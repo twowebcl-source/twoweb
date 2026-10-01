@@ -1,0 +1,1063 @@
+<!-- ============================================================
+     CLIPPERLAB — con formulario, aviso de privacidad y términos
+     ============================================================
+     NUEVO en esta versión:
+       - Aviso de privacidad bajo el formulario (Ley 19.628)
+       - Pantalla "Política de Privacidad"
+       - Pantalla "Términos y Condiciones"
+       - Enlaces a ambas en el pie de página
+     RECUERDA: reemplaza TU_CODIGO por tu código real de Formspree.
+============================================================ -->
+ 
+<!DOCTYPE html>
+<html lang="es">
+ 
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Si esta página se abre desde el dominio propio de una barbería (ej: minadeoro.cl), se muestra la página de esa barbería
+    (function(){ var h = location.hostname.toLowerCase().replace(/^www\./, '');
+      if (/\./.test(h) && !/^\d+(\.\d+){3}$/.test(h) && !/(^|\.)(clipperlab\.cl|github\.dev|github\.io|pages\.dev|githubpreview\.dev)$/.test(h))
+        location.replace('barberia.html' + location.search + location.hash); })();
+  </script>
+  <title>ClipperLab — Equipamiento y servicio técnico para barberías</title>
+ 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <!-- Conexión a la base de datos (para la inscripción de clientes) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&family=Anton&display=swap" rel="stylesheet">
+ 
+  <style>
+ 
+    :root {
+      --grafito:  #15171c;
+      --panel:    #1d2028;
+      --hueso:    #edeae4;
+      --voltaje:  #ff7a2f;
+      --gris:     #9aa0a8;
+    }
+ 
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+    body {
+      background-color: var(--grafito);
+      color: var(--hueso);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+    }
+ 
+    .contenedor { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+ 
+    header {
+      padding: 20px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      position: sticky; top: 0;
+      background-color: var(--grafito);
+      z-index: 10;
+    }
+    .nav { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700; letter-spacing: 0.5px;
+      cursor: pointer;
+    }
+    .logo span { color: var(--voltaje); }
+ 
+    .menu { display: flex; gap: 24px; flex-wrap: wrap; }
+    .menu button {
+      background: none; border: none; cursor: pointer;
+      color: var(--gris);
+      font-family: 'Inter', sans-serif; font-size: 15px;
+    }
+    .menu button:hover { color: var(--hueso); }
+    .menu button.activo { color: var(--voltaje); }
+ 
+    .pantalla { display: none; }
+    .pantalla.visible { display: block; }
+ 
+    .hero {
+      background-image: linear-gradient(rgba(21,23,28,0.72), rgba(21,23,28,0.94)), url('imagenes/hero.jpg');
+      background-size: cover; background-position: center;
+      padding: 130px 0 110px;
+    }
+    .hero .contenedor { max-width: 720px; }
+    .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: 52px; line-height: 1.05; margin-bottom: 20px; }
+    .hero h1 span { color: var(--voltaje); }
+    .hero p { color: var(--hueso); font-size: 19px; margin-bottom: 32px; opacity: 0.85; }
+ 
+    .boton {
+      display: inline-block;
+      background-color: var(--voltaje); color: var(--grafito);
+      font-weight: 600; padding: 15px 34px; border-radius: 4px;
+      text-decoration: none; border: none; cursor: pointer;
+      font-size: 16px; font-family: 'Inter', sans-serif;
+    }
+    .boton:hover { opacity: 0.88; }
+ 
+    .bloque { padding: 70px 0; }
+    .bloque h2 { font-family: 'Space Grotesk', sans-serif; font-size: 34px; margin-bottom: 12px; }
+    .subtitulo { color: var(--gris); margin-bottom: 40px; }
+ 
+    .grilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .tarjeta {
+      background-color: var(--panel); padding: 32px 28px;
+      border-radius: 8px; border-top: 3px solid var(--voltaje);
+    }
+    .tarjeta h3 { font-family: 'Space Grotesk', sans-serif; font-size: 20px; margin-bottom: 12px; }
+    .tarjeta p { color: var(--gris); font-size: 15px; }
+ 
+    .formulario { max-width: 560px; margin-top: 20px; }
+    .formulario input, .formulario textarea {
+      width: 100%; background-color: var(--panel);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
+      padding: 14px 16px; color: var(--hueso);
+      font-family: 'Inter', sans-serif; font-size: 15px; margin-bottom: 16px;
+    }
+    .formulario input:focus, .formulario textarea:focus { outline: none; border-color: var(--voltaje); }
+    .formulario textarea { min-height: 120px; resize: vertical; }
+    .fila-doble { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+ 
+    /* Aviso de privacidad bajo el formulario */
+    .aviso-privacidad {
+      font-size: 13px; color: var(--gris);
+      margin-top: 8px; max-width: 560px;
+    }
+    .aviso-privacidad a { color: var(--voltaje); }
+ 
+    /* Texto legal (política y términos) */
+    .legal { max-width: 760px; }
+    .legal h3 { font-family: 'Space Grotesk', sans-serif; font-size: 19px; margin: 28px 0 8px; }
+    .legal p { color: var(--gris); margin-bottom: 12px; font-size: 15px; }
+ 
+    footer {
+      padding: 40px 0; text-align: center;
+      color: var(--gris); font-size: 14px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    /* ---- PIE DE PÁGINA (negro con trama de rombos, acento naranja ClipperLab) ---- */
+    .pie-bt {
+      --oro: var(--voltaje); --oro-claro: #ffb07f;
+      background-color: #070707;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 26px),
+        repeating-linear-gradient(-45deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 26px);
+      border-top: 1px solid rgba(255,122,47,0.35);
+      padding: 60px 0 0; color: #d8d3c8; text-align: left;
+    }
+    .pie-bt .marca { text-align: center; margin-bottom: 44px; }
+    .pie-bt .marca b { font-family: 'Space Grotesk', sans-serif; font-size: 52px; letter-spacing: 2px; color: #f3efe6; font-weight: 700; }
+    .pie-bt .marca b span { color: var(--voltaje); }
+    .pie-bt .marca small { display: block; font-size: 12px; letter-spacing: 5px; color: #9a948a; margin-top: 4px; }
+    .pie-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+    .pie-cols h4 { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 20px; letter-spacing: 3px; text-transform: uppercase; color: #f3efe6; margin-bottom: 18px; }
+    .pie-cols a, .pie-cols button.pie-link { display: block; color: #bdb6a8; text-decoration: none; font-size: 15px; margin-bottom: 10px;
+      background: none; border: none; padding: 0; cursor: pointer; font-family: 'Inter', sans-serif; text-align: left; }
+    .pie-cols a:hover, .pie-cols button.pie-link:hover { color: var(--oro-claro); }
+    .pie-cols .local { margin-bottom: 18px; }
+    .pie-cols .local b { color: #f3efe6; font-size: 15px; display: block; }
+    .pie-cols .local a { margin: 0; line-height: 1.6; }
+    .pie-cols .etq { font-size: 11px; letter-spacing: 3px; color: #8d877c; text-transform: uppercase; margin: 16px 0 2px; }
+    .pie-cols .fono { color: #f3efe6; font-weight: 600; }
+    .redes { display: flex; gap: 12px; margin-top: 22px; }
+    .redes a { width: 46px; height: 46px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0;
+               border: 1px solid rgba(255,255,255,0.15); transition: transform .2s; }
+    .redes a:hover { transform: translateY(-3px); }
+    .redes svg { width: 22px; height: 22px; fill: #fff; }
+    .redes .ig { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fd5949 45%, #d6249f 60%, #285AEB 90%); border: none; }
+    .redes .tk { background: #000; }
+    .redes .fb { background: #1877f2; border: none; }
+    .pie-final { margin-top: 50px; border-top: 1px solid rgba(255,255,255,0.08); padding: 18px 24px; text-align: center; font-size: 12.5px; color: #8d877c; }
+    .pie-final a { color: #bdb6a8; }
+    @media (max-width: 720px) {
+      .pie-cols { grid-template-columns: 1fr; gap: 28px; text-align: center; }
+      .pie-cols a, .pie-cols button.pie-link { text-align: center; width: 100%; }
+      .redes { justify-content: center; }
+      .pie-cols .redes a { width: 46px; }
+      .pie-bt .marca b { font-size: 36px; letter-spacing: 6px; }
+    }
+
+    /* Enlaces del pie de página */
+    .footer-links { margin-top: 12px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    .footer-links button {
+      background: none; border: none; cursor: pointer;
+      color: var(--gris); font-family: 'Inter', sans-serif; font-size: 13px;
+      text-decoration: underline;
+    }
+    .footer-links button:hover { color: var(--hueso); }
+ 
+    /* ---- INSCRIPCIÓN: 10% EN LA PRIMERA VISITA ---- */
+    .boton-linea { background: none; border: 1px solid var(--voltaje); color: var(--voltaje); }
+    .boton-linea:hover { background: var(--voltaje); color: var(--grafito); opacity: 1; }
+    .menu a.menu-reserva { color: var(--voltaje); text-decoration: none; font-size: 15px; font-weight: 600; }
+    .inscripcion { background: linear-gradient(135deg, rgba(255,122,47,0.14), rgba(29,32,40,0.9)); border-top: 1px solid rgba(255,122,47,0.35);
+                   border-bottom: 1px solid rgba(255,122,47,0.35); padding: 70px 0; text-align: center; }
+    .inscripcion .etiqueta { display: inline-block; font-size: 12px; letter-spacing: 3px; color: var(--voltaje); border: 1px solid var(--voltaje);
+                             padding: 4px 12px; border-radius: 20px; margin-bottom: 16px; }
+    .inscripcion h2 { font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05; text-transform: uppercase; margin-bottom: 10px; }
+    .inscripcion h2 span { color: var(--voltaje); }
+    .inscripcion .subtitulo { margin-bottom: 28px; }
+    .form-insc { max-width: 620px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; }
+    .form-insc input, .form-insc select { width: 100%; background: var(--grafito); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px;
+                                         padding: 14px 16px; color: var(--hueso); font-family: 'Inter', sans-serif; font-size: 15px; }
+    .form-insc input:focus, .form-insc select:focus { outline: none; border-color: var(--voltaje); }
+    .form-insc .completo { grid-column: 1 / -1; }
+    .form-insc .tel { display: flex; }
+    .form-insc .tel select { width: auto; border-radius: 6px 0 0 6px; border-right: none; }
+    .form-insc .tel input { border-radius: 0 6px 6px 0; }
+    .form-insc label.acepto { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--gris); }
+    .form-insc label.acepto input { width: auto; accent-color: var(--voltaje); }
+    .form-insc .boton { grid-column: 1 / -1; width: 100%; letter-spacing: 1px; }
+    .form-insc .boton:disabled { opacity: .5; cursor: wait; }
+    .estado-insc { grid-column: 1 / -1; min-height: 18px; font-size: 14px; color: #f87171; text-align: center; }
+    .insc-ok { max-width: 560px; margin: 0 auto; background: var(--panel); border: 1px solid var(--voltaje); border-radius: 10px; padding: 30px; }
+    .insc-ok .check { width: 56px; height: 56px; border-radius: 50%; background: #4ade80; color: var(--grafito); font-size: 28px; font-weight: 700;
+                      display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+    .insc-ok h3 { font-family: 'Space Grotesk', sans-serif; font-size: 24px; margin-bottom: 8px; }
+    .insc-ok p { color: var(--gris); margin-bottom: 18px; }
+
+    @media (max-width: 720px) {
+      .inscripcion h2 { font-size: 32px; }
+      .form-insc { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 38px; }
+      .grilla  { grid-template-columns: 1fr; }
+      .fila-doble { grid-template-columns: 1fr; }
+    }
+ 
+ 
+    /* ---- CATÁLOGO Y PRECIOS ---- */
+    .lista-precios { max-width: 720px; margin-top: 10px; }
+    .item-precio {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px; padding: 18px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .item-precio .info h4 {
+      font-family: 'Space Grotesk', sans-serif; font-size: 17px; margin-bottom: 2px;
+    }
+    .item-precio .info p { color: var(--gris); font-size: 14px; }
+    .item-precio .precio {
+      font-family: 'Space Grotesk', sans-serif; font-size: 18px;
+      color: var(--voltaje); white-space: nowrap;
+    }
+    .item-precio .pedir {
+      background: none; border: 1px solid var(--voltaje); color: var(--voltaje);
+      padding: 8px 16px; border-radius: 4px; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 13px; white-space: nowrap;
+    }
+    .item-precio .pedir:hover { background: var(--voltaje); color: var(--grafito); }
+ 
+    /* ---- AGENDA POR HORAS ---- */
+    .horas {
+      display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 30px;
+    }
+    .hora {
+      background-color: var(--panel); border: 1px solid rgba(255,255,255,0.12);
+      color: var(--hueso); padding: 10px 18px; border-radius: 6px;
+      cursor: pointer; font-family: 'Inter', sans-serif; font-size: 15px;
+    }
+    .hora:hover { border-color: var(--voltaje); }
+    .hora.elegida { background-color: var(--voltaje); color: var(--grafito); border-color: var(--voltaje); }
+ 
+    .selector-servicio {
+      background-color: var(--panel); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px; padding: 14px 16px; color: var(--hueso);
+      font-family: 'Inter', sans-serif; font-size: 15px; margin-bottom: 20px;
+      max-width: 400px; width: 100%;
+    }
+ 
+ 
+    /* ============================================================
+       CARRITO DE COMPRAS
+       ============================================================ */
+    /* Contador en el menú (ícono con número) */
+    .carrito-btn {
+      position: relative; background: none; border: none; cursor: pointer;
+      color: var(--hueso); font-size: 22px; padding: 4px;
+    }
+    .carrito-contador {
+      position: absolute; top: -6px; right: -8px;
+      background: var(--voltaje); color: var(--grafito);
+      font-size: 11px; font-weight: 700;
+      min-width: 18px; height: 18px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 5px;
+    }
+ 
+    /* Panel lateral deslizante */
+    .panel-carrito {
+      position: fixed; top: 0; right: 0; height: 100%; width: 360px; max-width: 90vw;
+      background: var(--panel); z-index: 100;
+      transform: translateX(100%);            /* oculto a la derecha */
+      transition: transform 0.3s ease;
+      display: flex; flex-direction: column;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.4);
+    }
+    .panel-carrito.abierto { transform: translateX(0); } /* se desliza a la vista */
+ 
+    .panel-cab {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 22px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .panel-cab h3 { font-family: 'Space Grotesk', sans-serif; font-size: 20px; }
+    .cerrar-carrito { background: none; border: none; color: var(--gris); font-size: 26px; cursor: pointer; }
+ 
+    .panel-items { flex: 1; overflow-y: auto; padding: 12px 22px; }
+    .carrito-vacio { color: var(--gris); text-align: center; margin-top: 40px; }
+ 
+    .item-carrito {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 10px; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .item-carrito .nombre { font-size: 14px; }
+    .item-carrito .sub { color: var(--gris); font-size: 13px; }
+    .cantidad-ctrl { display: flex; align-items: center; gap: 8px; }
+    .cantidad-ctrl button {
+      width: 26px; height: 26px; border-radius: 4px; cursor: pointer;
+      background: var(--grafito); border: 1px solid rgba(255,255,255,0.15);
+      color: var(--hueso); font-size: 16px; line-height: 1;
+    }
+    .cantidad-ctrl button:hover { border-color: var(--voltaje); }
+ 
+    .panel-pie { padding: 22px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .total-linea {
+      display: flex; justify-content: space-between; margin-bottom: 16px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 18px;
+    }
+    .total-linea .monto { color: var(--voltaje); }
+    .panel-pie .boton { width: 100%; text-align: center; }
+ 
+    /* Fondo oscuro detrás del panel */
+    .fondo-carrito {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 99; display: none;
+    }
+    .fondo-carrito.visible { display: block; }
+ 
+ 
+    /* ---- CATÁLOGO AMPLIADO ---- */
+    .cat-titulo {
+      font-family: 'Space Grotesk', sans-serif; color: var(--voltaje);
+      margin: 40px 0 4px; font-size: 20px;
+    }
+    .banner-mayorista {
+      display: flex; justify-content: space-between; align-items: center; gap: 24px;
+      background: linear-gradient(135deg, rgba(255,122,47,0.15), rgba(29,32,40,0.6));
+      border: 1px solid var(--voltaje); border-radius: 10px;
+      padding: 28px; margin: 10px 0 20px; flex-wrap: wrap;
+    }
+    .banner-mayorista h3 { font-family: 'Space Grotesk', sans-serif; font-size: 20px; margin-bottom: 6px; }
+    .banner-mayorista p { color: var(--gris); font-size: 14px; max-width: 520px; }
+    .banner-mayorista .boton { white-space: nowrap; }
+    /* Etiqueta de mayorista dentro de cada producto */
+    .badge-mayor {
+      display: inline-block; font-size: 12px; color: var(--voltaje);
+      border: 1px solid var(--voltaje); border-radius: 4px;
+      padding: 1px 8px; margin-top: 4px;
+    }
+ 
+ 
+    /* ---- CATÁLOGO VISUAL MEJORADO ---- */
+    .item-precio .precios-doble { text-align: right; white-space: nowrap; }
+    .precio-detalle { font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: var(--voltaje); }
+    .precio-mayor-linea { font-size: 12px; color: var(--gris); margin-top: 2px; }
+    .precio-mayor-linea b { color: var(--hueso); }
+    .ahorro { color: #4ade80; font-size: 11px; font-weight: 600; }
+ 
+    /* Aviso "estás comprando por mayor" en el item del carrito */
+    .aviso-mayor {
+      display: inline-block; background: rgba(74,222,128,0.15);
+      color: #4ade80; font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+    }
+    .sub-precio { color: var(--hueso); font-size: 13px; }
+    .sub-tachado { color: var(--gris); font-size: 12px; text-decoration: line-through; margin-right: 6px; }
+ 
+    /* Nota de cuánto falta para el precio mayor */
+    .falta-mayor { color: var(--voltaje); font-size: 11px; margin-top: 3px; }
+ 
+  </style>
+</head>
+ 
+<body>
+ 
+  <!-- CABECERA -->
+  <header>
+    <div class="contenedor">
+      <div class="nav">
+        <div class="logo" onclick="mostrar('inicio')">Clipper<span>Lab</span></div>
+        <nav class="menu">
+          <button onclick="mostrar('inicio')" class="activo">Inicio</button>
+          <button onclick="mostrar('maquinas')">Venta de máquinas</button>
+          <button onclick="mostrar('catalogo')">Catálogo y precios</button>
+          <button onclick="mostrar('mantencion')">Mantención</button>
+          <button onclick="mostrar('contacto')">Contacto</button>
+          <a class="menu-reserva" href="agenda.html">Reservar hora</a>
+          <button class="carrito-btn" onclick="abrirCarrito()">🛒<span class="carrito-contador" id="contadorCarrito">0</span></button>
+        </nav>
+      </div>
+    </div>
+  </header>
+ 
+  <!-- PANTALLA 1: INICIO -->
+  <div class="pantalla visible" id="inicio">
+    <section class="hero">
+      <div class="contenedor">
+        <h1>Equipamiento y <span>servicio técnico</span> para barberías</h1>
+        <p>Venta de máquinas, mantención de sillones y equipos, e instalación integral para locales nuevos o remodelaciones.</p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button class="boton" onclick="mostrar('contacto')">Solicitar asesoría</button>
+          <a class="boton boton-linea" href="agenda.html">Reserva tu hora</a>
+        </div>
+      </div>
+    </section>
+    <section class="bloque contenedor">
+      <h2>Qué hacemos</h2>
+      <p class="subtitulo">Todo lo que tu barbería necesita, en un solo lugar.</p>
+      <div class="grilla">
+        <div class="tarjeta"><h3>Venta de máquinas e insumos</h3><p>Máquinas profesionales, repuestos, cuchillas y accesorios.</p></div>
+        <div class="tarjeta"><h3>Mantención y reparación</h3><p>Servicio técnico de máquinas y sillones.</p></div>
+        <div class="tarjeta"><h3>Instalaciones y asesoría</h3><p>Montaje integral para locales nuevos o remodelaciones.</p></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         INSCRIPCIÓN: 10% EN LA PRIMERA VISITA
+         Guarda nombre, apellido, correo y WhatsApp en la base de clientes
+         (Supabase → función inscribir_cliente). El 10% se aplica solo
+         cuando la persona reserva en agenda.html con ese mismo WhatsApp.
+         ============================================================ -->
+    <section class="inscripcion" id="inscribete">
+      <div class="contenedor">
+        <span class="etiqueta">CLIPPERLAB · LAMPA Y PROVIDENCIA</span>
+        <h2>Inscríbete y recibe <span>10%</span><br>en tu primera visita</h2>
+        <p class="subtitulo">Sin spam. Te avisamos solo cuando vale la pena.</p>
+        <div id="cajaInsc">
+          <form class="form-insc" onsubmit="return inscribirme(event)">
+            <input id="insNombre" placeholder="Nombre" autocomplete="given-name" required>
+            <input id="insApellido" placeholder="Apellido" autocomplete="family-name" required>
+            <input id="insCorreo" class="completo" type="email" placeholder="Correo (ej: tunombre@gmail.com)" autocomplete="email" required>
+            <div class="tel completo">
+              <select id="insCod" aria-label="Código de país" onchange="if (this.value !== '+56' && document.getElementById('insTel').value.trim() === '9') document.getElementById('insTel').value = ''">
+                <option value="+56">🇨🇱 +56</option><option value="+54">🇦🇷 +54</option><option value="+51">🇵🇪 +51</option><option value="+57">🇨🇴 +57</option>
+                <option value="+58">🇻🇪 +58</option><option value="+593">🇪🇨 +593</option><option value="+591">🇧🇴 +591</option><option value="+1">🇺🇸 +1</option>
+              </select>
+              <input id="insTel" type="tel" inputmode="tel" value="9 " placeholder="WhatsApp: 9 1234 5678" autocomplete="tel-national" required>
+            </div>
+            <label class="acepto"><input type="checkbox" id="insPromos" checked> Acepto recibir promociones y descuentos de ClipperLab</label>
+            <button type="submit" class="boton" id="insBoton">Quiero mi 10%</button>
+            <p class="estado-insc" id="insEstado"></p>
+          </form>
+          <p class="aviso-privacidad" style="margin:14px auto 0; text-align:center;">
+            Tus datos se usan solo para tu reserva y, si lo aceptas, para enviarte promociones. Puedes darte de baja cuando quieras.
+            <button onclick="mostrar('privacidad')" style="background:none;border:none;color:var(--voltaje);cursor:pointer;text-decoration:underline;font-size:13px;padding:0;">Política de Privacidad</button>.
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+ 
+  <!-- PANTALLA 2: VENTA DE MÁQUINAS -->
+  <div class="pantalla" id="maquinas">
+    <section class="bloque contenedor">
+      <h2>Venta de máquinas e insumos</h2>
+      <p class="subtitulo">Equipos profesionales y repuestos para tu barbería.</p>
+      <div class="grilla">
+        <div class="tarjeta"><h3>Máquinas de corte</h3><p>Modelos profesionales para uso intensivo.</p></div>
+        <div class="tarjeta"><h3>Cuchillas y repuestos</h3><p>Repuestos originales y cuchillas de recambio.</p></div>
+        <div class="tarjeta"><h3>Accesorios</h3><p>Peines, aceites, cepillos y más.</p></div>
+      </div>
+      <div style="margin-top:30px;"><button class="boton" onclick="mostrar('contacto')">Consultar por un producto</button></div>
+    </section>
+  </div>
+ 
+  <!-- PANTALLA 3: MANTENCIÓN -->
+  <div class="pantalla" id="mantencion">
+    <section class="bloque contenedor">
+      <h2>Mantención y reparación</h2>
+      <p class="subtitulo">Dejamos tus equipos y sillones como nuevos.</p>
+      <div class="grilla">
+        <div class="tarjeta"><h3>Servicio de máquinas</h3><p>Limpieza, ajuste, afilado y reparación.</p></div>
+        <div class="tarjeta"><h3>Reparación de sillones</h3><p>Tapizado, hidráulica y estructura.</p></div>
+        <div class="tarjeta"><h3>Customización</h3><p>Personalizamos tus equipos a tu estilo.</p></div>
+      </div>
+      <div style="margin-top:30px;"><button class="boton" onclick="mostrar('contacto')">Pedir una mantención</button></div>
+    </section>
+  </div>
+ 
+  <!-- ============================================================
+       PANTALLA: CATÁLOGO Y PRECIOS
+       Cada botón "Pedir" llama a pedirWhatsApp() con el nombre del
+       producto: JavaScript arma el mensaje solo y abre WhatsApp.
+       ============================================================ -->
+  <div class="pantalla" id="catalogo">
+    <section class="bloque contenedor">
+      <h2>Catálogo y precios</h2>
+      <p class="subtitulo">Precios al detalle. Compra por mayor y accede a precio rebajado automáticamente.</p>
+ 
+      <!-- BANNER MAYORISTA -->
+      <div class="banner-mayorista">
+        <div>
+          <h3>¿Barbería o tienda? Compra por mayor</h3>
+          <p>Equipa tu local o revende. Al llevar la cantidad mínima de cada producto, el precio mayorista se aplica solo. ¿Volumen grande? Cotiza directo.</p>
+        </div>
+        <button class="boton" onclick="cotizarMayor()">Cotizar por mayor</button>
+      </div>
+ 
+      <!-- MÁQUINAS -->
+      <h3 class="cat-titulo">Máquinas</h3>
+      <div class="lista-precios" id="cat-maquinas"></div>
+ 
+      <!-- CUCHILLAS Y NAVAJAS -->
+      <h3 class="cat-titulo">Cuchillas, navajas y accesorios de corte</h3>
+      <div class="lista-precios" id="cat-corte"></div>
+ 
+      <!-- INSUMOS -->
+      <h3 class="cat-titulo">Insumos y mantención</h3>
+      <div class="lista-precios" id="cat-insumos"></div>
+ 
+      <h3 style="font-family:'Space Grotesk',sans-serif;color:var(--voltaje);margin:36px 0 4px;">Servicios técnicos</h3>
+      <div class="lista-precios">
+        <div class="item-precio">
+          <div class="info"><h4>Mantención de máquina</h4><p>Limpieza, ajuste y afilado</p></div>
+          <span class="precio">$00.000</span>
+          <button class="pedir" onclick="pedirWhatsApp('Mantención de máquina')">Pedir</button>
+        </div>
+        <div class="item-precio">
+          <div class="info"><h4>Reparación de sillón</h4><p>Hidráulica, tapizado o estructura</p></div>
+          <span class="precio">Cotizar</span>
+          <button class="pedir" onclick="pedirWhatsApp('Reparación de sillón')">Pedir</button>
+        </div>
+        <div class="item-precio">
+          <div class="info"><h4>Instalación de local</h4><p>Montaje eléctrico y puesta a punto</p></div>
+          <span class="precio">Cotizar</span>
+          <button class="pedir" onclick="pedirWhatsApp('Instalación de local')">Pedir</button>
+        </div>
+      </div>
+ 
+      <div style="margin-top:36px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="boton" onclick="abrirCarrito()">Ver mi carrito</button>
+        <button class="boton boton-linea" onclick="mostrar('contacto')">Agendar un servicio técnico</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- PANTALLA 4: CONTACTO -->
+  <div class="pantalla" id="contacto">
+    <section class="bloque contenedor">
+      <h2>Contáctanos</h2>
+      <p class="subtitulo">Escríbenos directo, o elige un servicio y una hora y te lo enviamos por WhatsApp.</p>
+ 
+      <!-- AGENDA RÁPIDA POR WHATSAPP (automatizada con JavaScript) -->
+      <h3 style="font-family:'Space Grotesk',sans-serif;margin-bottom:12px;">Agenda rápida</h3>
+      <select class="selector-servicio" id="servicioAgenda">
+        <option value="">¿Qué servicio necesitas?</option>
+        <option>Mantención de máquina</option>
+        <option>Reparación de sillón</option>
+        <option>Instalación / asesoría</option>
+        <option>Compra de máquina o insumos</option>
+      </select>
+      <div class="horas" id="listaHoras">
+        <button class="hora" onclick="elegirHora(this)">09:00</button>
+        <button class="hora" onclick="elegirHora(this)">10:00</button>
+        <button class="hora" onclick="elegirHora(this)">11:00</button>
+        <button class="hora" onclick="elegirHora(this)">12:00</button>
+        <button class="hora" onclick="elegirHora(this)">15:00</button>
+        <button class="hora" onclick="elegirHora(this)">16:00</button>
+        <button class="hora" onclick="elegirHora(this)">17:00</button>
+      </div>
+      <button class="boton" onclick="agendarPorWhatsApp()">Agendar por WhatsApp</button>
+ 
+      <p style="color:var(--gris);font-size:14px;margin:36px 0 12px;">O déjanos tus datos y te contactamos:</p>
+ 
+      <a href="https://wa.me/56949430834?text=Hola%20ClipperLab,%20me%20gustaría%20recibir%20más%20información%20sobre%20sus%20servicios" class="boton">Escríbenos por WhatsApp</a>
+ 
+      <!-- FORMULARIO: reemplaza TU_CODIGO por tu código de Formspree -->
+      <form class="formulario" action="https://formspree.io/f/xzezawgo" method="POST">
+        <input type="hidden" name="_subject" value="Nuevo contacto desde ClipperLab">
+        <input type="text" name="_gotcha" style="display:none">
+        <div class="fila-doble">
+          <input type="text" name="nombre" placeholder="Nombre" required>
+          <input type="text" name="apellido" placeholder="Apellido" required>
+        </div>
+        <input type="email" name="correo" placeholder="Correo (Gmail)" required>
+        <input type="tel" name="whatsapp" placeholder="WhatsApp (ej. +56 9 1234 5678)" required>
+        <textarea name="motivo" placeholder="Cuéntanos brevemente en qué te podemos ayudar..." required></textarea>
+        <button type="submit" class="boton">Enviar mis datos</button>
+      </form>
+ 
+      <!-- AVISO DE PRIVACIDAD (Ley 19.628) -->
+      <p class="aviso-privacidad">
+        Al enviar este formulario aceptas que tus datos se usen únicamente para contactarte,
+        conforme a la Ley 19.628 sobre protección de la vida privada. Revisa nuestra
+        <button onclick="mostrar('privacidad')" style="background:none;border:none;color:var(--voltaje);cursor:pointer;text-decoration:underline;font-size:13px;padding:0;">Política de Privacidad</button>.
+      </p>
+    </section>
+  </div>
+ 
+  <!-- PANTALLA 5: POLÍTICA DE PRIVACIDAD -->
+  <div class="pantalla" id="privacidad">
+    <section class="bloque contenedor legal">
+      <h2>Política de Privacidad</h2>
+      <p class="subtitulo">Cómo tratamos tus datos personales.</p>
+ 
+      <h3>1. Responsable de los datos</h3>
+      <p>ClipperLab (Santiago, Chile) es responsable del tratamiento de los datos personales que nos entregas a través de este sitio y de su agenda online.</p>
+
+      <h3>2. Qué datos recopilamos</h3>
+      <p>Solo los que ingresas voluntariamente: nombre, apellido, correo electrónico y número de WhatsApp, al inscribirte, reservar una hora o escribirnos por el formulario de contacto.
+         Al reservar también guardamos el historial de tus atenciones (fecha, local, servicios y montos) y, si la envías, la foto de referencia del corte.</p>
+
+      <h3>3. Para qué los usamos</h3>
+      <p>Para gestionar tus reservas, aplicar tus beneficios (como el 10% de la primera visita), responder tus consultas y, solo si lo aceptaste, enviarte promociones y novedades por correo o WhatsApp.
+         No vendemos ni compartimos tus datos con terceros ajenos a la prestación del servicio. Los barberos solo ven tu nombre y el servicio; tus datos de contacto los maneja únicamente la administración.</p>
+
+      <h3>4. Promociones y cómo darte de baja</h3>
+      <p>Puedes dejar de recibir promociones en cualquier momento respondiendo "BAJA" a cualquiera de nuestros mensajes o escribiéndonos por WhatsApp. Seguirás recibiendo solo los avisos de tus reservas.</p>
+
+      <h3>5. Tus derechos</h3>
+      <p>Conforme a la legislación chilena de protección de datos personales (Ley 19.628 y sus modificaciones), tienes derecho a acceder, rectificar, cancelar y oponerte al tratamiento de tus datos. Para ejercerlos, escríbenos por los canales de contacto de este sitio.</p>
+
+      <h3>6. Conservación y seguridad</h3>
+      <p>Conservamos tus datos mientras seas cliente o hasta que pidas eliminarlos. Las fotos de referencia se borran automáticamente 45 días después de tu atención. Los datos se guardan en servidores con acceso restringido y tomamos medidas razonables para protegerlos.</p>
+
+      <div style="margin-top:30px;"><button class="boton" onclick="mostrar('inicio')">Volver al inicio</button></div>
+    </section>
+  </div>
+ 
+  <!-- PANTALLA: POLÍTICA DE CANCELACIÓN (ajusta los plazos a tu gusto) -->
+  <div class="pantalla" id="cancelacion">
+    <section class="bloque contenedor legal">
+      <h2>Política de Cancelación</h2>
+      <p class="subtitulo">Para que tu hora y la de otros clientes se respete.</p>
+
+      <h3>1. Cancelar o cambiar tu hora</h3>
+      <p>Puedes cancelar o cambiar tu reserva sin costo avisando con al menos 2 horas de anticipación por WhatsApp al local donde reservaste
+         (Providencia +56 9 4943 0834 · Lampa +56 9 3030 1232).</p>
+
+      <h3>2. Atrasos</h3>
+      <p>Te esperamos hasta 10 minutos. Pasado ese tiempo, la hora puede reasignarse o el servicio acortarse para no atrasar al siguiente cliente.</p>
+
+      <h3>3. Inasistencias</h3>
+      <p>Si no asistes sin avisar, quedará registrado. Tras inasistencias repetidas podremos pedir confirmación previa para nuevas reservas.</p>
+
+      <h3>4. Beneficios</h3>
+      <p>Si tu hora tenía un descuento (como el 10% de primera visita) y la cancelas con aviso, el beneficio sigue disponible para tu próxima reserva.</p>
+
+      <div style="margin-top:30px;"><button class="boton" onclick="mostrar('inicio')">Volver al inicio</button></div>
+    </section>
+  </div>
+
+  <!-- PANTALLA 6: TÉRMINOS Y CONDICIONES -->
+  <div class="pantalla" id="terminos">
+    <section class="bloque contenedor legal">
+      <h2>Términos y Condiciones</h2>
+      <p class="subtitulo">Condiciones de uso de este sitio.</p>
+ 
+      <h3>1. Sobre este sitio</h3>
+      <p>Este sitio web pertenece a ClipperLab y tiene como fin informar sobre nuestros servicios de venta de máquinas, mantención, reparación e instalación para barberías, y facilitar el contacto con clientes.</p>
+ 
+      <h3>2. Uso del sitio</h3>
+      <p>La información publicada tiene carácter referencial. Los precios, disponibilidad y características de los productos y servicios pueden variar y se confirman al momento de la cotización.</p>
+ 
+      <h3>3. Contacto y cotizaciones</h3>
+      <p>El envío de un formulario o mensaje no constituye un contrato ni una obligación de compra. Toda contratación se acuerda directamente entre ClipperLab y el cliente.</p>
+ 
+      <h3>4. Propiedad</h3>
+      <p>Los contenidos, marca e imágenes de este sitio pertenecen a ClipperLab y no pueden usarse sin autorización.</p>
+ 
+      <h3>5. Legislación aplicable</h3>
+      <p>Estos términos se rigen por las leyes de la República de Chile.</p>
+ 
+      <div style="margin-top:30px;"><button class="boton" onclick="mostrar('inicio')">Volver al inicio</button></div>
+    </section>
+  </div>
+ 
+ 
+  <!-- ============================================================
+       PANEL DEL CARRITO (se desliza desde la derecha)
+       ============================================================ -->
+  <div class="fondo-carrito" id="fondoCarrito" onclick="cerrarCarrito()"></div>
+  <div class="panel-carrito" id="panelCarrito">
+    <div class="panel-cab">
+      <h3>Tu carrito</h3>
+      <button class="cerrar-carrito" onclick="cerrarCarrito()">&times;</button>
+    </div>
+    <div class="panel-items" id="itemsCarrito">
+      <p class="carrito-vacio">Tu carrito está vacío.</p>
+    </div>
+    <div class="panel-pie">
+      <div class="total-linea"><span>Total</span><span class="monto" id="totalCarrito">$0</span></div>
+      <button class="boton" onclick="enviarPedido()">Finalizar pedido por WhatsApp</button>
+    </div>
+  </div>
+ 
+  <!-- PIE DE PÁGINA con enlaces legales -->
+  <!-- ============================================================
+       PIE DE PÁGINA
+       >>> EDITA AQUÍ los links de tus redes sociales (href de cada ícono) <<<
+       ============================================================ -->
+  <footer class="pie-bt">
+    <div class="marca"><b>Clipper<span>Lab</span></b><small>· SANTIAGO · CHILE ·</small></div>
+
+    <div class="pie-cols">
+      <!-- Columna 1: legal + redes -->
+      <div>
+        <h4>Términos y condiciones</h4>
+        <button class="pie-link" onclick="mostrar('terminos')">Términos del servicio</button>
+        <button class="pie-link" onclick="mostrar('privacidad')">Política de privacidad</button>
+        <button class="pie-link" onclick="mostrar('cancelacion')">Política de cancelación</button>
+        <div class="redes">
+          <a class="ig" href="https://www.instagram.com/clipperlab.cl/" target="_blank" rel="noopener" aria-label="Instagram de ClipperLab">
+            <svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.8.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1.1.4 2.2.1 1.3.1 1.6.1 4.8s0 3.6-.1 4.8c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1.1.4-2.2.4-1.3.1-1.6.1-4.8.1s-3.6 0-4.8-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1.1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.8c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1.1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2zm0 4.9a4.9 4.9 0 1 0 0 9.8 4.9 4.9 0 0 0 0-9.8zm0 8.1a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4zm5.1-9.4a1.15 1.15 0 1 0 0 2.3 1.15 1.15 0 0 0 0-2.3z"/></svg>
+          </a>
+          <!-- TikTok: cuando tengas la cuenta, cambia href="#" por el link y borra onclick y title -->
+          <a class="tk" href="#" onclick="event.preventDefault()" title="Próximamente" aria-label="TikTok de ClipperLab">
+            <svg viewBox="0 0 24 24"><path d="M16.6 2h-3.3v13.4a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .8.1V9.2a6.3 6.3 0 1 0 5.4 6.2V8.6a8 8 0 0 0 4.4 1.3V6.6a4.5 4.5 0 0 1-4.4-4.6z"/></svg>
+          </a>
+          <!-- Facebook: cuando tengas la página, cambia href="#" por el link y borra onclick y title -->
+          <a class="fb" href="#" onclick="event.preventDefault()" title="Próximamente" aria-label="Facebook de ClipperLab">
+            <svg viewBox="0 0 24 24"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.5 1.6-1.5h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.4 0-4.1 1.5-4.1 4.2v2.3H7.5V14h2.7v8h3.3z"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Columna 2: ubicación -->
+      <div>
+        <h4>Ubicación</h4>
+        <div class="local">
+          <b>Local Providencia</b>
+          <a href="https://www.google.com/maps/search/?api=1&query=Av.+Nueva+Providencia+2160,+Providencia" target="_blank" rel="noopener">Av. Nueva Providencia 2160<br>Providencia · Metro Los Leones</a>
+        </div>
+        <div class="local">
+          <b>Local Lampa</b>
+          <a href="https://www.google.com/maps/search/?api=1&query=Los+Halcones+1171,+Lampa" target="_blank" rel="noopener">Av. Los Halcones 1171<br>Larapinta, Lampa</a>
+        </div>
+      </div>
+
+      <!-- Columna 3: contacto -->
+      <div>
+        <h4>Contacto</h4>
+        <!-- Si tienes correo de ClipperLab, agrégalo aquí: <a href="mailto:TU_CORREO">TU_CORREO</a> -->
+        <p class="etq">Providencia</p>
+        <a class="fono" href="https://wa.me/56949430834" target="_blank" rel="noopener">+56 9 4943 0834</a>
+        <p class="etq">Lampa</p>
+        <a class="fono" href="https://wa.me/56930301232" target="_blank" rel="noopener">+56 9 3030 1232</a>
+      </div>
+    </div>
+
+    <div class="pie-final">
+      © <span id="anioPie">2026</span> ClipperLab · Agenda online, equipamiento y servicio técnico para barberías · Santiago, Chile
+    </div>
+  </footer>
+ 
+  <!-- JAVASCRIPT: navegación entre pantallas -->
+  <script>
+ 
+    // ---- AUTOMATIZACIÓN: pedir un producto por WhatsApp ----
+    // Recibe el nombre del producto y arma el mensaje solo.
+    function pedirWhatsApp(producto) {
+      const numero = "56949430834";
+      const mensaje = "Hola ClipperLab, me interesa: " + producto + ". ¿Me pueden dar más información?";
+      const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(mensaje);
+      window.open(url, "_blank");
+    }
+ 
+    // ---- AGENDA: recordar qué hora eligió el cliente ----
+    let horaElegida = "";
+    function elegirHora(boton) {
+      // Quita la marca de todas las horas
+      document.querySelectorAll('.hora').forEach(h => h.classList.remove('elegida'));
+      // Marca la que tocó y guarda su texto
+      boton.classList.add('elegida');
+      horaElegida = boton.textContent;
+    }
+ 
+    // ---- AUTOMATIZACIÓN: armar la reserva y mandarla por WhatsApp ----
+    function agendarPorWhatsApp() {
+      const servicio = document.getElementById('servicioAgenda').value;
+      const numero = "56949430834";
+ 
+      // Validación: revisa que haya elegido servicio y hora
+      if (!servicio) { alert("Elige primero un servicio."); return; }
+      if (!horaElegida) { alert("Elige una hora disponible."); return; }
+ 
+      const mensaje = "Hola ClipperLab, quiero agendar: " + servicio + " a las " + horaElegida + ". ¿Está disponible?";
+      const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(mensaje);
+      window.open(url, "_blank");
+    }
+ 
+ 
+ 
+    // ============================================================
+    // CATÁLOGO DE PRODUCTOS (edita aquí precios y cantidades mínimas)
+    // ------------------------------------------------------------
+    // precio       = precio al detalle (1 unidad)
+    // precioMayor  = precio por unidad al comprar por mayor
+    // minMayor     = cantidad mínima para que se active el precio mayor
+    // Pon precio 0 si es "A cotizar".
+    // ============================================================
+    const PRODUCTOS = {
+      maquinas: [
+        { nombre: "Máquina de corte profesional", precio: 89990, precioMayor: 74990, minMayor: 3 },
+        { nombre: "Trimmer / patillera profesional", precio: 54990, precioMayor: 44990, minMayor: 3 },
+        { nombre: "Máquina inalámbrica premium", precio: 129990, precioMayor: 109990, minMayor: 2 }
+      ],
+      corte: [
+        { nombre: "Cuchilla de recambio", precio: 12990, precioMayor: 8990, minMayor: 10 },
+        { nombre: "Navaja barbera profesional", precio: 24990, precioMayor: 18990, minMayor: 5 },
+        { nombre: "Porta navajas de cuero", precio: 16990, precioMayor: 12990, minMayor: 5 },
+        { nombre: "Set de hojas desechables (caja)", precio: 9990, precioMayor: 6990, minMayor: 10 },
+        { nombre: "Tijera de corte profesional", precio: 39990, precioMayor: 31990, minMayor: 4 }
+      ],
+      insumos: [
+        { nombre: "Kit de aceites y limpieza", precio: 14990, precioMayor: 10990, minMayor: 6 },
+        { nombre: "Aceite lubricante para máquina", precio: 5990, precioMayor: 3990, minMayor: 12 },
+        { nombre: "Cepillo desvanecedor", precio: 7990, precioMayor: 5490, minMayor: 10 },
+        { nombre: "Capa de corte impermeable", precio: 11990, precioMayor: 8490, minMayor: 6 }
+      ]
+    };
+ 
+    // Dibuja una lista de productos dentro de un contenedor
+    function dibujarCatalogo(lista, idContenedor) {
+      let html = '';
+      lista.forEach(p => {
+        const precioTxt = p.precio > 0 ? '$' + p.precio.toLocaleString('es-CL') : 'A cotizar';
+        // Bloque de precio mayorista visual con ahorro
+        let bloqueMayor = '';
+        if (p.precioMayor > 0 && p.minMayor > 0) {
+          const ahorro = p.precio - p.precioMayor;
+          bloqueMayor = `
+            <div class="precio-mayor-linea">
+              Por mayor (desde ${p.minMayor}): <b>$${p.precioMayor.toLocaleString('es-CL')}</b> c/u
+              <span class="ahorro">ahorras $${ahorro.toLocaleString('es-CL')}</span>
+            </div>`;
+        }
+        html += `
+          <div class="item-precio">
+            <div class="info">
+              <h4>${p.nombre}</h4>
+            </div>
+            <div class="precios-doble">
+              <div class="precio-detalle">${precioTxt}</div>
+              ${bloqueMayor}
+            </div>
+            <button class="pedir" onclick="agregarCarrito('${p.nombre}', ${p.precio})">Agregar</button>
+          </div>`;
+      });
+      document.getElementById(idContenedor).innerHTML = html;
+    }
+ 
+    // Busca un producto por nombre en todo el catálogo (para saber su precio mayor)
+    function buscarProducto(nombre) {
+      for (const cat in PRODUCTOS) {
+        const encontrado = PRODUCTOS[cat].find(p => p.nombre === nombre);
+        if (encontrado) return encontrado;
+      }
+      return null;
+    }
+ 
+    // Cotizar por mayor por WhatsApp
+    function cotizarMayor() {
+      const numero = "56949430834";
+      const mensaje = "Hola ClipperLab, quiero cotizar una compra por MAYOR para equipar/revender. ¿Me pueden enviar lista de precios mayorista?";
+      window.open("https://wa.me/" + numero + "?text=" + encodeURIComponent(mensaje), "_blank");
+    }
+ 
+    // Dibuja todo el catálogo al cargar la página
+    window.addEventListener('DOMContentLoaded', function() {
+      dibujarCatalogo(PRODUCTOS.maquinas, 'cat-maquinas');
+      dibujarCatalogo(PRODUCTOS.corte, 'cat-corte');
+      dibujarCatalogo(PRODUCTOS.insumos, 'cat-insumos');
+    });
+ 
+    // ============================================================
+    // SISTEMA DE CARRITO — la "memoria" manda sobre todo lo visible
+    // ============================================================
+    // El carrito es un ARRAY: cada elemento es un producto con su cantidad.
+    // Esta lista es el ESTADO. Cada acción la modifica y luego "redibuja".
+    let carrito = [];
+ 
+    // ---- ABRIR / CERRAR el panel ----
+    function abrirCarrito() {
+      document.getElementById('panelCarrito').classList.add('abierto');
+      document.getElementById('fondoCarrito').classList.add('visible');
+    }
+    function cerrarCarrito() {
+      document.getElementById('panelCarrito').classList.remove('abierto');
+      document.getElementById('fondoCarrito').classList.remove('visible');
+    }
+ 
+    // ---- AGREGAR un producto ----
+    function agregarCarrito(nombre, precio) {
+      // ¿Ya está en el carrito? Buscamos por nombre.
+      const existente = carrito.find(p => p.nombre === nombre);
+      if (existente) {
+        existente.cantidad++;        // si ya está, suma 1
+      } else {
+        carrito.push({ nombre, precio, cantidad: 1 }); // si no, lo agrega
+      }
+      dibujarCarrito();  // redibuja con el estado nuevo
+      abrirCarrito();    // muestra el panel
+    }
+ 
+    // ---- CAMBIAR cantidad (+1 o -1) ----
+    function cambiarCantidad(nombre, delta) {
+      const item = carrito.find(p => p.nombre === nombre);
+      if (!item) return;
+      item.cantidad += delta;
+      // Si llega a 0, se quita del carrito
+      if (item.cantidad <= 0) {
+        carrito = carrito.filter(p => p.nombre !== nombre);
+      }
+      dibujarCarrito();
+    }
+ 
+    // ---- DIBUJAR el carrito (lee el estado y arma lo visible) ----
+    function dibujarCarrito() {
+      const cont = document.getElementById('itemsCarrito');
+      const contador = document.getElementById('contadorCarrito');
+      const totalEl = document.getElementById('totalCarrito');
+ 
+      // Contador: suma todas las cantidades
+      const totalItems = carrito.reduce((s, p) => s + p.cantidad, 0);
+      contador.textContent = totalItems;
+ 
+      // Si está vacío
+      if (carrito.length === 0) {
+        cont.innerHTML = '<p class="carrito-vacio">Tu carrito está vacío.</p>';
+        totalEl.textContent = '$0';
+        return;
+      }
+ 
+      // Arma la lista de productos
+      let html = '';
+      let total = 0;
+      carrito.forEach(p => {
+        // LÓGICA MAYORISTA: si la cantidad alcanza el mínimo, usa precio mayor
+        const info = buscarProducto(p.nombre);
+        let precioUnit = p.precio;
+        let esMayor = false;
+        if (info && info.precioMayor > 0 && info.minMayor > 0 && p.cantidad >= info.minMayor) {
+          precioUnit = info.precioMayor;
+          esMayor = true;
+        }
+        const subtotal = precioUnit * p.cantidad;
+        total += subtotal;
+ 
+        // Línea de precio del item (con tachado si aplica mayorista)
+        let lineaPrecio = '';
+        if (precioUnit > 0) {
+          if (esMayor) {
+            const detalleTotal = p.precio * p.cantidad;
+            lineaPrecio = `<span class="sub-tachado">$${detalleTotal.toLocaleString('es-CL')}</span><span class="sub-precio">$${subtotal.toLocaleString('es-CL')}</span>`;
+          } else {
+            lineaPrecio = `<span class="sub-precio">$${subtotal.toLocaleString('es-CL')}</span>`;
+          }
+        } else {
+          lineaPrecio = '<span class="sub-precio">A cotizar</span>';
+        }
+ 
+        // Aviso: ya es mayorista, o cuánto falta para serlo
+        let avisoMayor = '';
+        if (esMayor) {
+          avisoMayor = `<div class="aviso-mayor">✓ Precio por mayor aplicado</div>`;
+        } else if (info && info.precioMayor > 0 && info.minMayor > 0) {
+          const faltan = info.minMayor - p.cantidad;
+          avisoMayor = `<div class="falta-mayor">Agrega ${faltan} más y pagas precio por mayor</div>`;
+        }
+ 
+        html += `
+          <div class="item-carrito">
+            <div>
+              <div class="nombre">${p.nombre}</div>
+              <div class="sub">${lineaPrecio}</div>
+              ${avisoMayor}
+            </div>
+            <div class="cantidad-ctrl">
+              <button onclick="cambiarCantidad('${p.nombre}', -1)">-</button>
+              <span>${p.cantidad}</span>
+              <button onclick="cambiarCantidad('${p.nombre}', 1)">+</button>
+            </div>
+          </div>`;
+      });
+      cont.innerHTML = html;
+      totalEl.textContent = '$' + total.toLocaleString('es-CL');
+    }
+ 
+ 
+    // ---- FINALIZAR: arma el mensaje de WhatsApp con todo el detalle ----
+    function enviarPedido() {
+      if (carrito.length === 0) { alert("Tu carrito está vacío."); return; }
+ 
+      const numero = "56949430834";
+      let mensaje = "Hola ClipperLab, quiero hacer este pedido:%0A%0A";
+      let total = 0;
+      let hayMayor = false;
+ 
+      carrito.forEach(p => {
+        const info = buscarProducto(p.nombre);
+        let precioUnit = p.precio;
+        let esMayor = false;
+        if (info && info.precioMayor > 0 && info.minMayor > 0 && p.cantidad >= info.minMayor) {
+          precioUnit = info.precioMayor; esMayor = true; hayMayor = true;
+        }
+        const subtotal = precioUnit * p.cantidad;
+        total += subtotal;
+ 
+        // Línea por producto: cantidad x nombre — subtotal (marca si es mayorista)
+        const precioLinea = precioUnit > 0 ? ("$" + subtotal.toLocaleString("es-CL")) : "a cotizar";
+        const etiqueta = esMayor ? " (por mayor)" : "";
+        mensaje += "• " + p.cantidad + "x " + p.nombre + etiqueta + " — " + precioLinea + "%0A";
+      });
+ 
+      mensaje += "%0ATotal: $" + total.toLocaleString("es-CL");
+      if (hayMayor) { mensaje += "%0A(incluye precios por mayor)"; }
+      mensaje += "%0A%0A¿Me confirman disponibilidad y forma de pago?";
+ 
+      window.open("https://wa.me/" + numero + "?text=" + mensaje, "_blank");
+    }
+ 
+    // ============================================================
+    // INSCRIPCIÓN (10% en la primera visita)
+    // Llama a la función segura "inscribir_cliente" de la base de datos:
+    // el sitio no puede leer la lista de clientes, solo agregar/actualizar.
+    // ============================================================
+    const db = window.supabase ? window.supabase.createClient("https://ugchyfulwkzmxwqjwkwp.supabase.co", "sb_publishable__WRIUNVBq6-nxTAwPD360g_5UICkBn_") : null;
+    async function inscribirme(ev) {
+      ev.preventDefault();
+      const g = id => document.getElementById(id), est = g('insEstado');
+      const cod = g('insCod').value, dig = g('insTel').value.replace(/\D/g, '');
+      if (cod === '+56' ? !/^9\d{8}$/.test(dig) : dig.length < 6) { est.textContent = 'Revisa tu WhatsApp (9 dígitos, parte con 9).'; return false; }
+      if (!db) { est.textContent = 'No hay conexión. Revisa tu internet y recarga la página.'; return false; }
+      const p = { nombre: g('insNombre').value.trim(), apellido: g('insApellido').value.trim(), correo: g('insCorreo').value.trim(),
+                  telefono: cod === '+56' ? `+56 ${dig.slice(0, 1)} ${dig.slice(1, 5)} ${dig.slice(5)}` : `${cod} ${dig}`, promos: g('insPromos').checked };
+      g('insBoton').disabled = true; est.textContent = '';
+      const { data, error } = await db.rpc('inscribir_cliente', { p });
+      g('insBoton').disabled = false;
+      if (error) { est.textContent = error.message; return false; }
+      try { localStorage.setItem('clipperlab-inscrito', 'true'); } catch (e) {}   // la agenda muestra "Estás inscrito"
+      g('cajaInsc').innerHTML = `<div class="insc-ok"><div class="check">✓</div>
+        <h3>${data.beneficio ? '¡Listo, ' + p.nombre + '! Tienes 10% en tu primera visita' : '¡Gracias, ' + p.nombre + '!'}</h3>
+        <p>${data.beneficio ? 'Se aplica automáticamente cuando reserves con este WhatsApp.' : 'Como ya te has atendido con nosotros, el 10% de primera visita no aplica, pero te llegarán nuestras promociones.'}</p>
+        <a class="boton" href="agenda.html">Reserva tu hora →</a></div>`;
+      return false;
+    }
+
+    document.getElementById('anioPie').textContent = new Date().getFullYear();
+
+    function mostrar(id) {
+      const pantallas = document.querySelectorAll('.pantalla');
+      pantallas.forEach(p => p.classList.remove('visible'));
+      document.getElementById(id).classList.add('visible');
+ 
+      const botones = document.querySelectorAll('.menu button');
+      botones.forEach(b => b.classList.remove('activo'));
+ 
+      window.scrollTo(0, 0);
+    }
+  </script>
+ 
+</body>
+</html>
+ 
