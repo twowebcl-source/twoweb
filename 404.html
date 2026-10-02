@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClipperLab</title>
+  <script>
+    // Links cortos de cada barbería (funciona en GitHub Pages y en Cloudflare):
+    //   clipperlab.cl/minadeoro            → su página web
+    //   clipperlab.cl/minadeoro/reservar   → su agenda
+    (function(){
+      var partes = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
+      var slug = decodeURIComponent(partes[0] || '').toLowerCase();
+      var resto = (partes[1] || '').toLowerCase();
+      var q = location.search.replace(/^\?/, '');
+      var reservados = ['agenda', 'panel', 'barberia', 'index', 'imagenes', 'supabase'];
+      if (/^[a-z0-9]([a-z0-9-]{1,38})[a-z0-9]$/.test(slug) && reservados.indexOf(slug) < 0 && partes.length <= 2) {
+        var destino = (resto === 'reservar' || resto === 'agenda') ? '/agenda.html' : (resto === 'inscribete' ? '/agenda.html' : '/barberia.html');
+        var extra = resto === 'inscribete' ? '&inscribete' : '';
+        location.replace(destino + '?b=' + slug + '&_c=1' + extra + (q ? '&' + q : '') + location.hash);
+        return;
+      }
+      document.addEventListener('DOMContentLoaded', function(){ document.getElementById('no').style.display = 'block'; });
+    })();
+  </script>
+  <style>
+    body { margin:0; background:#111318; color:#f1eee8; font-family:system-ui,-apple-system,sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; text-align:center; padding:20px; }
+    #no { display:none; } h1 { font-size:26px; margin-bottom:8px; } p { color:#9aa0a8; } a { color:#ff7a2f; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div id="no"><h1>Página no encontrada</h1><p>Revisa el link que te enviaron.</p><p><a href="/">Ir a ClipperLab</a></p></div>
+</body>
+</html>

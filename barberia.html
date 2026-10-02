@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google" content="notranslate">
+  <title>Barbería</title>
+  <meta name="description" content="Reserva tu hora online.">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root { --voltaje:#ff7a2f; }
+    /* ===== TEMAS (Fase 12): colores, formas y letras. El tema se elige en el panel ===== */
+    :root { --fondo:#111318; --panel:#1b1e25; --panel2:#232730; --hueso:#f1eee8; --gris:#9aa0a8;
+      --borde:color-mix(in srgb, var(--hueso) 9%, transparent); --verde:#4ade80; --rojo:#f87171; --azul:#60a5fa; --rojo-suave:#fca5a5;
+      --esquema:dark; --r:16px; --r-s:10px; --r-pill:999px; --r-foto:50%; --r-paso:50%; --r-check:7px; --r-cita:7px;
+      --fuente:'Inter',system-ui,-apple-system,sans-serif; --fuente-tit:inherit; --sobre:#111;
+      --voltaje-suave:color-mix(in srgb, var(--voltaje) 13%, transparent); }
+    html[data-tema="burbuja"] { --fondo:#131726; --panel:#1c2135; --panel2:#262c44; --hueso:#eef1fb; --gris:#9aa3bf;
+      --borde:color-mix(in srgb, var(--hueso) 8%, transparent); --verde:#4ade80; --rojo:#f87171; --azul:#60a5fa; --rojo-suave:#fca5a5;
+      --esquema:dark; --r:28px; --r-s:18px; --r-pill:999px; --r-foto:50%; --r-paso:50%; --r-check:50%; --r-cita:12px;
+      --fuente:'Nunito',system-ui,sans-serif; --fuente-tit:'Nunito',system-ui,sans-serif; }
+    html[data-tema="vintage"] { --fondo:#efe6d6; --panel:#fbf6ec; --panel2:#f1e7d4; --hueso:#2a1f16; --gris:#76644f;
+      --borde:color-mix(in srgb, var(--hueso) 22%, transparent); --verde:#2f7d3b; --rojo:#b3261e; --azul:#1d4e89; --rojo-suave:#9b1c1c;
+      --esquema:light; --r:3px; --r-s:2px; --r-pill:3px; --r-foto:50%; --r-paso:50%; --r-check:2px; --r-cita:2px;
+      --fuente:Georgia,'Times New Roman',serif; --fuente-tit:'Playfair Display',Georgia,serif; }
+    html[data-tema="neon"] { --fondo:#07080c; --panel:#0e1017; --panel2:#161a24; --hueso:#f4f6ff; --gris:#8a93a8;
+      --borde:color-mix(in srgb, var(--hueso) 11%, transparent); --verde:#39ff88; --rojo:#ff4d6d; --azul:#4dd8ff; --rojo-suave:#ff8fa3;
+      --esquema:dark; --r:0px; --r-s:0px; --r-pill:0px; --r-foto:0px; --r-paso:0px; --r-check:0px; --r-cita:0px;
+      --fuente:system-ui,-apple-system,sans-serif; --fuente-tit:'Oswald',Impact,sans-serif; }
+    html[data-tema="minimal"] { --fondo:#f4f5f7; --panel:#ffffff; --panel2:#f0f1f4; --hueso:#14161b; --gris:#6b7280;
+      --borde:color-mix(in srgb, var(--hueso) 11%, transparent); --verde:#15803d; --rojo:#dc2626; --azul:#2563eb; --rojo-suave:#b91c1c;
+      --esquema:light; --r:12px; --r-s:8px; --r-pill:999px; --r-foto:50%; --r-paso:50%; --r-check:6px; --r-cita:6px;
+      --fuente:'Inter',system-ui,-apple-system,sans-serif; --fuente-tit:'Inter',system-ui,sans-serif; }
+    html[data-tema="organico"] { --fondo:#171512; --panel:#221f1a; --panel2:#2d2923; --hueso:#f3ebe0; --gris:#a99d8d;
+      --borde:color-mix(in srgb, var(--hueso) 10%, transparent); --verde:#8fd18a; --rojo:#f08a7a; --azul:#8fb8de; --rojo-suave:#f5b1a5;
+      --esquema:dark; --r:28px 8px 28px 8px; --r-s:16px 5px 16px 5px; --r-pill:18px 6px 18px 6px; --r-foto:58% 42% 55% 45% / 50% 58% 42% 50%; --r-paso:60% 40% 55% 45% / 55% 45% 55% 45%; --r-check:8px 3px; --r-cita:12px 3px 12px 3px;
+      --fuente:system-ui,-apple-system,sans-serif; --fuente-tit:'Fraunces',Georgia,serif; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { background:var(--fondo); color:var(--hueso); font-family:var(--fuente); line-height:1.5; }
+    .oculto { display:none !important; }
+    a { color:inherit; }
+    .caja { max-width:1080px; margin:0 auto; padding:0 18px; }
+    h1, h2, h3, .marca { font-family:var(--fuente-tit); }
+    /* Cabecera */
+    header { position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--fondo) 90%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--borde); }
+    .cab { display:flex; align-items:center; gap:18px; height:64px; }
+    .marca { display:flex; align-items:center; gap:10px; font-weight:800; font-size:19px; text-decoration:none; min-width:0; }
+    .marca img { width:40px; height:40px; object-fit:contain; border-radius:var(--r-s); }
+    .marca span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    nav { display:flex; gap:20px; margin-left:auto; font-size:14px; }
+    nav a { text-decoration:none; color:var(--gris); font-weight:600; }
+    nav a:hover { color:var(--hueso); }
+    .boton { display:inline-flex; align-items:center; justify-content:center; gap:8px; background:var(--voltaje); color:var(--sobre); border:none; border-radius:var(--r-s);
+             padding:12px 20px; font-weight:800; font-size:15px; text-decoration:none; cursor:pointer; font-family:inherit; white-space:nowrap; }
+    .boton:hover { filter:brightness(1.08); }
+    .boton.sec { background:transparent; color:var(--hueso); border:1px solid color-mix(in srgb, var(--hueso) 30%, transparent); }
+    .cab .boton { padding:9px 16px; font-size:14px; }
+    /* Portada */
+    .hero { position:relative; min-height:440px; display:flex; align-items:flex-end; overflow:hidden;
+            background:radial-gradient(circle at 80% 10%, color-mix(in srgb, var(--voltaje) 35%, transparent), transparent 50%), var(--panel); }
+    .hero .foto-fondo { position:absolute; inset:0; background:center/cover no-repeat; }
+    .hero .foto-fondo::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.78) 85%); }
+    .hero .caja { position:relative; width:100%; padding-top:70px; padding-bottom:54px; }
+    .hero.con-foto { color:#fff; }
+    .hero .logo-grande { width:92px; height:92px; object-fit:contain; border-radius:var(--r); background:color-mix(in srgb, var(--fondo) 50%, transparent); margin-bottom:16px; }
+    .hero h1 { font-size:clamp(34px, 7vw, 60px); line-height:1.05; font-weight:800; max-width:760px; }
+    .hero p { font-size:clamp(16px, 2.4vw, 19px); margin-top:12px; max-width:620px; opacity:.92; }
+    .hero .acciones { display:flex; gap:10px; flex-wrap:wrap; margin-top:26px; }
+    .hero.con-foto .boton.sec { color:#fff; border-color:rgba(255,255,255,0.5); }
+    .promo { display:inline-flex; align-items:center; gap:10px; margin-top:20px; background:color-mix(in srgb, var(--voltaje) 22%, transparent); border:1px solid var(--voltaje);
+             border-radius:var(--r-pill); padding:8px 16px; font-size:14px; font-weight:700; text-decoration:none; }
+    .promo b { color:var(--voltaje); font-size:18px; }
+    .hero.con-foto .promo { color:#fff; }
+    /* Secciones */
+    section.bloque { padding:64px 0 10px; }
+    .titulo { display:flex; align-items:end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+    .titulo small { display:block; color:var(--voltaje); font-weight:800; letter-spacing:2px; text-transform:uppercase; font-size:12px; margin-bottom:4px; font-family:var(--fuente); }
+    .titulo h2 { font-size:clamp(26px, 4vw, 36px); line-height:1.1; }
+    .tabs { display:flex; gap:6px; flex-wrap:wrap; }
+    .tab { background:var(--panel); border:1px solid var(--borde); color:var(--gris); padding:8px 16px; border-radius:var(--r-pill); cursor:pointer; font-family:inherit; font-size:14px; font-weight:700; }
+    .tab.sel { background:var(--voltaje); border-color:var(--voltaje); color:var(--sobre); }
+    .cat { font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--gris); margin:22px 0 10px; display:flex; align-items:center; gap:10px; }
+    .cat::after { content:''; flex:1; height:1px; background:var(--borde); }
+    .servicios { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:10px; }
+    .serv { display:flex; gap:14px; align-items:center; background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:16px 18px; text-decoration:none; transition:border-color .15s, transform .15s; }
+    .serv:hover { border-color:var(--voltaje); transform:translateY(-2px); }
+    .serv .info { flex:1; min-width:0; }
+    .serv b { display:block; font-size:16px; }
+    .serv .desc { color:var(--gris); font-size:13px; }
+    .serv .dur { color:var(--gris); font-size:12px; margin-top:4px; }
+    .serv .precio { font-weight:800; font-size:18px; font-family:var(--fuente-tit); white-space:nowrap; }
+    .serv .ir { font-size:12px; color:var(--voltaje); font-weight:700; display:block; text-align:right; }
+    .equipo { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:14px; }
+    .barbero { background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:22px 14px 18px; text-align:center; }
+    .barbero .foto { width:110px; height:110px; margin:0 auto 12px; border-radius:var(--r-foto); background:var(--panel2) center/cover no-repeat;
+                     display:flex; align-items:center; justify-content:center; font-size:40px; font-weight:800; color:var(--voltaje); border:3px solid var(--voltaje-suave); }
+    .barbero b { display:block; font-size:16px; }
+    .barbero small { color:var(--gris); font-size:13px; }
+    .locales { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; }
+    .local { background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); overflow:hidden; }
+    .local iframe { width:100%; height:220px; border:0; display:block; filter:saturate(.85); }
+    .local .txt { padding:18px; }
+    .local h3 { font-size:20px; }
+    .local .dir { color:var(--gris); font-size:14px; }
+    .horario { width:100%; border-collapse:collapse; font-size:13.5px; margin-top:12px; }
+    .horario td { padding:4px 0; border-bottom:1px dashed var(--borde); }
+    .horario td:last-child { text-align:right; color:var(--gris); }
+    .horario tr.hoy td { color:var(--voltaje); font-weight:700; }
+    .local .acc { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+    .local .acc .boton { padding:9px 14px; font-size:13.5px; }
+    .contacto { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; }
+    .contacto a { display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:16px 18px; text-decoration:none; font-weight:700; }
+    .contacto a:hover { border-color:var(--voltaje); }
+    .contacto .ic { width:42px; height:42px; border-radius:var(--r-s); background:var(--voltaje-suave); display:flex; align-items:center; justify-content:center; font-size:20px; }
+    .contacto small { display:block; color:var(--gris); font-weight:500; font-size:13px; }
+    .cierre { margin:70px 0 0; padding:46px 0; text-align:center; background:linear-gradient(135deg, color-mix(in srgb, var(--voltaje) 22%, var(--panel)), var(--panel)); }
+    .cierre h2 { font-size:clamp(24px, 4vw, 34px); margin-bottom:16px; }
+    footer { padding:26px 0 90px; text-align:center; color:var(--gris); font-size:13px; }
+    footer a { color:var(--gris); }
+    .flotante { position:fixed; right:18px; bottom:18px; z-index:30; width:56px; height:56px; border-radius:50%; background:#25d366; color:#fff; display:flex; align-items:center;
+                justify-content:center; box-shadow:0 8px 24px rgba(0,0,0,0.35); text-decoration:none; }
+    .flotante svg { width:28px; height:28px; }
+    .reservar-movil { display:none; }
+    .aviso { max-width:520px; margin:90px auto; text-align:center; padding:0 18px; }
+    .aviso h1 { font-size:26px; margin-bottom:10px; }
+    .aviso p { color:var(--gris); }
+    .cargando { padding:120px 0; text-align:center; color:var(--gris); }
+    @media (max-width:760px){
+      nav { display:none; }
+      .cab .boton { margin-left:auto; }
+      .hero { min-height:400px; }
+      .reservar-movil { display:flex; position:fixed; left:12px; right:84px; bottom:18px; z-index:30; }
+      .reservar-movil .boton { width:100%; padding:15px; box-shadow:0 8px 24px rgba(0,0,0,0.35); }
+    }
+    /* Toques de cada tema */
+    html[data-tema="vintage"] header::after { content:''; display:block; height:6px; background:repeating-linear-gradient(-45deg, #b3261e 0 10px, #fff 10px 20px, #1d4e89 20px 30px, #fff 30px 40px); }
+    html[data-tema="vintage"] :is(.serv, .barbero, .local, .contacto a) { border:4px double color-mix(in srgb, var(--hueso) 30%, transparent); }
+    html[data-tema="vintage"] .servicios { grid-template-columns:1fr; gap:0; }
+    html[data-tema="vintage"] .serv { background:transparent; border:none; border-bottom:1px dashed color-mix(in srgb, var(--hueso) 30%, transparent); border-radius:0; }
+    html[data-tema="vintage"] .boton { text-transform:uppercase; letter-spacing:1.5px; }
+    html[data-tema="neon"] body { background-image:linear-gradient(color-mix(in srgb, var(--hueso) 4%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--hueso) 4%, transparent) 1px, transparent 1px); background-size:34px 34px; }
+    html[data-tema="neon"] :is(h1, h2, .boton, .tab) { text-transform:uppercase; letter-spacing:1px; }
+    html[data-tema="neon"] .barbero .foto { clip-path:polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); border:none; }
+    html[data-tema="neon"] .boton { clip-path:polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
+    html[data-tema="neon"] :is(.serv, .barbero, .local):hover { box-shadow:0 0 0 1px var(--voltaje), 0 0 18px color-mix(in srgb, var(--voltaje) 50%, transparent); }
+    html[data-tema="burbuja"] :is(.serv, .barbero, .local, .contacto a) { border-color:transparent; box-shadow:0 10px 28px rgba(0,0,0,0.28); }
+    html[data-tema="burbuja"] .boton { border-radius:999px; }
+    html[data-tema="minimal"] :is(.serv, .barbero, .local, .contacto a) { box-shadow:0 1px 2px rgba(15,20,30,0.06); }
+    html[data-tema="organico"] .serv:nth-child(even), html[data-tema="organico"] .barbero:nth-child(even) { border-radius:8px 28px 8px 28px; }
+    html[data-tema="organico"] .barbero:nth-child(even) .foto { border-radius:45% 55% 42% 58% / 55% 45% 58% 42%; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="caja cab">
+      <a class="marca" id="marca" href="#inicio"><span>&nbsp;</span></a>
+      <nav id="menu"><a href="#servicios">Servicios</a><a href="#equipo">Equipo</a><a href="#ubicacion">Ubicación</a><a href="#contacto">Contacto</a></nav>
+      <a class="boton" id="btnCab" href="agenda.html">Reservar hora</a>
+    </div>
+  </header>
+  <main id="contenido"><div class="cargando">Cargando…</div></main>
+  <div class="reservar-movil oculto" id="reservarMovil"><a class="boton" id="btnMovil" href="agenda.html">📅 Reservar hora</a></div>
+  <a class="flotante oculto" id="flotante" target="_blank" rel="noopener" title="Escríbenos por WhatsApp">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-1.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg></a>
+  <script>
+    const SUPABASE_URL = "https://ugchyfulwkzmxwqjwkwp.supabase.co";
+    const SUPABASE_KEY = "sb_publishable__WRIUNVBq6-nxTAwPD360g_5UICkBn_";
+    // ¿De qué barbería es esta página?  1) su dominio propio (minadeoro.cl)  2) barberia.html?b=link-del-negocio
+    const QS = new URLSearchParams(location.search);
+    const HOST = location.hostname.toLowerCase().replace(/^www\./, '');
+    const DOMINIO_PROPIO = /\./.test(HOST) && !/^\d+(\.\d+){3}$/.test(HOST) &&
+      !/(^|\.)(clipperlab\.cl|github\.dev|github\.io|pages\.dev|githubpreview\.dev)$/.test(HOST) ? HOST : '';
+    const SLUG = (QS.get('b') || QS.get('negocio') || DOMINIO_PROPIO || '').trim().toLowerCase();
+    const $ = id => document.getElementById(id);
+    const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const clp = x => "$" + Number(x || 0).toLocaleString("es-CL");
+    // Links a la agenda de ESTA barbería (en su dominio no hace falta ?b=)
+    const CORTO = QS.has('_c') && SLUG && !DOMINIO_PROPIO;     // se llegó por clipperlab.cl/minadeoro
+    const agendaUrl = extra => CORTO ? '/' + SLUG + '/reservar' + (extra ? '?' + extra : '') : agendaUrlLarga(extra);
+    const agendaUrlLarga = extra => { const q = [DOMINIO_PROPIO || !SLUG ? '' : 'b=' + encodeURIComponent(SLUG), extra || ''].filter(Boolean).join('&'); return 'agenda.html' + (q ? '?' + q : ''); };
+
+    // ---------- Temas (los mismos de la agenda) ----------
+    const TEMAS = ['clasico', 'burbuja', 'vintage', 'neon', 'minimal', 'organico'];
+    const FUENTES = { burbuja:'Nunito:wght@400;600;700;800', vintage:'Playfair+Display:wght@600;700;800', neon:'Oswald:wght@500;600;700',
+                      minimal:'Inter:wght@400;500;600;700;800', organico:'Fraunces:opsz,wght@9..144,600;9..144,800' };
+    const ACENTO = { clasico:'#ff7a2f', burbuja:'#7c83ff', vintage:'#a4161a', neon:'#00e5ff', minimal:'#111827', organico:'#d9a05b' };
+    function textoSobre(c){
+      const l = i => { const x = parseInt(c.slice(i, i + 2), 16) / 255; return x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4; };
+      const L = .2126 * l(1) + .7152 * l(3) + .0722 * l(5);
+      return (L + .05) / .0556 >= 1.05 / (L + .05) ? '#111' : '#fff';
+    }
+    function aplicarTema(tema, color){
+      const t = TEMAS.includes(tema) ? tema : 'clasico', raiz = document.documentElement;
+      if (t === 'clasico') delete raiz.dataset.tema; else raiz.dataset.tema = t;
+      if (FUENTES[t] && !document.getElementById('fuente-' + t)){
+        const l = document.createElement('link'); l.id = 'fuente-' + t; l.rel = 'stylesheet';
+        l.href = 'https://fonts.googleapis.com/css2?family=' + FUENTES[t] + '&display=swap'; document.head.appendChild(l);
+      }
+      const c = /^#[0-9a-f]{6}$/i.test(color || '') ? color : ACENTO[t];
+      raiz.style.setProperty('--voltaje', c); raiz.style.setProperty('--sobre', textoSobre(c));
+    }
+    const K_TEMA = 'clipperlab-tema-' + (SLUG || 'clipperlab');
+    try { const g = JSON.parse(localStorage.getItem(K_TEMA) || 'null'); if (g) aplicarTema(g.tema, g.color); } catch(e) {}
+
+    const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
+    let CFG = null, LOCAL_SERV = null;
+
+    function aviso(titulo, texto){
+      $('contenido').innerHTML = `<div class="aviso"><h1>${titulo}</h1><p>${texto}</p></div>`;
+      $('menu').classList.add('oculto'); $('btnCab').classList.add('oculto');
+    }
+
+    async function iniciar(){
+      const { data, error } = await db.rpc('agenda_config', { p_negocio: SLUG || null });
+      if (error) return aviso('Esta página no existe', (error.message || '').includes('NEGOCIO_NO_EXISTE') ? 'Revisa el link o el nombre de la página.' : 'No pudimos cargar la información: ' + esc(error.message));
+      const n = data.negocio || {};
+      aplicarTema(n.tema, n.color);
+      pintarCabecera(n);
+      if (data.suspendido) return aviso(esc(n.nombre || ''), `Nuestra página no está disponible por ahora.${n.whatsapp ? `<br><br><a class="boton" href="https://wa.me/${esc(n.whatsapp.replace(/\D/g, ''))}">Escríbenos por WhatsApp</a>` : ''}`);
+      try { localStorage.setItem(K_TEMA, JSON.stringify({ tema: n.tema, color: n.color })); } catch(e) {}
+      CFG = data; CFG.locales = CFG.locales || []; LOCAL_SERV = CFG.locales[0]?.id ?? null;
+      // llegó por el link corto (clipperlab.cl/minadeoro): se deja esa dirección bonita en la barra
+      if (QS.has('_c') && SLUG && !DOMINIO_PROPIO){ const b = document.createElement('base'); b.href = '/'; document.head.prepend(b); history.replaceState(null, '', '/' + SLUG + location.hash); }
+      dibujar();
+    }
+
+    function pintarCabecera(n){
+      const nombre = n.nombre || 'Barbería';
+      document.title = nombre + (n.bienvenida ? ' — ' + n.bienvenida : ' — Reserva tu hora online');
+      document.querySelector('meta[name="description"]').content = n.bienvenida || `Reserva tu hora en ${nombre}.`;
+      $('marca').innerHTML = (n.logo_url ? `<img src="${esc(n.logo_url)}" alt="">` : '') + `<span>${esc(nombre)}</span>`;
+      if (n.logo_url){ let f = document.querySelector('link[rel="icon"]'); if (!f){ f = document.createElement('link'); f.rel = 'icon'; document.head.appendChild(f); } f.href = n.logo_url; }
+      $('btnCab').href = $('btnMovil').href = agendaUrl();
+    }
+
+    function horarioLocal(localId){
+      const trabs = CFG.trabajadores.filter(t => t.local_id === localId).map(t => t.id);
+      return ORDEN_DIAS.map(d => {
+        const hs = CFG.horarios.filter(h => h.dia === d && trabs.includes(h.trabajador_id) && h.inicio && h.fin);
+        if (!hs.length) return [d, null];
+        return [d, hs.map(h => h.inicio).sort()[0] + ' – ' + hs.map(h => h.fin).sort().slice(-1)[0]];
+      });
+    }
+
+    function dibujar(){
+      const n = CFG.negocio, wsp = (n.whatsapp || '').replace(/\D/g, ''), insta = (n.instagram || '').replace(/^@/, '');
+      const hoy = new Date().getDay();
+      const locales = CFG.locales, trabs = CFG.trabajadores;
+      const nombreLocal = id => locales.find(l => l.id === id)?.nombre || '';
+      $('contenido').innerHTML = `
+        <section class="hero ${n.portada_url ? 'con-foto' : ''}" id="inicio">
+          ${n.portada_url ? `<div class="foto-fondo" style="background-image:url('${esc(n.portada_url)}')"></div>` : ''}
+          <div class="caja">
+            ${n.logo_url ? `<img class="logo-grande" src="${esc(n.logo_url)}" alt="">` : ''}
+            <h1>${esc(n.nombre)}</h1>
+            <p>${esc(n.bienvenida || (locales.length ? 'Barbería en ' + locales.map(l => l.nombre).join(' y ') + '. Reserva tu hora online en segundos.' : 'Reserva tu hora online en segundos.'))}</p>
+            <div class="acciones">
+              <a class="boton" href="${agendaUrl()}">📅 Reservar hora</a>
+              ${wsp ? `<a class="boton sec" href="https://wa.me/${wsp}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+            </div>
+            ${n.promo_10 ? `<a class="promo" href="${agendaUrl('inscribete')}"><b>10%</b> en tu primera visita · Inscríbete aquí →</a>` : ''}
+          </div>
+        </section>
+
+        <section class="bloque caja" id="servicios">
+          <div class="titulo"><div><small>Servicios y precios</small><h2>¿Qué te hacemos hoy?</h2></div>
+            ${locales.length > 1 ? `<div class="tabs" id="tabsLocal"></div>` : ''}</div>
+          <div id="listaServ"></div>
+        </section>
+
+        ${trabs.length ? `<section class="bloque caja" id="equipo">
+          <div class="titulo"><div><small>Nuestro equipo</small><h2>${trabs.length === 1 ? 'Tu barbero' : 'Los barberos'}</h2></div></div>
+          <div class="equipo">${trabs.map(t => `<div class="barbero">
+              <div class="foto" ${t.foto_url ? `style="background-image:url('${esc(t.foto_url)}')"` : ''}>${t.foto_url ? '' : esc((t.nombre || '?')[0].toUpperCase())}</div>
+              <b>${esc(t.nombre)}</b>${locales.length > 1 ? `<small>${esc(nombreLocal(t.local_id))}</small>` : ''}</div>`).join('')}</div>
+        </section>` : ''}
+
+        ${locales.length ? `<section class="bloque caja" id="ubicacion">
+          <div class="titulo"><div><small>Ubicación y horario</small><h2>${locales.length > 1 ? 'Nuestros locales' : 'Dónde estamos'}</h2></div></div>
+          <div class="locales">${locales.map(l => {
+            const q = encodeURIComponent((l.direccion || l.nombre) + ', Chile');
+            return `<div class="local">
+              ${l.direccion ? `<iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Mapa ${esc(l.nombre)}" src="https://www.google.com/maps?q=${q}&output=embed"></iframe>` : ''}
+              <div class="txt"><h3>${esc(l.nombre)}</h3><div class="dir">📍 ${esc(l.direccion || '')}${l.referencia ? ` · ${esc(l.referencia)}` : ''}</div>
+                <table class="horario">${horarioLocal(l.id).map(([d, h]) => `<tr class="${d === hoy ? 'hoy' : ''}"><td>${DIAS[d]}${d === hoy ? ' (hoy)' : ''}</td><td>${h || 'Cerrado'}</td></tr>`).join('')}</table>
+                <div class="acc"><a class="boton" href="${agendaUrl('local=' + l.id)}">Reservar aquí</a>
+                  <a class="boton sec" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Cómo llegar ↗</a></div></div></div>`;
+          }).join('')}</div>
+        </section>` : ''}
+
+        ${wsp || insta || n.correo ? `<section class="bloque caja" id="contacto">
+          <div class="titulo"><div><small>Contacto</small><h2>Hablemos</h2></div></div>
+          <div class="contacto">
+            ${wsp ? `<a href="https://wa.me/${wsp}" target="_blank" rel="noopener"><span class="ic">💬</span><span>WhatsApp<small>${esc(n.whatsapp)}</small></span></a>` : ''}
+            ${insta ? `<a href="https://www.instagram.com/${encodeURIComponent(insta)}/" target="_blank" rel="noopener"><span class="ic">📷</span><span>Instagram<small>@${esc(insta)}</small></span></a>` : ''}
+            ${n.correo ? `<a href="mailto:${esc(n.correo)}"><span class="ic">✉️</span><span>Correo<small>${esc(n.correo)}</small></span></a>` : ''}
+          </div>
+        </section>` : ''}
+
+        <section class="cierre"><div class="caja"><h2>Tu próximo corte está a un clic</h2><a class="boton" href="${agendaUrl()}">📅 Reservar hora</a></div></section>
+        <footer class="caja">© ${new Date().getFullYear()} ${esc(n.nombre)} · <a href="${agendaUrl()}">Reservar</a> · <a href="panel.html">Acceso equipo</a><br>
+          <span style="opacity:.75;">Agenda online con <a href="https://clipperlab.cl" target="_blank" rel="noopener">ClipperLab</a></span></footer>`;
+      if (!trabs.length) document.querySelector('#menu a[href="#equipo"]').classList.add('oculto');
+      if (!locales.length) document.querySelector('#menu a[href="#ubicacion"]').classList.add('oculto');
+      if (!(wsp || insta || n.correo)) document.querySelector('#menu a[href="#contacto"]').classList.add('oculto');
+      if (wsp){ $('flotante').href = 'https://wa.me/' + wsp; $('flotante').classList.remove('oculto'); }
+      $('reservarMovil').classList.remove('oculto');
+      dibujarServicios();
+    }
+
+    function dibujarServicios(){
+      const locales = CFG.locales;
+      if ($('tabsLocal')) $('tabsLocal').innerHTML = locales.map(l => `<button class="tab ${l.id === LOCAL_SERV ? 'sel' : ''}" onclick="LOCAL_SERV=${l.id}; dibujarServicios()">${esc(l.nombre)}</button>`).join('');
+      // solo servicios que alguien de ese local hace
+      const hacen = new Set(CFG.trabajadores.filter(t => t.local_id === LOCAL_SERV).flatMap(t => t.servicios || []));
+      const servs = CFG.servicios.filter(s => s.local_id === LOCAL_SERV && hacen.has(s.id));
+      if (!servs.length){ $('listaServ').innerHTML = '<p style="color:var(--gris);">Pronto publicaremos nuestros servicios.</p>'; return; }
+      const cats = [...new Set(servs.map(s => s.categoria || 'Servicios'))].sort((a, b) => (b.toLowerCase().startsWith('promo')) - (a.toLowerCase().startsWith('promo')));
+      $('listaServ').innerHTML = cats.map(c => `${cats.length > 1 ? `<div class="cat">${esc(c)}</div>` : ''}<div class="servicios">
+        ${servs.filter(s => (s.categoria || 'Servicios') === c).map(s => `<a class="serv" href="${agendaUrl('local=' + LOCAL_SERV)}">
+          <div class="info"><b>${esc(s.nombre)}</b>${s.descripcion ? `<div class="desc">${esc(s.descripcion)}</div>` : ''}<div class="dur">⏱ ${s.duracion} min</div></div>
+          <div><div class="precio">${clp(s.precio)}</div><span class="ir">Reservar →</span></div></a>`).join('')}</div>`).join('');
+    }
+
+    let db;
+    if (typeof supabase === 'undefined') aviso('Sin conexión', 'No se pudo cargar la página. Revisa tu internet y vuelve a intentar.');
+    else { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); iniciar(); }
+  </script>
+</body>
+</html>
