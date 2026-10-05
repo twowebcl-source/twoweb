@@ -84,6 +84,7 @@
     .tab.sel { background:var(--voltaje); border-color:var(--voltaje); color:var(--sobre); }
     .cat { font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--gris); margin:22px 0 10px; display:flex; align-items:center; gap:10px; }
     .cat::after { content:''; flex:1; height:1px; background:var(--borde); }
+    .precio .antes { opacity:.55; font-weight:500; font-size:.8em; margin-right:4px; }
     .servicios { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:10px; }
     .serv { display:flex; gap:14px; align-items:center; background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:16px 18px; text-decoration:none; transition:border-color .15s, transform .15s; }
     .serv:hover { border-color:var(--voltaje); transform:translateY(-2px); }
@@ -357,7 +358,7 @@
       $('listaServ').innerHTML = cats.map(c => `${cats.length > 1 ? `<div class="cat">${esc(c)}</div>` : ''}<div class="servicios">
         ${servs.filter(s => (s.categoria || 'Servicios') === c).map(s => `<a class="serv" href="${agendaUrl('local=' + LOCAL_SERV)}">
           <div class="info"><b>${esc(s.nombre)}</b>${s.descripcion ? `<div class="desc">${esc(s.descripcion)}</div>` : ''}<div class="dur">⏱ ${s.duracion} min</div></div>
-          <div><div class="precio">${clp(s.precio)}</div><span class="ir">Reservar →</span></div></a>`).join('')}</div>`).join('');
+          <div><div class="precio">${s.precio_normal > s.precio ? `<s class="antes">${clp(s.precio_normal)}</s> ` : ''}${clp(s.precio)}</div><span class="ir">Reservar →</span></div></a>`).join('')}</div>`).join('');
     }
 
     let db;

@@ -112,6 +112,7 @@
     .serv-info { flex:1; min-width:0; }
     .serv-nom { font-weight:700; font-size:15px; }
     .serv-desc { color:var(--gris); font-size:12.5px; margin-top:2px; }
+    .precio .antes { color:var(--gris); font-weight:500; font-size:.85em; margin-right:4px; }
     .serv-meta { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
     .dur { font-size:12px; color:var(--gris); background:var(--panel2); padding:3px 9px; border-radius:var(--r-pill); }
     .precio { font-weight:800; font-size:16px; }
@@ -744,7 +745,7 @@
           return `<button class="serv ${sel ? 'sel' : ''} ${ok ? '' : 'no'}" ${ok ? `onclick="toggleServicio(${s.id})"` : `title="Ningún ${esc(pro())} hace este servicio junto a lo que ya elegiste"`}>
             <span class="serv-check">${sel ? '✓' : ''}</span>
             <span class="serv-info"><span class="serv-nom">${esc(s.nombre)}</span>${s.descripcion ? `<span class="serv-desc" style="display:block">${esc(s.descripcion)}</span>` : ''}
-              <span class="serv-meta"><span class="dur">⏱ ${s.duracion} min</span><span class="precio">${clp(s.precio)}</span></span></span>
+              <span class="serv-meta"><span class="dur">⏱ ${s.duracion} min</span><span class="precio">${s.precio_normal > s.precio ? `<s class="antes">${clp(s.precio_normal)}</s> ` : ''}${clp(s.precio)}</span></span></span>
           </button>`; }).join('')}</div>`).join('')}
         ${saltaPro() ? vitrinaMini() : ''}`;
       barraServicio();

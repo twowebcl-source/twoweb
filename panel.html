@@ -303,8 +303,32 @@
     .tabla-horario tr.no-trabaja input[type=time] { opacity:.3; }
     .detalle-horario { margin-top:10px; }
     .detalle-horario summary { cursor:pointer; color:var(--voltaje); font-size:13px; font-weight:600; }
-    .serv-fila { display:grid; grid-template-columns:1fr 1.2fr 0.9fr 110px 95px 68px 44px 172px; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--linea); }
-    .serv-fila.cab { color:var(--gris); font-size:12px; border-bottom:none; padding-bottom:0; }
+    .serv-top { display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .serv-crear { display:flex; flex-wrap:wrap; gap:8px; }
+    .boton-promo { background:linear-gradient(135deg, #ff7a45, #ff3d77); border-color:transparent; color:#fff; }
+    .serv-card { border:1px solid var(--linea); border-radius:14px; padding:12px 14px; margin:10px 0; background:var(--panel2); }
+    .serv-card.promo { border-color:color-mix(in srgb, #ff5a5f 55%, transparent); background:linear-gradient(135deg, color-mix(in srgb, #ff5a5f 9%, var(--panel2)), var(--panel2)); }
+    .serv-card.inactivo { opacity:.6; }
+    .serv-card.nuevo { border-style:dashed; border-color:var(--voltaje); }
+    .sc-cab { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .sc-cab .segmentado .seg { padding:6px 12px; }
+    .sc-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:8px; }
+    .sc-grid .sc-nombre { grid-column:span 2; }
+    .sc-grid label, .sc-desc label { display:flex; flex-direction:column; gap:3px; font-size:11.5px; color:var(--gris); }
+    .sc-desc { margin-top:8px; }
+    .sc-quien { margin-top:10px; padding-top:10px; border-top:1px dashed var(--linea); }
+    .sc-quien .t { font-size:12.5px; font-weight:600; margin-bottom:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .sc-quien .t a { font-weight:400; font-size:12px; color:var(--voltaje); cursor:pointer; }
+    .sc-chips { display:flex; flex-wrap:wrap; gap:6px; }
+    .sc-chips label { display:inline-flex; gap:6px; align-items:center; padding:5px 11px; border-radius:var(--r-pill); border:1px solid var(--linea); cursor:pointer; font-size:13px; }
+    .sc-chips label:has(input:checked) { background:var(--voltaje-suave, color-mix(in srgb, var(--voltaje) 18%, transparent)); border-color:var(--voltaje); }
+    .sc-chips input { margin:0; width:auto; }
+    .sc-pie { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; align-items:center; margin-top:10px; }
+    .sc-pie .activo { margin-right:auto; display:flex; gap:6px; align-items:center; font-size:13px; }
+    .sc-pie .activo input { width:auto; }
+    .tag-promo { background:linear-gradient(135deg, #ff7a45, #ff3d77); color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:var(--r-pill); }
+    .sc-ahorro { font-size:11.5px; color:#ff6b6b; font-weight:600; }
+    .sc-otra { width:150px; padding:6px 10px; }
     @media (max-width:640px){
       .panel-notif { position:fixed; top:64px; left:12px; right:12px; width:auto; }
       .barra-der { margin-left:0; width:100%; }
@@ -315,9 +339,8 @@
       .trab-cab { grid-template-columns:auto 1fr; }
       .trab-cab .ancho-full { grid-column:1 / -1; }
       .trab-extra { grid-template-columns:1fr; }
-      .serv-fila { grid-template-columns:1fr 1fr; }
-      .serv-fila.cab { display:none; }
-      .serv-fila .desc { grid-column:1 / -1; }
+      .sc-grid { grid-template-columns:1fr 1fr; }
+      .sc-grid .sc-nombre { grid-column:1 / -1; }
       .grid-2 { grid-template-columns:1fr; }
     }
 
@@ -743,12 +766,23 @@
       <!-- Servicios (admin) -->
       <div id="tab-servicios" class="oculto">
         <div class="tarjeta">
-          <div class="serv-fila cab"><span>Nombre</span><span>Descripción</span><span>Categoría</span><span>Local</span><span>Precio ($)</span><span>Minutos</span><span>Activo</span><span></span></div>
+          <div class="serv-top">
+            <div>
+              <h3 style="margin:0;">Servicios y promociones</h3>
+              <p class="nota" style="margin:2px 0 0;">Cada uno es de un local, con su precio y los profesionales que lo realizan.</p>
+            </div>
+            <div class="serv-crear">
+              <button class="boton" onclick="nuevoServicio('Servicios')">+ Nuevo servicio</button>
+              <button class="boton boton-promo" onclick="nuevoServicio('Promociones')">🏷 Nueva promoción</button>
+            </div>
+          </div>
+          <div class="vista-ctrl" id="filtrosServ"></div>
           <div id="listaServ"></div>
-          <button class="boton-linea" style="margin-top:12px;" onclick="nuevoServicio()">+ Nuevo servicio</button>
           <p class="estado" id="estadoServ"></p>
-          <p class="nota">Cada servicio es de un local (así el mismo "Corte" puede costar distinto en cada sucursal). Al crear uno, lo hace todo el equipo de ese local; en "Equipo y horarios" eliges quién hace qué.
-            La categoría agrupa las tarjetas en la agenda (ej: "Promociones" aparece primero). Los inactivos no aparecen en la agenda pública, pero se conservan en reservas antiguas.</p>
+          <p class="nota">Las <b>promociones</b> aparecen primero en la agenda, con el precio normal tachado si lo escribes.
+            Con <b>⧉ Copiar a otro local</b> creas el mismo servicio en otra sucursal y le pones su propio precio.
+            En <b>👥 Quién lo hace</b> marcas los profesionales de ese local que lo realizan: solo ellos aparecen al reservarlo.
+            Los inactivos no aparecen en la agenda pública, pero se conservan en reservas antiguas.</p>
         </div>
       </div>
 
@@ -3015,73 +3049,165 @@
                                                      : `✓ Contraseña cambiada. Avísale a ${t.nombre} la nueva contraseña.`, 'ok');
     }
 
-    // ================= SERVICIOS (admin) =================
+    // ================= SERVICIOS Y PROMOCIONES (admin) =================
+    const FSERV = { tipo: 'todos', local: 0 };
+    const esPromo = c => /^promo/i.test((c || '').trim());
+    const tipoDe = c => esPromo(c) ? 'promo' : (!c || c.trim().toLowerCase() === 'servicios') ? 'serv' : 'otra';
+    const trabsDeLocal = lid => trabajadores.filter(t => t.activo !== false && t.local_id === lid);
     async function cargarServicios(){
       const { data, error } = await db.from('servicios').select('*').order('orden').order('id');
       if (error) return estado('estadoServ', 'Error: ' + error.message, 'error');
       servicios = data;
       if (!locales.length) await cargarBase();
-      const ver = LOCAL_PANEL ? locales.filter(l => l.id === LOCAL_PANEL) : locales;
-      const sinLocal = servicios.filter(s => !locales.some(l => l.id === s.local_id));
-      $('listaServ').innerHTML = (ver.length ? ver : [{ id: null, nombre: '' }]).map(l => {
-        const del = servicios.filter(s => s.local_id === l.id);
-        return (locales.length > 1 ? `<div class="dia-titulo" style="margin-top:14px;">📍 ${esc(l.nombre)} · ${del.length} servicio${del.length === 1 ? '' : 's'}</div>` : '') + del.map(filaServicio).join('');
-      }).join('') + sinLocal.map(filaServicio).join('');
-      $('datalistCat')?.remove();
-      document.body.insertAdjacentHTML('beforeend', `<datalist id="datalistCat">${[...new Set(['Promociones', 'Servicios', ...servicios.map(s => s.categoria || 'Servicios')])].map(c => `<option value="${esc(c)}">`).join('')}</datalist>`);
+      dibujarServicios();
     }
-    function filaServicio(s){
-      const otros = locales.filter(l => l.id !== s.local_id && !servicios.some(x => x.local_id === l.id && x.nombre.trim().toLowerCase() === (s.nombre || '').trim().toLowerCase()));
-      return `<div class="serv-fila" data-id="${s.id ?? ''}">
-        <input data-c="nombre" value="${esc(s.nombre)}" placeholder="Nombre">
-        <input data-c="descripcion" class="desc" value="${esc(s.descripcion || '')}" placeholder="Descripción corta">
-        <input data-c="categoria" list="datalistCat" value="${esc(s.categoria || 'Servicios')}" placeholder="Categoría">
-        <select data-c="local_id">${locales.map(l => `<option value="${l.id}" ${l.id === s.local_id ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('')}</select>
-        <input data-c="precio" type="number" min="0" step="500" value="${s.precio ?? ''}" placeholder="Precio">
-        <input data-c="duracion" type="number" min="5" step="5" value="${s.duracion ?? ''}" placeholder="Min">
-        <input data-c="activo" type="checkbox" ${s.activo !== false ? 'checked' : ''} aria-label="Activo">
-        <div style="display:flex;gap:6px;">
-          <button class="boton-linea" onclick="guardarServicio(this)">Guardar</button>
-          ${s.id && otros.length ? `<button class="boton-linea" onclick="duplicarServicio(${s.id})" title="Crear el mismo servicio en ${esc(otros.map(o => o.nombre).join(', '))}">⧉</button>` : ''}
+    function dibujarServicios(){
+      const localVer = LOCAL_PANEL || FSERV.local || 0;
+      const enLocal = servicios.filter(s => !localVer || s.local_id === localVer);
+      const cuenta = k => enLocal.filter(s => k === 'todos' || (k === 'promo') === esPromo(s.categoria)).length;
+      $('filtrosServ').innerHTML = `<div class="segmentado">${[['todos', 'Todos'], ['serv', 'Servicios'], ['promo', '🏷 Promociones']].map(([k, v]) =>
+          `<button class="seg ${FSERV.tipo === k ? 'sel' : ''}" onclick="FSERV.tipo='${k}'; dibujarServicios()">${v} (${cuenta(k)})</button>`).join('')}</div>
+        ${locales.length > 1 && !LOCAL_PANEL ? `<select class="sel-vista" onchange="FSERV.local=Number(this.value); dibujarServicios()">
+          <option value="0">📍 Todos los locales</option>${locales.map(l => `<option value="${l.id}" ${FSERV.local === l.id ? 'selected' : ''}>📍 ${esc(l.nombre)}</option>`).join('')}</select>` : ''}`;
+      const pasa = s => FSERV.tipo === 'todos' || (FSERV.tipo === 'promo') === esPromo(s.categoria);
+      // promociones primero dentro de cada local
+      const ordenar = l => l.filter(pasa).sort((x, y) => esPromo(y.categoria) - esPromo(x.categoria));
+      const ver = localVer ? locales.filter(l => l.id === localVer) : locales;
+      const sinLocal = localVer ? [] : servicios.filter(s => !locales.some(l => l.id === s.local_id));
+      let html = (ver.length ? ver : [{ id: null, nombre: '' }]).map(l => {
+        const del = ordenar(servicios.filter(s => s.local_id === l.id));
+        return (locales.length > 1 ? `<div class="dia-titulo" style="margin-top:14px;">📍 ${esc(l.nombre)} · ${del.length}</div>` + (del.length ? '' : `<p class="nota" style="margin:4px 0 10px;">Sin ${FSERV.tipo === 'promo' ? 'promociones' : 'servicios'} en este local. Crea uno o usa ⧉ Copiar a otro local.</p>`) : '') + del.map(tarjetaServicio).join('');
+      }).join('') + ordenar(sinLocal).map(tarjetaServicio).join('');
+      if (!servicios.filter(pasa).filter(s => !localVer || s.local_id === localVer).length && (localVer || locales.length < 2))
+        html = `<p class="nota" style="padding:14px 0;">${FSERV.tipo === 'promo' ? 'Aún no tienes promociones. Crea una con <b>🏷 Nueva promoción</b>.' : 'Aún no hay servicios aquí. Crea uno con <b>+ Nuevo servicio</b>.'}</p>`;
+      $('listaServ').innerHTML = html;
+    }
+    function chipsQuien(lid, marcados){
+      const ts = trabsDeLocal(lid);
+      if (!ts.length) return `<div class="t">👥 Quién lo hace</div><span class="nota">Este local aún no tiene profesionales. Agrégalos en "Equipo y horarios".</span>`;
+      const on = id => marcados === null || marcados.includes(id);
+      return `<div class="t">👥 Quién lo hace <span class="nota">(${ts.filter(t => on(t.id)).length} de ${ts.length})</span>
+          <a onclick="marcarQuien(this, true)">Todos</a><a onclick="marcarQuien(this, false)">Ninguno</a></div>
+        <div class="sc-chips">${ts.map(t => `<label><input type="checkbox" class="f-quien" value="${t.id}" ${on(t.id) ? 'checked' : ''} onchange="contarQuien(this)"> ${esc(t.nombre)}</label>`).join('')}</div>`;
+    }
+    function contarQuien(el){
+      const q = el.closest('.sc-quien'), n = q.querySelectorAll('.f-quien').length, k = q.querySelectorAll('.f-quien:checked').length;
+      const sp = q.querySelector('.t .nota'); if (sp) sp.textContent = `(${k} de ${n})`;
+    }
+    function marcarQuien(a, on){ const q = a.closest('.sc-quien'); q.querySelectorAll('.f-quien').forEach(c => c.checked = on); contarQuien(a); }
+    function cambioLocalServ(sel){
+      const card = sel.closest('.serv-card'), lid = Number(sel.value);
+      // al cambiar de local, por defecto lo hace todo el equipo de ese local
+      card.querySelector('.sc-quien').innerHTML = chipsQuien(lid, null);
+    }
+    function tarjetaServicio(s){
+      const tipo = tipoDe(s.categoria), nuevo = !s.id;
+      const quien = s.id ? trabajadores.filter(t => (asignados[t.id] || []).includes(s.id)).map(t => t.id) : null;
+      const otros = s.id ? locales.filter(l => l.id !== s.local_id && !servicios.some(x => x.local_id === l.id && x.nombre.trim().toLowerCase() === (s.nombre || '').trim().toLowerCase())) : [];
+      const ahorro = tipo === 'promo' && s.precio_normal > s.precio ? s.precio_normal - s.precio : 0;
+      return `<div class="serv-card ${tipo === 'promo' ? 'promo' : ''} ${s.activo === false ? 'inactivo' : ''} ${nuevo ? 'nuevo' : ''}" data-id="${s.id ?? ''}" data-tipo="${tipo}" data-cat="${esc(s.categoria || '')}">
+        <div class="sc-cab">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="segmentado">${[['serv', 'Servicio'], ['promo', '🏷 Promoción'], ['otra', 'Otra categoría']].map(([k, v]) =>
+              `<button class="seg ${tipo === k ? 'sel' : ''}" data-k="${k}" onclick="tipoServ(this)">${v}</button>`).join('')}</div>
+            <input data-c="otra" class="sc-otra ${tipo === 'otra' ? '' : 'oculto'}" list="datalistCat" value="${tipo === 'otra' ? esc(s.categoria) : ''}" placeholder="Ej: Color, Niños">
+          </div>
+          <span>${nuevo ? '<span class="nota">Nuevo · sin guardar</span>' : ''}${ahorro ? `<span class="sc-ahorro">Ahorra ${clp(ahorro)}</span>` : ''}</span>
+        </div>
+        <div class="sc-grid">
+          <label class="sc-nombre">Nombre<input data-c="nombre" value="${esc(s.nombre || '')}" placeholder="${tipo === 'promo' ? 'Ej: Corte + Barba' : 'Ej: Corte clásico'}"></label>
+          <label class="${locales.length > 1 ? '' : 'oculto'}">Local<select data-c="local_id" onchange="cambioLocalServ(this)">${locales.map(l => `<option value="${l.id}" ${l.id === s.local_id ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('')}</select></label>
+          <label><span class="et-precio">${tipo === 'promo' ? 'Precio promo ($)' : 'Precio ($)'}</span><input data-c="precio" type="number" min="0" step="500" value="${s.precio ?? ''}" placeholder="Precio"></label>
+          <label class="sc-normal ${tipo === 'promo' ? '' : 'oculto'}">Precio normal ($)<input data-c="precio_normal" type="number" min="0" step="500" value="${s.precio_normal ?? ''}" placeholder="Opcional"></label>
+          <label>Minutos<input data-c="duracion" type="number" min="5" step="5" value="${s.duracion ?? ''}" placeholder="Min"></label>
+        </div>
+        <div class="sc-desc"><label>Descripción<input data-c="descripcion" value="${esc(s.descripcion || '')}" placeholder="${tipo === 'promo' ? 'Ej: Válida de lunes a jueves' : 'Descripción corta (opcional)'}"></label></div>
+        <div class="sc-quien">${chipsQuien(s.local_id, quien)}</div>
+        <div class="sc-pie">
+          <label class="activo"><input data-c="activo" type="checkbox" ${s.activo !== false ? 'checked' : ''}> Visible en la agenda</label>
+          ${otros.length ? `<button class="boton-linea" onclick="duplicarServicio(${s.id})" title="Crear el mismo en ${esc(otros.map(o => o.nombre).join(', '))}">⧉ Copiar a otro local</button>` : ''}
           <button class="boton-linea rojo" onclick="eliminarServicio(this)" title="Eliminar">✕</button>
+          <button class="boton" onclick="guardarServicio(this)">Guardar</button>
         </div>
       </div>`;
     }
-    // Copia un servicio al otro local (mismo nombre y duración; después ajustas el precio de ese local)
+    function tipoServ(btn){
+      const card = btn.closest('.serv-card'), k = btn.dataset.k;
+      card.dataset.tipo = k;
+      card.querySelectorAll('.sc-cab .seg').forEach(b => b.classList.toggle('sel', b === btn));
+      card.classList.toggle('promo', k === 'promo');
+      card.querySelector('[data-c=otra]').classList.toggle('oculto', k !== 'otra');
+      card.querySelector('.sc-normal').classList.toggle('oculto', k !== 'promo');
+      card.querySelector('.et-precio').textContent = k === 'promo' ? 'Precio promo ($)' : 'Precio ($)';
+      if (k === 'otra') card.querySelector('[data-c=otra]').focus();
+    }
+    // Copia un servicio a otro local, preguntando el precio de ese local
     async function duplicarServicio(id){
       const s = servicios.find(x => x.id === id); if (!s) return;
       const destinos = locales.filter(l => l.id !== s.local_id && !servicios.some(x => x.local_id === l.id && x.nombre.trim().toLowerCase() === s.nombre.trim().toLowerCase()));
       if (!destinos.length) return estado('estadoServ', `"${s.nombre}" ya existe en los otros locales.`, 'error');
-      if (!confirm(`¿Crear "${s.nombre}" también en ${destinos.map(d => d.nombre).join(' y ')}? Queda con el mismo precio (${clp(s.precio)}): cámbialo si ahí cuesta distinto.`)) return;
-      const { error } = await db.from('servicios').insert(destinos.map(d => ({ nombre: s.nombre, descripcion: s.descripcion, precio: s.precio, duracion: s.duracion,
-        activo: s.activo, categoria: s.categoria || 'Servicios', local_id: d.id, orden: servicios.length + 1 })));
+      const filas = [];
+      for (const d of destinos){
+        const r = prompt(`Precio de "${s.nombre}" en ${d.nombre} (deja vacío para no crearlo ahí):`, s.precio);
+        if (r === null) return;
+        const precio = parseInt(String(r).replace(/\D/g, ''));
+        if (isNaN(precio)) continue;
+        filas.push({ nombre: s.nombre, descripcion: s.descripcion, precio, duracion: s.duracion, activo: s.activo,
+                     categoria: s.categoria || 'Servicios', local_id: d.id, orden: servicios.length + 1,
+                     ...(s.precio_normal ? { precio_normal: s.precio_normal } : {}) });
+      }
+      if (!filas.length) return;
+      const { error } = await db.from('servicios').insert(filas);
       if (error) return estado('estadoServ', 'Error: ' + error.message, 'error');
-      estado('estadoServ', `✓ "${s.nombre}" creado en ${destinos.map(d => d.nombre).join(' y ')}. Revisa su precio.`, 'ok');
-      await cargarServicios(); await cargarBase();
+      const donde = filas.map(f => nombreLocal(f.local_id)).join(' y ');
+      await cargarBase(); await cargarServicios();
+      estado('estadoServ', `✓ "${s.nombre}" creado en ${donde}, con todo el equipo de ese local. Ajusta abajo en "Quién lo hace".`, 'ok');
     }
     async function eliminarServicio(btn){
-      const f = btn.closest('.serv-fila'), id = f.dataset.id, nombre = f.querySelector('[data-c=nombre]').value || 'este servicio';
+      const f = btn.closest('.serv-card'), id = f.dataset.id, nombre = f.querySelector('[data-c=nombre]').value || 'este servicio';
       if (!id){ f.remove(); return; }
-      if (!confirm(`¿Eliminar "${nombre}"? Las reservas antiguas lo conservan en su historial.\n\nSi solo quieres ocultarlo por un tiempo, desmarca "Activo".`)) return;
+      if (!confirm(`¿Eliminar "${nombre}"? Las reservas antiguas lo conservan en su historial.\n\nSi solo quieres ocultarlo por un tiempo, desmarca "Visible en la agenda".`)) return;
       const { error } = await db.from('servicios').delete().eq('id', id);
       if (error) return estado('estadoServ', 'Error: ' + error.message, 'error');
       estado('estadoServ', `✓ "${nombre}" eliminado.`, 'ok');
-      cargarServicios();
+      await cargarBase(); cargarServicios();
     }
-    function nuevoServicio(){ $('listaServ').insertAdjacentHTML('beforeend', filaServicio({ nombre:'', activo:true, categoria:'Servicios', local_id: LOCAL_PANEL || locales[0]?.id })); }
+    function nuevoServicio(cat){
+      const lid = LOCAL_PANEL || FSERV.local || [...locales].sort((a, b) => a.id - b.id)[0]?.id;
+      if (FSERV.tipo !== 'todos' && (FSERV.tipo === 'promo') !== esPromo(cat)){ FSERV.tipo = 'todos'; dibujarServicios(); }
+      $('listaServ').querySelector(':scope > p.nota')?.remove();
+      $('listaServ').insertAdjacentHTML('afterbegin', tarjetaServicio({ nombre: '', activo: true, categoria: cat || 'Servicios', local_id: lid }));
+      const card = $('listaServ').firstElementChild;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.querySelector('[data-c=nombre]').focus();
+      if (!$('datalistCat')) document.body.insertAdjacentHTML('beforeend', `<datalist id="datalistCat">${[...new Set(servicios.map(s => s.categoria).filter(c => tipoDe(c) === 'otra'))].map(c => `<option value="${esc(c)}">`).join('')}</datalist>`);
+    }
     async function guardarServicio(btn){
-      const f = btn.closest('.serv-fila'), v = c => f.querySelector(`[data-c=${c}]`);
+      const f = btn.closest('.serv-card'), v = c => f.querySelector(`[data-c=${c}]`), tipo = f.dataset.tipo;
+      const catOrig = f.dataset.cat;
+      const categoria = tipo === 'promo' ? (esPromo(catOrig) ? catOrig : 'Promociones') : tipo === 'serv' ? 'Servicios' : (v('otra').value.trim() || 'Servicios');
+      const pn = parseInt(v('precio_normal').value);
       const fila = { nombre: v('nombre').value.trim(), descripcion: v('descripcion').value.trim(),
                      precio: parseInt(v('precio').value), duracion: parseInt(v('duracion').value), activo: v('activo').checked,
-                     categoria: v('categoria').value.trim() || 'Servicios', local_id: Number(v('local_id').value) || null };
-      if (!fila.nombre || isNaN(fila.precio) || isNaN(fila.duracion)) return estado('estadoServ', 'Completa nombre, precio y minutos.', 'error');
+                     categoria, local_id: Number(v('local_id').value) || null };
+      const que = tipo === 'promo' ? 'la promoción' : 'el servicio';
+      if (!fila.nombre || isNaN(fila.precio) || isNaN(fila.duracion)) return estado('estadoServ', `Completa nombre, precio y minutos de ${que}.`, 'error');
       if (fila.duracion < 5 || fila.duracion > 480) return estado('estadoServ', 'La duración debe estar entre 5 y 480 minutos.', 'error');
-      const id = f.dataset.id;
-      const { error } = id ? await db.from('servicios').update(fila).eq('id', id)
-                           : await db.from('servicios').insert({ ...fila, orden: servicios.length + 1 });
-      if (error) return estado('estadoServ', 'Error: ' + error.message, 'error');
-      estado('estadoServ', `✓ "${fila.nombre}" guardado${locales.length > 1 ? ' en ' + nombreLocal(fila.local_id) : ''}. La agenda pública ya muestra el cambio.`, 'ok');
-      await cargarServicios(); await cargarBase();
+      if (tipo === 'promo' && !isNaN(pn) && pn <= fila.precio) return estado('estadoServ', 'El precio normal debe ser mayor que el precio de la promoción (o déjalo vacío).', 'error');
+      const id = f.dataset.id, previo = servicios.find(x => String(x.id) === id);
+      if (tipo === 'promo' ? !isNaN(pn) : previo?.precio_normal) fila.precio_normal = tipo === 'promo' && !isNaN(pn) ? pn : null;
+      const chips = [...f.querySelectorAll('.f-quien')], tids = chips.filter(c => c.checked).map(c => Number(c.value));
+      if (chips.length && !tids.length && fila.activo && !confirm(`No marcaste a nadie en "Quién lo hace": ${que} no aparecerá en la agenda pública. ¿Guardar igual?`)) return;
+      const { data, error } = id ? await db.from('servicios').update(fila).eq('id', id).select('id').single()
+                                 : await db.from('servicios').insert({ ...fila, orden: servicios.length + 1 }).select('id').single();
+      if (error) return estado('estadoServ', (error.message || '').includes('precio_normal') ? 'Falta instalar la Fase 24 en Supabase (precio normal de promociones).' : 'Error: ' + error.message, 'error');
+      let quienTxt = '';
+      if (chips.length){
+        const r = await db.rpc('asignar_trabajadores_servicio', { p_sid: data.id, p_tids: tids });
+        if (r.error) return estado('estadoServ', (r.error.message || '').includes('asignar_trabajadores_servicio') ? `✓ Guardado, pero falta instalar la Fase 24 para elegir quién lo hace (por ahora lo hace todo el equipo del local).` : 'Guardado, pero no se pudo asignar el equipo: ' + r.error.message, 'error');
+        quienTxt = tids.length ? ` · lo hace${tids.length > 1 ? 'n' : ''}: ${tids.map(t => trabDe(t)?.nombre || '').filter(Boolean).join(', ')}` : ' · nadie asignado';
+      }
+      await cargarBase(); await cargarServicios();
+      estado('estadoServ', `✓ ${tipo === 'promo' ? 'Promoción' : 'Servicio'} "${fila.nombre}" ${tipo === 'promo' ? 'guardada' : 'guardado'}${locales.length > 1 ? ' en ' + nombreLocal(fila.local_id) : ''}${quienTxt}. La agenda pública ya lo muestra.`, 'ok');
     }
 
     // ================= CLIENTES (admin) =================
