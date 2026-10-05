@@ -2166,12 +2166,13 @@
       $('informeCaja').innerHTML = `
         <div class="tarjeta informe">
           <div class="inf-cab"><div><small>${admin ? 'Liquidación de' : 'Tu informe'} · ${esc(cajaPeriodo === 'dia' ? 'día' : cajaPeriodo === 'semana' ? 'semana (lunes a domingo)' : 'mes')}</small>
-            <h2>${esc(nombre)}</h2><p class="nota">${esc(periodoTxt)} · ${esc(NEG.nombre || '')} · comisión ${pct}%</p></div>
+            <h2>${esc(nombre)}</h2><p class="nota">${esc(periodoTxt)} · ${esc(NEG.nombre || '')}${admin ? ` · comisión ${pct}%` : ''}</p></div>
             <div class="inf-acc no-print">${accion}<button class="boton-linea" onclick="copiarInforme()">📋 Copiar</button><button class="boton-linea" onclick="imprimirInforme()">🖨 PDF</button></div></div>
 
           <div class="liq">
-            <div class="liq-fila"><span>Servicios realizados <small>(${S.n} atenci${S.n === 1 ? 'ón' : 'ones'})</small></span><b>${clp(S.serv)}</b></div>
-            <div class="liq-fila"><span>${admin ? 'Su' : 'Tu'} comisión <small>(${pct}% de los servicios)</small></span><b>${clp(S.parte)}</b></div>
+            ${admin ? `<div class="liq-fila"><span>Servicios realizados <small>(${S.n} atenci${S.n === 1 ? 'ón' : 'ones'})</small></span><b>${clp(S.serv)}</b></div>`
+                    : `<div class="liq-fila"><span>Atenciones realizadas <small>(${esc(categoriaLocal())})</small></span><b>${S.n}</b></div>`}
+            <div class="liq-fila"><span>${admin ? `Su comisión <small>(${pct}% de los servicios)</small>` : 'Tu comisión'}</span><b>${clp(S.parte)}</b></div>
             <div class="liq-fila mas"><span>+ Propinas <small>(100% ${admin ? 'suyas' : 'tuyas'})</small></span><b>${clp(S.prop)}</b></div>
             <div class="liq-fila total"><span>Total a pagar</span><b>${clp(S.total)}</b></div>
             <p class="nota" style="margin-top:6px;">${clp(S.parte)} por servicios + ${clp(S.prop)} en propinas = <b>${clp(S.total)}</b>${S.llegadas ? ` · ${S.llegadas} por orden de llegada` : ''}${S.noVino ? ` · ${S.noVino} no asistieron` : ''}</p>
@@ -2179,32 +2180,34 @@
 
           ${dias.length > 1 ? `<h3 style="margin-top:18px;">Por día</h3>
           <div style="overflow-x:auto;"><table class="tabla-caja">
-            <tr><th>Día</th><th class="num">Atenc.</th><th class="num">Servicios</th><th class="num">Comisión ${pct}%</th><th class="num">Propinas</th><th class="num">Total</th></tr>
+            <tr><th>Día</th><th class="num">Atenc.</th>${admin ? '<th class="num">Servicios</th>' : ''}<th class="num">${admin ? `Comisión ${pct}%` : "Comisión"}</th><th class="num">Propinas</th><th class="num">Total</th></tr>
             ${dias.map(d => { const x = hechas.filter(r => r.fecha === d), p = sum(x, parte), pr = sum(x, r => r.propina || 0);
-              return `<tr><td>${fechaDiaCaja(d)}</td><td class="num">${x.length}</td><td class="num">${clp(sum(x, r => r.total || 0))}</td><td class="num">${clp(p)}</td><td class="num">${pr ? clp(pr) : '—'}</td><td class="num"><b>${clp(p + pr)}</b></td></tr>`; }).join('')}
-            <tr class="total"><td>Total</td><td class="num">${S.n}</td><td class="num">${clp(S.serv)}</td><td class="num">${clp(S.parte)}</td><td class="num">${clp(S.prop)}</td><td class="num">${clp(S.total)}</td></tr>
+              return `<tr><td>${fechaDiaCaja(d)}</td><td class="num">${x.length}</td>${admin ? `<td class="num">${clp(sum(x, r => r.total || 0))}</td>` : ''}<td class="num">${clp(p)}</td><td class="num">${pr ? clp(pr) : '—'}</td><td class="num"><b>${clp(p + pr)}</b></td></tr>`; }).join('')}
+            <tr class="total"><td>Total</td><td class="num">${S.n}</td>${admin ? `<td class="num">${clp(S.serv)}</td>` : ''}<td class="num">${clp(S.parte)}</td><td class="num">${clp(S.prop)}</td><td class="num">${clp(S.total)}</td></tr>
           </table></div>` : ''}
 
           <h3 style="margin-top:18px;">Detalle de atenciones</h3>
           ${hechas.length ? `<div style="overflow-x:auto;"><table class="tabla-caja">
-            <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicios</th><th>Pago</th><th class="num">Valor</th><th class="num">Comisión</th><th class="num">Propina</th><th class="num">Total</th></tr>
+            <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicios</th><th>Pago</th>${admin ? '<th class="num">Valor</th>' : ''}<th class="num">Comisión</th><th class="num">Propina</th><th class="num">Total</th></tr>
             ${hechas.map(r => `<tr style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><td>${deTexto(r.fecha).toLocaleDateString('es-CL', { day:'numeric', month:'short' })}</td><td>${aHora(rangoDe(r)[0])}</td>
               <td>${esc(r.nombre)}${r.origen === 'llegada' ? ' ⚡' : ''}</td><td>${esc(r.servicios || '')}</td><td>${r.metodo_pago ? PAGOS[r.metodo_pago] : '—'}</td>
-              <td class="num">${clp(r.total)}</td><td class="num">${clp(parte(r))}</td><td class="num">${r.propina ? clp(r.propina) : '—'}</td><td class="num"><b>${clp(parte(r) + (r.propina || 0))}</b></td></tr>`).join('')}
+              ${admin ? `<td class="num">${clp(r.total)}</td>` : ''}<td class="num">${clp(parte(r))}</td><td class="num">${r.propina ? clp(r.propina) : '—'}</td><td class="num"><b>${clp(parte(r) + (r.propina || 0))}</b></td></tr>`).join('')}
           </table></div>` : '<p class="vacio">No hay atenciones terminadas en este período.</p>'}
 
           <h3 style="margin-top:18px;">Cómo pagaron los clientes</h3>
-          <div class="inf-metodos">${metodos.map(([k, v]) => `<div><small>${PAGOS[k]}</small><b>${clp(v)}</b></div>`).join('')}</div>
-          <p class="nota">Lo que pagaron los clientes (servicio + propina) por cada medio. Sirve para cuadrar el efectivo que recibiste.</p>
+          <div class="inf-metodos">${metodos.map(([k, v]) => `<div><small>${PAGOS[k]}</small><b>${admin ? clp(v) : hechas.filter(r => r.metodo_pago === k).length + ' atenc.'}</b></div>`).join('')}</div>
+          <p class="nota">${admin ? 'Lo que pagaron los clientes (servicio + propina) por cada medio. Sirve para cuadrar el efectivo.' : 'Cuántas atenciones se pagaron con cada medio.'}</p>
           <p class="nota inf-pie">Generado el ${new Date().toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' })} · TwoWeb</p>
         </div>`;
     }
+    // Categoría del local (rubro); si no tiene, el nombre del negocio
+    const categoriaLocal = () => NEG.rubro || NEG.nombre || 'Servicios';
     function textoInforme(){
       const I = ULTIMO_INFORME, admin = yo.rol === 'admin';
-      const lineas = [`• Atenciones: ${I.n}`, `• Servicios: ${clp(I.serv)}`, `• Comisión (${I.pct}%): ${clp(I.parte)}`, `• Propinas: ${clp(I.prop)}`, `• *Total a pagar: ${clp(I.total)}*`];
+      const lineas = [`• Atenciones: ${I.n}`, `• Servicios: ${categoriaLocal()}`, `• Comisión: ${clp(I.parte)}`, `• Propinas: ${clp(I.prop)}`, `• *Total a pagar: ${clp(I.total)}*`];
       return admin
-        ? `Hola ${I.nombre} 👋\nTu liquidación de ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\nCualquier duda me avisas.`
-        : `Hola 👋 soy ${I.nombre}.\nMi informe en ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\n¡Gracias!`;
+        ? `Hola ${I.nombre},\nTu liquidación de ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\nCualquier duda me avisas.`
+        : `Hola, soy ${I.nombre}.\nMi informe en ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\n¡Gracias!`;
     }
     function enviarInforme(){
       const I = ULTIMO_INFORME; if (!I) return;
