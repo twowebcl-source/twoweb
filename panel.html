@@ -6,6 +6,15 @@
   <meta name="robots" content="noindex">
   <meta name="google" content="notranslate">
   <title>Panel</title>
+  <!-- App instalable (añadir a inicio / escritorio) -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TwoWeb">
+  <link rel="apple-touch-icon" href="/imagenes/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/imagenes/favicon-32.png">
   <script src="config.js"></script>
   <script src="fondos.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -524,6 +533,15 @@
       body.imprimiendo .informe { background:#fff !important; color:#111 !important; border:none; box-shadow:none; }
       body.imprimiendo .informe * { color:#111 !important; background:transparent !important; }
     }
+    /* Avisos: instalar app / activar notificaciones */
+    .avisos-app { position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:30; width:min(560px, calc(100vw - 24px)); display:grid; gap:8px; }
+    .aviso-app { display:grid; grid-template-columns:auto 1fr; gap:10px 12px; align-items:center; background:var(--panel); border:1px solid color-mix(in srgb, var(--voltaje) 45%, var(--linea));
+      border-radius:16px; padding:12px 14px; box-shadow:0 12px 40px rgba(0,0,0,.45); animation:subeHoja .3s ease; }
+    .aa-ic { font-size:26px; } .aa-txt > b { display:block; font-size:15px; } .aa-txt > span { color:var(--gris); font-size:13px; } .aa-txt > span b { color:var(--hueso); }
+    .aa-acc { grid-column:1 / -1; display:flex; gap:12px; align-items:center; justify-content:flex-end; }
+    .aa-acc .boton { padding:8px 16px; } .aa-acc .link { margin:0; }
+    .ico-ios { display:inline-block; border:1px solid var(--gris); border-radius:4px; padding:0 4px; font-size:11px; }
+    @media (min-width:700px){ .aviso-app { grid-template-columns:auto 1fr auto; } .aa-acc { grid-column:auto; } }
   </style>
 </head>
 <body>
@@ -912,6 +930,7 @@
   <div class="toasts" id="toasts"></div>
 
   <!-- Ventana de detalle -->
+  <div id="avisosApp" class="avisos-app oculto" role="region" aria-label="Recomendaciones"></div>
   <div id="hojaPz" class="hoja-pz oculto" onclick="if(event.target===this)cerrarPz()">
     <div class="hoja">
       <div class="hoja-asa"></div>
@@ -1185,6 +1204,7 @@
       verTab(!conAgenda() ? 'pedidos' : yo.rol === 'admin' ? 'dia' : 'midia');
       if (conTienda()) cargarPedidos(true);
       iniciarNotif();
+      setTimeout(avisosApp, 1500);              // invitar a instalar la app y activar avisos (cada vez que entra, hasta que lo haga)
       if (entroConCodigo){ entroConCodigo = false; abrirMiCuenta('Entraste con un código. Crea tu nueva contraseña para la próxima vez.'); }
     }
     db.auth.onAuthStateChange((evento, session) => {
@@ -2644,7 +2664,60 @@
     async function activarAvisosNavegador(){
       if (!('Notification' in window)) return estado('estadoCuenta', 'Este navegador no permite avisos.', 'error');
       const p = await Notification.requestPermission();
+      if (p === 'granted') avisoSistema('✓ Avisos activados', 'Te avisaremos cuando te agenden, cancelen o lleguen pedidos.', 'twoweb-prueba');
       estado('estadoCuenta', p === 'granted' ? '✓ Avisos activados.' : 'No se activaron: revisa los permisos del sitio en tu navegador.', p === 'granted' ? 'ok' : 'error');
+    }
+
+    // ================= APP INSTALABLE Y AVISOS =================
+    let PROMPT_INSTALAR = null;
+    const esApp = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    const esIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const esMovil = () => /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || esIOS();
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+    addEventListener('beforeinstallprompt', e => { e.preventDefault(); PROMPT_INSTALAR = e; if (yo) avisosApp(); });
+    addEventListener('appinstalled', () => { PROMPT_INSTALAR = null; avisosApp(); mostrarToast({ id: 0, tipo: 'completada', titulo: '¡App instalada!', detalle: 'Ábrela desde el ícono TwoWeb de tu ' + (esMovil() ? 'pantalla de inicio' : 'escritorio') + '.' }); });
+    async function avisoSistema(titulo, cuerpo, tag){
+      const op = { body: cuerpo, tag, icon: '/imagenes/app-192.png', badge: '/imagenes/app-192.png' };
+      try { const reg = 'serviceWorker' in navigator && await navigator.serviceWorker.getRegistration(); if (reg) return reg.showNotification(titulo, op); } catch (e) {}
+      try { new Notification(titulo, op); } catch (e) {}
+    }
+    // Tarjeta flotante: aparece cada vez que entra mientras falte instalar la app o activar los avisos ("Ahora no" la oculta solo hasta la próxima vez)
+    function avisosApp(){
+      if (!yo) return;
+      let ocultos = {}; try { ocultos = JSON.parse(sessionStorage.getItem('twoweb-avisos-ocultos') || '{}'); } catch (e) {}
+      const items = [];
+      if (!esApp() && !ocultos.instalar){
+        const donde = esMovil() ? 'tu pantalla de inicio' : 'tu escritorio';
+        if (PROMPT_INSTALAR) items.push({ k: 'instalar', ic: '📲', t: 'Instala TwoWeb como app', d: `Queda en ${donde} y se abre sin barra del navegador, como una app.`, b: 'Instalar', a: 'instalarApp()' });
+        else if (esIOS()) items.push({ k: 'instalar', ic: '📲', t: 'Agrega TwoWeb a tu inicio', d: 'En Safari toca <b>Compartir</b> <span class="ico-ios">⬆︎</span> y luego <b>"Agregar a inicio"</b>. Así queda como app y podrás recibir avisos.' });
+        else if (/safari/i.test(navigator.userAgent) && !/chrome|chromium|edg/i.test(navigator.userAgent)) items.push({ k: 'instalar', ic: '💻', t: 'Agrega TwoWeb a tu Dock', d: 'En Safari ve al menú <b>Archivo → Agregar al Dock</b>.' });
+        else if (/firefox/i.test(navigator.userAgent)) items.push({ k: 'instalar', ic: '💻', t: 'Guarda TwoWeb a mano', d: 'Firefox no instala apps: usa Chrome o Edge para tenerlo como app, o guarda esta página en tus favoritos.' });
+      }
+      if ('Notification' in window && Notification.permission !== 'granted' && !ocultos.avisos){
+        if (esIOS() && !esApp()) { if (ocultos.instalar) items.push({ k: 'avisos', ic: '🔔', t: 'Activa los avisos', d: 'En iPhone los avisos funcionan cuando TwoWeb está agregado al inicio. Agrégalo y vuelve a entrar desde el ícono.' }); }
+        else if (Notification.permission === 'denied') items.push({ k: 'avisos', ic: '🔕', t: 'Los avisos están bloqueados', d: 'Toca el <b>candado 🔒</b> junto a la dirección (o los ajustes del sitio) → <b>Notificaciones → Permitir</b>, y recarga.' });
+        else items.push({ k: 'avisos', ic: '🔔', t: 'Activa los avisos', d: 'Te avisamos al instante cuando te agenden, cancelen o llegue un pedido.', b: 'Activar', a: 'activarAvisosApp()' });
+      }
+      const el = $('avisosApp');
+      if (!items.length){ el.classList.add('oculto'); return; }
+      el.innerHTML = items.map(x => `<div class="aviso-app"><span class="aa-ic">${x.ic}</span><div class="aa-txt"><b>${x.t}</b><span>${x.d}</span></div>
+          <div class="aa-acc">${x.b ? `<button class="boton" onclick="${x.a}">${x.b}</button>` : ''}<button class="link" onclick="ocultarAvisoApp('${x.k}')">Ahora no</button></div></div>`).join('');
+      el.classList.remove('oculto');
+    }
+    function ocultarAvisoApp(k){
+      let o = {}; try { o = JSON.parse(sessionStorage.getItem('twoweb-avisos-ocultos') || '{}'); } catch (e) {}
+      o[k] = 1; try { sessionStorage.setItem('twoweb-avisos-ocultos', JSON.stringify(o)); } catch (e) {}
+      avisosApp();
+    }
+    async function instalarApp(){
+      if (!PROMPT_INSTALAR) return avisosApp();
+      PROMPT_INSTALAR.prompt(); const r = await PROMPT_INSTALAR.userChoice.catch(() => ({}));
+      PROMPT_INSTALAR = null; if (r.outcome !== 'accepted') ocultarAvisoApp('instalar'); else avisosApp();
+    }
+    async function activarAvisosApp(){
+      const p = await Notification.requestPermission().catch(() => 'default');
+      if (p === 'granted') avisoSistema('✓ Avisos activados', 'Te avisaremos cuando te agenden, cancelen o lleguen pedidos.', 'twoweb-prueba');
+      avisosApp();
     }
 
     // ================= AVISOS EN TIEMPO REAL =================
@@ -2670,8 +2743,8 @@
       } catch (e) {}
     }
     function avisoNavegador(n){
-      try { if ('Notification' in window && Notification.permission === 'granted' && document.hidden)
-        new Notification((NEG.nombre || MARCA) + ' · ' + n.titulo, { body: n.detalle || '', tag: 'twoweb-' + n.id }); } catch (e) {}
+      try { if ('Notification' in window && Notification.permission === 'granted' && (document.hidden || esApp()))
+        avisoSistema((NEG.nombre || MARCA) + ' · ' + n.titulo, n.detalle || '', 'twoweb-' + n.id); } catch (e) {}
     }
     function conectarTiempoReal(){
       if (canal){ db.removeChannel(canal); canal = null; }

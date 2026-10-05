@@ -1,0 +1,24 @@
+# TwoWeb — Cabeceras de seguridad (Cloudflare Pages las aplica solas)
+# Todo el sitio
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+
+# El panel: no aparece en Google y no se puede incrustar en otra página (evita engaños tipo "clickjacking")
+/panel*
+  X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: DENY
+
+# La configuración siempre fresca (si cambias config.js, se aplica al tiro)
+/config.js
+  Cache-Control: no-cache
+
+# App instalable: el service worker y el manifiesto siempre frescos
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
