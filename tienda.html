@@ -7,6 +7,7 @@
   <title>Tienda</title>
   <meta name="description" content="Compra online y retira o recibe en tu casa.">
   <script src="config.js"></script>
+  <script src="fondos.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* ===== TEMAS: los mismos 6 de la agenda y la página de barbería (se eligen en el panel) ===== */
@@ -249,6 +250,7 @@
         : /tienda_config/.test(error.message || '') ? 'Falta instalar la Fase 14 en la base de datos.' : 'No pudimos cargar la tienda: ' + esc(error.message));
       const n = data.negocio || {};
       aplicarTema(n.tema, n.color);
+      if (typeof aplicarEstiloPublico === 'function') aplicarEstiloPublico(n);
       pintarCabecera(n);
       if (data.suspendido) return aviso(esc(n.nombre || ''), `Nuestra tienda no está disponible por ahora.${n.whatsapp ? `<br><br><a class="boton wsp" href="https://wa.me/${esc(n.whatsapp.replace(/\D/g, ''))}">Escríbenos por WhatsApp</a>` : ''}`);
       if (!n.mod_tienda) {

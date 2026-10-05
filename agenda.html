@@ -6,6 +6,7 @@
   <meta name="google" content="notranslate">
   <title>Reserva tu hora</title>
   <script src="config.js"></script>
+  <script src="fondos.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root { --voltaje:#ff7a2f; }
@@ -544,6 +545,7 @@
       // Tema elegido por la barbería (?tema= y ?color= solo para que el admin lo pruebe antes de guardar)
       const tema = TEMAS.includes(QS.get('tema')) ? QS.get('tema') : n.tema, color = /^#[0-9a-f]{6}$/i.test(QS.get('color') || '') ? QS.get('color') : n.color;
       aplicarTema(tema, color);
+      if (typeof aplicarEstiloPublico === 'function') aplicarEstiloPublico(n);
       if (!QS.get('tema')) try { localStorage.setItem(K_TEMA, JSON.stringify({ tema, color })); } catch(e) {}
       if (n.slug && $('accesoEquipo')) $('accesoEquipo').href = 'panel.html?n=' + encodeURIComponent(n.slug);
       $('creditos').innerHTML = (n.slug || PRINCIPAL) !== PRINCIPAL ? `· con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener" style="color:inherit;">${esc(CONF.MARCA || 'TwoWeb')}</a>` : '';

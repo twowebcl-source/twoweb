@@ -7,6 +7,7 @@
   <meta name="google" content="notranslate">
   <title>Panel</title>
   <script src="config.js"></script>
+  <script src="fondos.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root { --voltaje:#ff7a2f; }
@@ -446,10 +447,6 @@
     .ag-antes { display:inline-block; font-size:10px; font-weight:700; color:var(--verde); white-space:nowrap; }
     .btn-llegada { padding:7px 14px; font-size:13px; margin-left:auto; }
     /* Fondo con movimiento */
-    #fondoAnim { position:fixed; inset:0; width:100vw; height:100vh; z-index:0; pointer-events:none; display:none; }
-    html.con-fondo { background:var(--grafito); }
-    html.con-fondo body { background:transparent !important; }
-    html.con-fondo body > .caja { position:relative; z-index:1; }
     .fondos { display:grid; grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); gap:8px; margin-top:8px; }
     .fondo-op { background:var(--panel2); border:2px solid transparent; border-radius:var(--r-s); padding:8px; text-align:left; cursor:pointer; color:var(--hueso); font:inherit; }
     .fondo-op.sel { border-color:var(--voltaje); }
@@ -464,10 +461,37 @@
     .fondo-ajustes .chip { padding:4px 10px; margin:2px 2px 2px 0; }
     .fondo-ajustes input[type=color], .colores-fondo input[type=color] { width:44px; height:28px; padding:2px; margin-left:6px; }
     .colores-fondo { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; }
-    /* Tarjetas de vidrio (con fondo animado) */
-    html.con-fondo.vidrio :is(.tarjeta, .kpi, .cita, .resumen-dia div, .ped, .trab, .agenda-scroll, .reserva, .hueco, .proxima.libre, .fondo-card, .link-pro) {
-      background:color-mix(in srgb, var(--panel) 62%, transparent) !important; -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
-    html.con-fondo.vidrio .agenda .ag-col, html.con-fondo.vidrio .agenda .ag-cab, html.con-fondo.vidrio .agenda .ag-horas { background-color:transparent; }
+    /* Hoja "Personalizar" (como Instagram) */
+    .hoja-pz { position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; justify-content:center; }
+    .hoja { width:min(560px, 100%); max-height:86vh; display:flex; flex-direction:column; background:var(--panel); border-radius:22px 22px 0 0; border:1px solid var(--linea); border-bottom:none; position:relative; animation:subeHoja .25s ease; box-shadow:0 -10px 40px rgba(0,0,0,.4); }
+    @keyframes subeHoja { from { transform:translateY(40px); opacity:0; } to { transform:none; opacity:1; } }
+    .hoja-asa { width:44px; height:5px; border-radius:9px; background:var(--gris); opacity:.5; margin:10px auto 6px; }
+    .hoja-x { position:absolute; right:12px; top:10px; background:none; border:none; color:var(--gris); font-size:18px; cursor:pointer; }
+    .hoja h3 { text-align:center; margin:4px 0 2px; font-size:18px; }
+    .pz-tabs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--linea); margin-top:8px; }
+    .pz-tab { background:none; border:none; color:var(--gris); padding:12px; font:inherit; font-weight:700; cursor:pointer; border-bottom:3px solid transparent; }
+    .pz-tab.sel { color:var(--hueso); border-bottom-color:var(--hueso); }
+    .pz-cuerpo { overflow:auto; padding:14px 16px; flex:1; }
+    .pz-pie { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:12px 16px 16px; border-top:1px solid var(--linea); }
+    .pz-pie button { padding:12px; font-size:15px; }
+    .pz-estilos { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px 10px; }
+    .pz-estilos.super { grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); margin-top:12px; }
+    .pz-est { background:none; border:none; padding:0; color:var(--hueso); font:inherit; cursor:pointer; text-align:left; }
+    .pz-est .pz-img { display:flex; align-items:center; justify-content:center; aspect-ratio:3/4.4; border-radius:14px; font-size:30px; border:3px solid transparent; transition:transform .15s; }
+    .pz-est.sel .pz-img { border-color:var(--voltaje); }
+    .pz-est:hover .pz-img { transform:scale(1.02); }
+    .pz-est b { display:block; font-size:13px; margin-top:6px; font-weight:600; }
+    .pz-est small { display:block; color:var(--gris); font-size:11px; }
+    .pz-est.super { background:var(--panel); border:1px solid var(--linea); border-radius:16px; padding:8px; cursor:default; }
+    .pz-est.super .pz-img { cursor:pointer; }
+    .pz-est.super .fc-acc { display:flex; gap:6px; margin-top:8px; } .pz-est.super .fc-acc button { flex:1; padding:6px; font-size:13px; }
+    .pz-est.off { opacity:.5; }
+    .pz-fuentes { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .pz-fuente { background:var(--panel2); border:3px solid transparent; border-radius:14px; padding:26px 10px; color:var(--hueso); font-size:24px; cursor:pointer; }
+    .pz-fuente.sel { border-color:var(--voltaje); }
+    .pz-volver { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:41; background:var(--panel); color:var(--hueso); border:1px solid var(--linea); border-radius:999px; padding:12px 18px; font:inherit; font-weight:700; box-shadow:0 8px 30px rgba(0,0,0,.4); cursor:pointer; }
+    body.hoja-abierta { overflow:hidden; }
+    @media (max-width:520px){ .pz-fuente { font-size:20px; padding:22px 8px; } }
     /* Catálogo (super admin) */
     .fondos-cat { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:10px; margin-top:12px; }
     .fondo-card { display:grid; grid-template-columns:64px 1fr; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--linea); border-radius:var(--r); padding:10px; }
@@ -578,7 +602,7 @@
         <button class="tab solo-admin" data-tab="marca" onclick="verTab('marca')">🎨 Mi página</button>
         <button class="tab solo-super oculto" data-tab="negocios" onclick="verTab('negocios')">🏢 Negocios</button>
         <button class="tab solo-super oculto" data-tab="cobros" onclick="verTab('cobros')">💳 Planes y cobros</button>
-        <button class="tab solo-super oculto" data-tab="fondos" onclick="verTab('fondos')">🌊 Fondos</button>
+        <button class="tab solo-super oculto" data-tab="fondos" onclick="verTab('fondos')">🌊 Estilos</button>
         <button class="tab solo-trab mod-agenda" data-tab="mihorario" onclick="verTab('mihorario')">Mi horario</button>
         <select id="filtroLocal" class="solo-admin selector-local" onchange="cambiarLocalPanel(this.value)" title="Ver solo un local"></select>
       </div>
@@ -847,10 +871,11 @@
       <div id="tab-marca" class="oculto"><div id="marcaCont"></div></div>
 
       <div id="tab-fondos" class="oculto">
-        <div class="barra"><div><h2 style="margin:0;">🌊 Catálogo de fondos</h2>
-          <p class="nota">Los fondos que todos los paneles pueden elegir en Mi cuenta. Crea nuevos combinando un motor de animación con colores, formas, emojis o una imagen.</p></div>
-          <span class="barra-der"><button class="boton" onclick="editarFondo('')">+ Nuevo fondo</button></span></div>
-        <div id="listaFondos" class="fondos-cat"><p class="nota">Cargando…</p></div>
+        <div class="barra"><div><h2 style="margin:0;">🌊 Estilos de TwoWeb</h2>
+          <p class="nota">Los estilos que todos (paneles y páginas de los negocios) pueden elegir en "Personalizar". Sube imágenes o crea animaciones con colores, formas y emojis.</p></div>
+          <span class="barra-der"><label class="boton-linea" style="cursor:pointer;">📷 Subir imagen como estilo<input type="file" accept="image/*" class="oculto" onchange="subirEstiloImagen(this)"></label>
+            <button class="boton" onclick="editarFondo('')">+ Nuevo estilo animado</button></span></div>
+        <div id="listaFondos" class="pz-estilos super"><p class="nota">Cargando…</p></div>
       </div>
 
       <div id="tab-mihorario" class="oculto">
@@ -862,6 +887,17 @@
   <div class="toasts" id="toasts"></div>
 
   <!-- Ventana de detalle -->
+  <div id="hojaPz" class="hoja-pz oculto" onclick="if(event.target===this)cerrarPz()">
+    <div class="hoja">
+      <div class="hoja-asa"></div>
+      <button class="hoja-x" onclick="cerrarPz()" aria-label="Cerrar">✕</button>
+      <h3 id="pzTitulo">Personalizar</h3><p class="nota" id="pzSub" style="text-align:center;"></p>
+      <div class="pz-tabs"><button class="pz-tab sel" data-t="estilo" onclick="tabPz('estilo')">Estilo</button><button class="pz-tab" data-t="fuente" onclick="tabPz('fuente')">Fuente</button></div>
+      <div class="pz-cuerpo" id="pzCuerpo"></div>
+      <div class="pz-pie"><button class="boton-linea" onclick="vistaPreviaPz()">Vista previa</button><button class="boton" id="pzAplicar" onclick="aplicarPz()">Aplicar</button></div>
+    </div>
+  </div>
+  <button id="pzVolver" class="pz-volver oculto" onclick="volverPz()">👁 Vista previa · toca aquí para volver</button>
   <div class="fondo oculto" id="fondoDetalle" onclick="if(event.target===this)cerrarDetalle()">
     <div class="ventana" id="ventanaDetalle"></div>
   </div>
@@ -1041,7 +1077,7 @@
                                        error.message.includes('confirm') ? "Falta confirmar tu correo: revisa tu bandeja de entrada." : "Error: " + error.message, 'error');
     }
     // Cierra la sesión SOLO en este dispositivo/pestaña (no saca a la persona de sus otros equipos)
-    async function salir(){ FondoAnim.poner(null); try { localStorage.removeItem('twoweb-fondo-panel'); } catch(e) {} clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
+    async function salir(){ FondoAnim.poner(null); aplicarFuente(null); ['twoweb-fondo-panel', 'twoweb-fuente-panel', 'twoweb-fondo-img'].forEach(k => { try { localStorage.removeItem(k); } catch(e) {} }); MI_IMG = null; clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
     function mostrarCodigo(){ $('cajaCodigo').classList.toggle('oculto'); }
     async function enviarCodigo(){
       const email = $('loginCorreo').value.trim().toLowerCase();
@@ -1714,7 +1750,7 @@
       if (tr != null && r.origen !== 'llegada'){ const d = tr - rf; txt += d === 0 ? ' · a la hora' : ` · terminó ${Math.abs(d)} min ${d < 0 ? 'antes' : 'después'}`; }
       return `<div class="det-fila"><span>Atención real</span><span>${txt}</span></div>`;
     }
-    function cerrarDetalle(){ $('fondoDetalle').classList.add('oculto'); if (yo) { aplicarTemaActual(); aplicarFondoActual(); } }
+    function cerrarDetalle(sinFondo){ $('fondoDetalle').classList.add('oculto'); if (yo) { aplicarTemaActual(); if (sinFondo !== true) aplicarFondoActual(); } }
     function refrescarVista(){
       const t = document.querySelector('.tab.sel')?.dataset.tab;
       if (t === 'dia') dibujarDia(); if (t === 'lista') dibujarLista();
@@ -2077,7 +2113,7 @@
 
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
-      imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || ''; fondoMio = fondoGuardado() ? { ...fondoGuardado(), codigo: fondoGuardado().codigo || fondoGuardado().tipo } : null;
+      imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
       const permiso = 'Notification' in window ? Notification.permission : 'no';
       $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">Mi cuenta</h3>
         ${msg ? `<p class="ok" style="font-size:14px;margin-bottom:8px;">${esc(msg)}</p>` : ''}
@@ -2098,10 +2134,10 @@
         <label class="check-linea"><input type="checkbox" id="miColorPropio" ${yo.mi_color ? 'checked' : ''} onchange="probarMio()"> Usar mi propio color
           <input type="color" id="miColor" value="${colorOk(yo.mi_color) ? yo.mi_color : (colorOk(NEG.color) ? NEG.color : '#ff7a2f')}" oninput="$('miColorPropio').checked = true; probarMio()" style="width:54px;height:30px;padding:2px;margin-left:6px;"></label>
         <button class="boton-linea" style="margin-top:10px;" onclick="guardarMiTema()">Guardar mi apariencia</button>
-        <h3 style="margin-top:18px;">🌊 Fondo con movimiento</h3>
-        <p class="nota">Un fondo animado solo para <b>tu</b> panel, como el fondo de un chat. Toca uno para probarlo y ajusta sus colores, intensidad y forma.</p>
-        <div id="fondosMios">${selectorFondo()}</div>
-        <button class="boton-linea" style="margin-top:10px;" onclick="guardarMiFondo()">Guardar mi fondo</button>
+        <h3 style="margin-top:18px;">✨ Personalizar mi panel</h3>
+        <p class="nota">Estilo de fondo (con movimiento o tu propia foto) y fuente, como en Instagram. Solo cambia <b>tu</b> panel.</p>
+        <p class="nota" style="margin-top:4px;">Ahora: <b>${esc(resumenEstilo(fondoGuardado(), yo.mi_fuente))}</b></p>
+        <button class="boton-linea" style="margin-top:8px;" onclick="abrirPersonalizar('yo')">✨ Personalizar (estilo y fuente)</button>
         ${yo.rol === 'admin' && !yo.super ? `<h3 style="margin-top:18px;">💳 Mi plan</h3><div id="miPlan"><p class="nota">Cargando…</p></div>` : ''}
         ${yo.rol === 'admin' ? `<h3 style="margin-top:18px;">Mi negocio</h3>
           <p class="nota">El nombre, logo, portada, colores y cómo se ve tu agenda ahora están en la pestaña <b>🎨 Mi página</b>.</p>
@@ -2195,6 +2231,10 @@
           <p class="nota">Las imágenes se achican solas para que tu agenda cargue rápido.</p>
           <p class="nota" style="margin-top:6px;">🎁 Descuento 10% primera visita para clientes nuevos: <b>${NEG.promo_10 ? 'activo en tu agenda' : 'apagado'}</b>${yo.super ? '' : ' · para activarlo o apagarlo, escríbele a ' + esc(MARCA)}.</p>
           
+          <h3 style="margin-top:22px;">✨ Estilo de tu página</h3>
+          <p class="nota">Fondo con movimiento o una imagen tuya (con efecto encima) y la fuente de tu agenda${conTienda() ? ', tienda' : ''} y página web. Tus clientes lo verán así.</p>
+          <p class="nota" style="margin-top:4px;">Ahora: <b>${esc(resumenEstilo(NEG.estilo, NEG.fuente))}</b></p>
+          <button class="boton-linea" style="margin-top:8px;" onclick="abrirPersonalizar('negocio')">✨ Personalizar mi página (estilo y fuente)</button>
           <h3 style="margin-top:22px;">🗣 Cómo llamas a tu equipo</h3>
           <p class="nota">Se usa en tu agenda y tu página (ej: "Elige tu ${esc((NEG.pro || 'profesional').toLowerCase())}"). Por tu rubro${NEG.rubro ? ' (' + esc(NEG.rubro) + ')' : ''} sugerimos <b>${esc(NEG.rubro_pro || 'Profesional')}</b>.</p>
           <div class="form-grid" style="margin-top:8px;">
@@ -2218,265 +2258,167 @@
           <p class="estado" id="estadoMarca"></p>
         </div>`;
     }
-    // ================= FONDO CON MOVIMIENTO (cada persona elige el suyo) =================
-    // Catálogo administrado por el super admin (tabla "fondos", Fase 21). Cada fondo = un MOTOR + sus ajustes.
-    // Se dibuja en un <canvas> fijo detrás del panel: 30 cuadros/s, se pausa si la pestaña no se ve
-    // y respeta "reducir movimiento" del teléfono.
-    const FONDOS_BASE = [{"codigo": "agua", "nombre": "Agua", "icono": "🌊", "descripcion": "Olas y reflejos", "motor": "agua", "params": {"c1": "#22d3ee", "c2": "#2563eb", "tinte": "degradado", "tinte_alpha": 0.18}}, {"codigo": "aire", "nombre": "Aire", "icono": "☁️", "descripcion": "Nubes que flotan", "motor": "aire", "params": {"c1": "#a78bfa", "c2": "#f0abfc", "densidad": 1.2, "blur": 22}}, {"codigo": "burbujas", "nombre": "Burbujas", "icono": "🫧", "descripcion": "Suben despacio", "motor": "particulas", "params": {"c1": "#38bdf8", "c2": "#a5f3fc", "direccion": "arriba", "particula": "forma", "forma": "circulo", "estilo": "burbuja", "tmin": 5, "tmax": 24, "densidad": 1.3, "vel": 1}}, {"codigo": "aurora", "nombre": "Aurora", "icono": "🌌", "descripcion": "Luces del norte", "motor": "aurora", "params": {"c1": "#34d399", "c2": "#8b5cf6", "c3": "#22d3ee", "blur": 20, "tinte": "radial", "tinte_alpha": 0.12}}, {"codigo": "constelacion", "nombre": "Constelación", "icono": "✨", "descripcion": "Estrellas unidas", "motor": "constelacion", "params": {"c1": "#fde68a", "c2": "#93c5fd", "densidad": 1.3}}, {"codigo": "gotas", "nombre": "Gotas", "icono": "💧", "descripcion": "Ondas en el agua", "motor": "gotas", "params": {"c1": "#67e8f9", "c2": "#818cf8", "densidad": 2.2, "tinte": "radial", "tinte_alpha": 0.14}}, {"codigo": "formas", "nombre": "Formas", "icono": "🔷", "descripcion": "Figuras flotantes", "motor": "particulas", "params": {"c1": "#f472b6", "c2": "#facc15", "c3": "#60a5fa", "direccion": "arriba", "particula": "forma", "forma": "mezcla", "estilo": "relleno", "giro": true, "tmin": 8, "tmax": 34, "densidad": 1}}, {"codigo": "degradado", "nombre": "Degradado vivo", "icono": "🎨", "descripcion": "Colores que se mezclan", "motor": "gradiente", "params": {"c1": "#7c3aed", "c2": "#db2777", "c3": "#f59e0b", "blur": 40, "alpha": 0.55}}, {"codigo": "oceano", "nombre": "Océano profundo", "icono": "🐋", "descripcion": "Azules en movimiento", "motor": "gradiente", "params": {"c1": "#0ea5e9", "c2": "#1e3a8a", "c3": "#14b8a6", "blur": 40, "alpha": 0.5}}, {"codigo": "neon", "nombre": "Neón retro", "icono": "🌆", "descripcion": "Sol y grilla de los 80", "motor": "neon", "params": {"c1": "#f0abfc", "c2": "#22d3ee", "c3": "#f97316"}}, {"codigo": "seda", "nombre": "Seda", "icono": "🎐", "descripcion": "Líneas que ondulan", "motor": "ondas", "params": {"c1": "#f472b6", "c2": "#60a5fa", "densidad": 1.2}}, {"codigo": "galaxia", "nombre": "Galaxia", "icono": "🌀", "descripcion": "Espiral de estrellas", "motor": "espiral", "params": {"c1": "#c4b5fd", "c2": "#f9a8d4", "c3": "#93c5fd", "densidad": 1.3, "tinte": "radial", "tinte_alpha": 0.15}}, {"codigo": "nieve", "nombre": "Nieve", "icono": "❄️", "descripcion": "Copos que caen", "motor": "particulas", "params": {"c1": "#ffffff", "c2": "#bae6fd", "direccion": "abajo", "particula": "forma", "forma": "circulo", "estilo": "relleno", "tmin": 1.5, "tmax": 5, "densidad": 2.6, "vel": 0.7, "alpha": 0.85}}, {"codigo": "lluvia", "nombre": "Lluvia", "icono": "🌧️", "descripcion": "Gotas de lluvia", "motor": "particulas", "params": {"c1": "#93c5fd", "c2": "#c7d2fe", "direccion": "diagonal", "particula": "linea", "tmin": 10, "tmax": 24, "densidad": 2.6, "vel": 2.6, "alpha": 0.5, "tinte": "degradado", "tinte_alpha": 0.12}}, {"codigo": "confeti", "nombre": "Confeti", "icono": "🎉", "descripcion": "Fiesta de colores", "motor": "particulas", "params": {"c1": "#f43f5e", "c2": "#facc15", "c3": "#22c55e", "direccion": "abajo", "particula": "forma", "forma": "mezcla", "estilo": "relleno", "giro": true, "tmin": 4, "tmax": 9, "densidad": 2, "vel": 1.2, "alpha": 0.85}}, {"codigo": "petalos", "nombre": "Pétalos", "icono": "🌸", "descripcion": "Flores al viento", "motor": "particulas", "params": {"c1": "#f9a8d4", "c2": "#fbcfe8", "direccion": "diagonal", "particula": "emoji", "emojis": "🌸🌸🌺", "giro": true, "tmin": 9, "tmax": 16, "densidad": 0.9, "vel": 0.8, "alpha": 0.85}}, {"codigo": "barberia", "nombre": "Barbería", "icono": "💈", "descripcion": "Tijeras y navajas", "motor": "particulas", "params": {"c1": "#ef4444", "c2": "#3b82f6", "direccion": "flotar", "particula": "emoji", "emojis": "💈✂️🪒", "giro": true, "tmin": 10, "tmax": 18, "densidad": 0.6, "vel": 0.6, "alpha": 0.6, "tinte": "degradado", "tinte_alpha": 0.12}}, {"codigo": "chispas", "nombre": "Chispas", "icono": "🔥", "descripcion": "Brasas que suben", "motor": "particulas", "params": {"c1": "#f97316", "c2": "#facc15", "direccion": "arriba", "particula": "forma", "forma": "circulo", "estilo": "relleno", "brillo": true, "tmin": 1.5, "tmax": 4, "densidad": 1.8, "vel": 1.4, "alpha": 0.9, "tinte": "degradado", "tinte_alpha": 0.14}}, {"codigo": "corazones", "nombre": "Corazones", "icono": "💗", "descripcion": "Para enamorar", "motor": "particulas", "params": {"c1": "#f43f5e", "c2": "#f9a8d4", "direccion": "arriba", "particula": "forma", "forma": "corazon", "estilo": "relleno", "giro": true, "tmin": 7, "tmax": 20, "densidad": 1, "vel": 0.9, "alpha": 0.6}}];          // respaldo si la base aún no tiene la Fase 21
-    let FONDOS_CAT = FONDOS_BASE.slice();
-    const MOTORES = {
-      agua:        { n: 'Agua (olas)', colores: 2 },          aire:     { n: 'Aire (nubes)', colores: 2 },
-      aurora:      { n: 'Aurora', colores: 3 },              gotas:    { n: 'Gotas (ondas)', colores: 2 },
-      constelacion:{ n: 'Constelación', colores: 2, forma: true },
-      particulas:  { n: 'Partículas (burbujas, nieve, confeti, emojis…)', colores: 3, forma: true, particulas: true },
-      gradiente:   { n: 'Degradado vivo', colores: 3 },      neon:     { n: 'Neón retro (sol y grilla)', colores: 3 },
-      ondas:       { n: 'Seda (líneas que ondulan)', colores: 2 }, espiral: { n: 'Galaxia (espiral)', colores: 3 },
-      imagen:      { n: 'Imagen propia con movimiento', colores: 2, imagen: true }
-    };
-    const FORMAS_FONDO = { circulo: '●', cuadrado: '■', triangulo: '▲', rombo: '◆', estrella: '★', corazon: '♥', mezcla: '✦ Mezcla' };
-    const fondoDe = cod => FONDOS_CAT.find(f => f.codigo === cod) || FONDOS_BASE.find(f => f.codigo === cod);
+    // ================= ESTILO Y FUENTE (como "Personalizar" de Instagram) =================
+    // El motor de fondos y las fuentes están en fondos.js (compartido con agenda, tienda y página).
     async function cargarFondos(){
       try { const { data, error } = await db.rpc('fondos_lista'); if (!error && Array.isArray(data) && data.length) FONDOS_CAT = data; } catch(e) {}
     }
-    const FondoAnim = (() => {
-      let cv, cx, cfg = null, raf = 0, t0 = 0, ult = 0, W = 0, H = 0, dpr = 1, items = [], ondas = [], proxGota = 0, img = null, imgSrc = '';
-      const quieto = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const rgba = (hex, a) => { const n = parseInt((hex || '#888888').slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${Math.max(0, Math.min(1, a))})`; };
-      const R = (a, b) => a + Math.random() * (b - a);
-      const oscuro = () => (getComputedStyle(document.documentElement).getPropertyValue('--esquema') || 'dark').trim() !== 'light';
-      const glifos = t => { try { return [...new Intl.Segmenter('es', { granularity: 'grapheme' }).segment(t)].map(x => x.segment).filter(x => x.trim()); } catch(e) { return Array.from(t).filter(x => x.trim()); } };
-      function lienzo(){
-        if (cv) return;
-        cv = document.createElement('canvas'); cv.id = 'fondoAnim'; cv.setAttribute('aria-hidden', 'true');
-        document.body.prepend(cv); cx = cv.getContext('2d');
-        addEventListener('resize', medir);
-        document.addEventListener('visibilitychange', () => { cancelAnimationFrame(raf); if (!document.hidden && cfg && !quieto()) bucle(performance.now()); });
-      }
-      function medir(){
-        if (!cv) return;
-        dpr = Math.min(1.5, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
-        cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        if (cfg) sembrar();
-      }
-      const colorAl = i => [cfg.c1, cfg.c2, cfg.c3 || cfg.c1][i % 3];
-      function sembrar(){
-        const P = cfg, dens = (P.densidad || 1) * [0, .6, 1, 1.4, 1.9][P.intensidad], area = W * H / 1e5;
-        items = []; ondas = [];
-        const base = { particulas: 7, constelacion: 7, aire: .55, espiral: 40 }[P.motor] || 0;
-        const tope = { constelacion: 120, espiral: 700, particulas: 160 }[P.motor] || 60;
-        const cant = Math.round(Math.min(tope, Math.max(P.motor === 'aire' ? 5 : 8, base * area * dens)));
-        const em = P.particula === 'emoji' ? glifos(P.emojis || '✨') : [];
-        const formas = Object.keys(FORMAS_FONDO).filter(k => k !== 'mezcla');
-        for (let i = 0; i < cant; i++) items.push({ x: R(0, W), y: R(0, H), r: P.motor === 'aire' ? R(.22, .45) * Math.max(W, H) : R(P.tmin || 4, P.tmax || 18),
-          vx: R(-1, 1), vy: R(-1, 1), f: R(0, 6.3), g: R(.5, 1.2), rot: R(0, 6.3), vr: R(-.8, .8), col: Math.floor(R(0, 3)),
-          forma: P.forma === 'mezcla' ? formas[Math.floor(R(0, formas.length))] : (P.forma || 'circulo'),
-          glifo: em.length ? em[Math.floor(R(0, em.length))] : '', ang: R(0, 6.3), rad: Math.pow(Math.random(), .6), brazo: Math.floor(R(0, 3)) });
-      }
-      function figura(forma, x, y, r, rot){
-        cx.save(); cx.translate(x, y); cx.rotate(rot); cx.beginPath();
-        if (forma === 'cuadrado') cx.rect(-r * .8, -r * .8, r * 1.6, r * 1.6);
-        else if (forma === 'triangulo'){ cx.moveTo(0, -r); cx.lineTo(r * .9, r * .7); cx.lineTo(-r * .9, r * .7); cx.closePath(); }
-        else if (forma === 'rombo'){ cx.moveTo(0, -r); cx.lineTo(r * .75, 0); cx.lineTo(0, r); cx.lineTo(-r * .75, 0); cx.closePath(); }
-        else if (forma === 'estrella'){ for (let i = 0; i < 10; i++){ const a = i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .45 : r; cx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } cx.closePath(); }
-        else if (forma === 'corazon'){ const s = r / 16; cx.moveTo(0, 5 * s); cx.bezierCurveTo(-16 * s, -6 * s, -6 * s, -16 * s, 0, -7 * s); cx.bezierCurveTo(6 * s, -16 * s, 16 * s, -6 * s, 0, 5 * s); cx.closePath(); }
-        else cx.arc(0, 0, r, 0, Math.PI * 2);
-        cx.restore();
-      }
-      function halo(x, y, r, color, a){ const g = cx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, rgba(color, a)); g.addColorStop(1, rgba(color, 0)); cx.fillStyle = g; cx.fillRect(x - r, y - r, r * 2, r * 2); }
-      function tinte(k){
-        const P = cfg, a = (P.tinte_alpha ?? .15) * k; if (!P.tinte || P.tinte === 'ninguno' || a <= 0) return;
-        if (P.tinte === 'solido'){ cx.fillStyle = rgba(P.c1, a); cx.fillRect(0, 0, W, H); return; }
-        if (P.tinte === 'radial'){ halo(W / 2, H / 2, Math.max(W, H) * .75, P.c1, a); return; }
-        const g = cx.createLinearGradient(0, 0, W, H); g.addColorStop(0, rgba(P.c1, a)); g.addColorStop(1, rgba(P.c2, a)); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
-      }
-      function cuadro(t){
-        const P = cfg, A = P.alpha ?? 1, k = [0, .55, 1, 1.5, 2.1][P.intensidad] * (oscuro() ? 1 : .8), kk = k * A;
-        const v = [0, .45, 1, 1.9][P.velocidad] * (P.vel || 1), s = t / 1000 * v, dt = Math.min(.05, (t - ult) / 1000) * v || 0; ult = t;
-        const C = P.c1, C2 = P.c2, C3 = P.c3 || P.c1;
-        cx.clearRect(0, 0, W, H);
-        if (P.motor === 'imagen' && img && img.complete && img.naturalWidth){
-          const z = 1.12 + Math.sin(s * .05) * .06, iw = img.naturalWidth, ih = img.naturalHeight, e = Math.max(W / iw, H / ih) * z;
-          const dx = (W - iw * e) / 2 + Math.sin(s * .07) * W * .03, dy = (H - ih * e) / 2 + Math.cos(s * .06) * H * .03;
-          cx.globalAlpha = Math.min(1, .35 + .25 * k); cx.drawImage(img, dx, dy, iw * e, ih * e); cx.globalAlpha = 1;
-        }
-        tinte(k);
-        if (P.motor === 'agua'){
-          for (let c = 0; c < 5; c++){
-            const base = H * (.5 + c * .1), amp = 18 + c * 8, fr = .006 - c * .0008, vel = .6 + c * .25;
-            cx.beginPath(); cx.moveTo(0, H);
-            for (let x = 0; x <= W + 10; x += 10) cx.lineTo(x, base + Math.sin(x * fr + s * vel + c) * amp + Math.sin(x * fr * 2.3 - s * vel * .7) * amp * .35);
-            cx.lineTo(W, H); cx.closePath(); cx.fillStyle = rgba(c % 2 ? C2 : C, (.09 + c * .03) * kk); cx.fill();
-          }
-          for (let i = 0; i < 6; i++) halo(W * (i + .5) / 6 + Math.sin(s * .4 + i) * 70, H * .22 + Math.cos(s * .3 + i * 2) * 50, 140 + 40 * Math.sin(s + i), C, .09 * kk);
-        } else if (P.motor === 'aire'){
-          items.forEach((b, i) => halo(b.x + Math.sin(s * .12 * b.g + b.f) * W * .2, b.y + Math.cos(s * .1 * b.g + b.f * 1.3) * H * .14, b.r, colorAl(i), .24 * kk));
-        } else if (P.motor === 'gradiente'){
-          const M = Math.max(W, H);
-          [[.2, .25, C, 0], [.8, .3, C2, 1.7], [.5, .85, C3, 3.1], [.85, .85, C, 4.4]].forEach(([px, py, col, f], i) =>
-            halo(W * px + Math.sin(s * .16 + f) * W * .25, H * py + Math.cos(s * .13 + f * 1.4) * H * .25, M * (.55 + .1 * Math.sin(s * .2 + i)), col, .55 * kk));
-        } else if (P.motor === 'aurora'){
-          for (let b = 0; b < 4; b++){
-            const col1 = [C, C2, C3, C][b], col2 = [C2, C3, C, C2][b];
-            const g = cx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, rgba(col1, 0)); g.addColorStop(.3, rgba(col1, .26 * kk)); g.addColorStop(.7, rgba(col2, .22 * kk)); g.addColorStop(1, rgba(col2, 0));
-            cx.beginPath();
-            const yb = H * (.12 + b * .12), gros = 90 + b * 30;
-            for (let x = 0; x <= W + 12; x += 12) cx.lineTo(x, yb + Math.sin(x * .004 + s * (.35 + b * .12) + b) * 60 + Math.sin(x * .011 - s * .3) * 22);
-            for (let x = W + 12; x >= 0; x -= 12) cx.lineTo(x, yb + gros + Math.sin(x * .005 + s * (.3 + b * .1) + b * 2) * 70);
-            cx.closePath(); cx.fillStyle = g; cx.fill();
-          }
-        } else if (P.motor === 'neon'){
-          const hz = H * .58, sol = Math.min(W, H) * .22;
-          halo(W / 2, hz - sol * .3, sol * 2.2, C, .25 * kk);
-          const gs = cx.createLinearGradient(0, hz - sol * 1.3, 0, hz); gs.addColorStop(0, rgba(C3, .75 * kk)); gs.addColorStop(1, rgba(C, .75 * kk));
-          cx.save(); cx.beginPath(); cx.arc(W / 2, hz - sol * .25, sol, Math.PI, 0); cx.closePath(); cx.clip(); cx.fillStyle = gs; cx.fillRect(0, 0, W, H);
-          for (let i = 0; i < 7; i++){ const yy = hz - sol * .25 - i * sol * .14; cx.clearRect(0, yy - i * .9, W, 2 + i * .7); }
-          cx.restore();
-          cx.strokeStyle = rgba(C2, .55 * kk); cx.lineWidth = 1.4;
-          for (let i = -14; i <= 14; i++){ cx.beginPath(); cx.moveTo(W / 2 + i * 8, hz); cx.lineTo(W / 2 + i * W * .16, H); cx.stroke(); }
-          const fase = (s * .35) % 1;
-          for (let i = 0; i < 14; i++){ const z = (i + fase) / 14, yy = hz + Math.pow(z, 2.2) * (H - hz); cx.globalAlpha = Math.min(1, z * 1.6); cx.beginPath(); cx.moveTo(0, yy); cx.lineTo(W, yy); cx.stroke(); }
-          cx.globalAlpha = 1;
-          const gh = cx.createLinearGradient(0, hz - 2, 0, hz + 30); gh.addColorStop(0, rgba(C2, .6 * kk)); gh.addColorStop(1, rgba(C2, 0)); cx.fillStyle = gh; cx.fillRect(0, hz - 2, W, 32);
-        } else if (P.motor === 'ondas'){
-          const n = Math.round(10 + 8 * (P.densidad || 1));
-          for (let i = 0; i < n; i++){
-            const g = cx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, rgba(C, .4 * kk)); g.addColorStop(1, rgba(C2, .4 * kk));
-            cx.beginPath();
-            for (let x = 0; x <= W + 8; x += 8){
-              const y = H * .5 + Math.sin(x * .003 + s * .5 + i * .18) * H * .18 + Math.sin(x * .007 - s * .3 + i * .1) * H * .06 + (i - n / 2) * 6;
-              x ? cx.lineTo(x, y) : cx.moveTo(x, y);
-            }
-            cx.strokeStyle = g; cx.lineWidth = 1.3; cx.stroke();
-          }
-        } else if (P.motor === 'espiral'){
-          const cxm = W / 2, cym = H / 2, M = Math.min(W, H) * .62;
-          halo(cxm, cym, M * .55, C, .35 * kk); halo(cxm, cym, M * .18, '#ffffff', .25 * kk);
-          items.forEach((p, i) => {
-            const r = p.rad * M, a = p.brazo * 2.094 + p.rad * 5.5 + p.f * .25 - s * .25 / (0.35 + p.rad);
-            const x = cxm + Math.cos(a) * r, y = cym + Math.sin(a) * r * .62;
-            cx.fillStyle = rgba(colorAl(p.col), (.35 + .55 * (1 - p.rad)) * kk); cx.fillRect(x, y, 1.2 + p.g * 1.4, 1.2 + p.g * 1.4);
-          });
-        } else if (P.motor === 'constelacion'){
-          const lim = Math.min(170, Math.max(W, H) * .15);
-          items.forEach(p => { p.x += p.vx * 9 * dt; p.y += p.vy * 9 * dt; if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1; });
-          for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++){
-            const a = items[i], b = items[j], d = Math.hypot(a.x - b.x, a.y - b.y);
-            if (d < lim){ cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.strokeStyle = rgba(C2, (1 - d / lim) * .32 * kk); cx.lineWidth = 1; cx.stroke(); }
-          }
-          items.forEach(p => { const tw = .55 + .45 * Math.sin(s * 2 + p.f); figura(p.forma, p.x, p.y, 1.8 + p.g * 2.4, p.rot); cx.fillStyle = rgba(C, (.45 + .55 * tw) * kk); cx.fill(); });
-        } else if (P.motor === 'gotas'){
-          if (t > proxGota){ ondas.push({ x: R(0, W), y: R(0, H), r: 0, c: Math.floor(R(0, 3)) }); proxGota = t + R(180, 560) / v / ((P.densidad || 1) * [0, .6, 1, 1.4, 1.9][P.intensidad]); }
-          ondas = ondas.filter(o => o.r < 260);
-          ondas.forEach(o => {
-            o.r += 50 * dt;
-            for (let a = 0; a < 3; a++){ const rr = o.r - a * 20; if (rr <= 0) continue;
-              cx.beginPath(); cx.ellipse(o.x, o.y, rr, rr * .55, 0, 0, 7); cx.strokeStyle = rgba(colorAl(o.c), (1 - o.r / 260) * .6 * kk); cx.lineWidth = 2; cx.stroke(); }
-          });
-        } else if (P.motor === 'particulas'){
-          const dir = P.direccion || 'arriba', est = P.estilo || 'relleno';
-          items.forEach(p => {
-            const sp = (14 + p.r * 1.4) * p.g * dt;
-            p.f += dt * 1.5; if (P.giro) p.rot += p.vr * dt * 1.5;
-            if (dir === 'arriba') p.y -= sp; else if (dir === 'abajo') p.y += sp; else if (dir === 'izquierda') p.x -= sp; else if (dir === 'derecha') p.x += sp;
-            else if (dir === 'diagonal'){ p.y += sp; p.x += sp * .45; }
-            else { p.x += p.vx * sp * .6; p.y += p.vy * sp * .6; }
-            const m = p.r * 2 + 30;
-            if (p.y < -m) { p.y = H + m; p.x = R(0, W); } if (p.y > H + m) { p.y = -m; p.x = R(0, W); }
-            if (p.x < -m) { p.x = W + m; } if (p.x > W + m) { p.x = -m; }
-            const x = p.x + (dir === 'arriba' || dir === 'abajo' ? Math.sin(p.f) * 14 : 0), col = colorAl(p.col);
-            if (P.brillo) halo(x, p.y, p.r * 5, col, .35 * kk);
-            if (P.particula === 'emoji'){
-              cx.save(); cx.translate(x, p.y); cx.rotate(P.giro ? p.rot : 0); cx.globalAlpha = Math.min(1, .55 * kk + .15);
-              cx.font = `${Math.round(p.r * 2)}px serif`; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(p.glifo, 0, 0); cx.restore();
-            } else if (P.particula === 'linea'){
-              const dx = dir === 'diagonal' ? p.r * .45 : 0, dy = p.r;
-              cx.beginPath(); cx.moveTo(x, p.y); cx.lineTo(x - dx, p.y - dy); cx.strokeStyle = rgba(col, .55 * kk); cx.lineWidth = 1.3; cx.stroke();
-            } else {
-              figura(p.forma, x, p.y, p.r, P.giro ? p.rot : Math.sin(p.f) * .25);
-              if (est === 'contorno' || est === 'burbuja'){ cx.strokeStyle = rgba(col, .6 * kk); cx.lineWidth = 1.5; cx.stroke(); }
-              cx.fillStyle = rgba(col, (est === 'relleno' ? .55 : .1) * kk); cx.fill();
-              if (est === 'burbuja'){ cx.beginPath(); cx.arc(x - p.r * .35, p.y - p.r * .35, p.r * .2, 0, 7); cx.fillStyle = rgba('#ffffff', .45 * kk); cx.fill(); }
-            }
-          });
-        }
-      }
-      const cada = 1000 / 30;
-      function bucle(t){ if (!cfg) return; if (t - t0 >= cada){ t0 = t; cuadro(t); } raf = requestAnimationFrame(bucle); }
-      return {
-        // sel = elección de la persona { codigo, color, color2, color3, intensidad, velocidad, forma, vidrio }; item = fondo del catálogo (opcional, para probar)
-        poner(sel, item){
-          cancelAnimationFrame(raf);
-          const f = item || (sel && fondoDe(sel.codigo || sel.tipo));
-          vidrio(!!f && (sel?.vidrio ?? true));
-          if (!sel || !f || !MOTORES[f.motor]){ cfg = null; if (cv){ cx.clearRect(0, 0, W, H); cv.style.display = 'none'; } document.documentElement.classList.remove('con-fondo'); return; }
-          lienzo(); cv.style.display = 'block'; document.documentElement.classList.add('con-fondo');
-          const p = f.params || {};
-          cfg = { ...p, motor: f.motor, c1: sel.color || p.c1 || '#22d3ee', c2: sel.color2 || p.c2 || '#6366f1', c3: sel.color3 || p.c3 || p.c1,
-                  forma: sel.forma || p.forma || 'circulo', intensidad: sel.intensidad || 2, velocidad: sel.velocidad || 2 };
-          cv.style.filter = p.blur ? `blur(${p.blur}px)` : 'none';
-          if (f.motor === 'imagen' && f.imagen && f.imagen !== imgSrc){ imgSrc = f.imagen; img = new Image(); img.onload = () => { if (cfg) cuadro(performance.now()); }; img.src = f.imagen; }
-          medir(); ult = performance.now();
-          if (quieto()){ cuadro(ult); return; }     // "reducir movimiento": una imagen fija
-          bucle(ult);
-        }
-      };
-    })();
-    // Tarjetas de vidrio: con fondo, las tarjetas se vuelven semitransparentes para que el fondo luzca más
-    function vidrio(on){ document.documentElement.classList.toggle('vidrio', !!on); }
-    const fondoGuardado = () => (yo && yo.mi_fondo) || (() => { try { return JSON.parse(localStorage.getItem('twoweb-fondo-panel') || 'null'); } catch(e) { return null; } })();
-    function aplicarFondoActual(){
-      const f = fondoGuardado(); FondoAnim.poner(f);
-      try { localStorage.setItem('twoweb-fondo-panel', JSON.stringify(f || null)); } catch(e) {}
+    const leerLS = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') ?? d; } catch(e) { return d; } };
+    const guardarLS = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
+    const fondoGuardado = () => (yo ? yo.mi_fondo : leerLS('twoweb-fondo-panel', null)) || null;
+    let MI_IMG = leerLS('twoweb-fondo-img', null);          // foto propia del fondo (se guarda en el teléfono para no descargarla cada vez)
+    async function imagenPropia(){
+      if (MI_IMG) return MI_IMG;
+      try { const { data } = await db.rpc('mi_imagen_fondo'); MI_IMG = data || null; guardarLS('twoweb-fondo-img', MI_IMG); } catch(e) {}
+      return MI_IMG;
     }
-    try { const f = JSON.parse(localStorage.getItem('twoweb-fondo-panel') || 'null'); if (f) FondoAnim.poner(f); } catch(e) {}
+    async function aplicarFondoActual(){
+      const sel = fondoGuardado();
+      aplicarFuente(yo ? yo.mi_fuente : leerLS('twoweb-fuente-panel', null));
+      FondoAnim.poner(sel, sel && sel.codigo === 'propio' ? resolverFondo(sel, await imagenPropia()) : undefined);
+      guardarLS('twoweb-fondo-panel', sel); if (yo) guardarLS('twoweb-fuente-panel', yo.mi_fuente || null);
+    }
+    { const s = leerLS('twoweb-fondo-panel', null); aplicarFuente(leerLS('twoweb-fuente-panel', null));
+      if (s) FondoAnim.poner(s, s.codigo === 'propio' ? resolverFondo(s, MI_IMG) : undefined); }
 
-    // ----- Selector del fondo en "Mi cuenta" -----
-    let fondoMio = null;
-    const miniFondo = f => `<span class="fondo-mini" style="--c1:${f.params?.c1 || '#555'};--c2:${f.params?.c2 || '#333'};${f.imagen ? `background-image:url('${f.imagen}');background-size:cover;` : ''}">${esc(f.icono || '✨')}</span>`;
-    function selectorFondo(){
-      const sel = fondoMio, f = sel && fondoDe(sel.codigo), mot = f ? MOTORES[f.motor] : null;
-      const chip = (k, v, t) => `<button class="chip ${String(sel?.[k]) === String(v) ? 'sel' : ''}" onclick="cambiarFondo('${k}', ${typeof v === 'number' ? v : `'${v}'`})">${t}</button>`;
-      return `<div class="fondos">
-          <button class="fondo-op ${!sel ? 'sel' : ''}" onclick="cambiarFondo('codigo', '')"><span class="fondo-mini ninguno">⬛</span><b>Sin fondo</b><small>Solo el tema</small></button>
-          ${FONDOS_CAT.filter(x => x.activo !== false).map(x => `<button class="fondo-op ${sel?.codigo === x.codigo ? 'sel' : ''}" onclick="cambiarFondo('codigo', '${x.codigo}')">
-            ${miniFondo(x)}<b>${esc(x.nombre)}</b><small>${esc(x.descripcion || '')}</small></button>`).join('')}</div>
-        ${f ? `<div class="fondo-ajustes">
-          <div class="colores-fondo">${[['color', 'c1', 'Color 1'], ['color2', 'c2', 'Color 2'], ['color3', 'c3', 'Color 3']].slice(0, mot.colores).map(([k, pk, t]) =>
-            `<label class="check-linea" style="margin:0;">${t} <input type="color" value="${sel[k] || f.params?.[pk] || f.params?.c1 || '#888888'}" oninput="cambiarFondo('${k}', this.value, true)"></label>`).join('')}
-            <button class="link" style="margin:0;" onclick="cambiarFondo('reset', 1)">Colores originales</button></div>
-          <div><small>Intensidad</small> ${chip('intensidad', 1, 'Suave')}${chip('intensidad', 2, 'Media')}${chip('intensidad', 3, 'Fuerte')}${chip('intensidad', 4, '🔥 Máxima')}</div>
-          <div><small>Velocidad</small> ${chip('velocidad', 1, 'Lenta')}${chip('velocidad', 2, 'Normal')}${chip('velocidad', 3, 'Rápida')}</div>
-          ${mot.forma && (f.params?.particula || 'forma') === 'forma' ? `<div><small>Forma</small> ${Object.entries(FORMAS_FONDO).map(([k, t]) => chip('forma', k, t)).join('')}</div>` : ''}
-          <label class="check-linea" style="margin:0;"><input type="checkbox" ${sel.vidrio !== false ? 'checked' : ''} onchange="cambiarFondo('vidrio', this.checked, true)"> Tarjetas de vidrio (el fondo se ve a través de las tarjetas)</label>
-        </div>` : ''}`;
+    // ----- Hoja "Personalizar" (para mi panel o para la página pública del negocio) -----
+    let PZ = null;     // { para:'yo'|'negocio', tab, sel, fuente, imagen, imagenNueva }
+    async function abrirPersonalizar(para){
+      await cargarFondos();
+      const neg = para === 'negocio';
+      PZ = { para, tab: 'estilo', sel: neg ? (NEG.estilo ? { ...NEG.estilo } : null) : (fondoGuardado() ? { ...fondoGuardado() } : null),
+             fuente: (neg ? NEG.fuente : yo.mi_fuente) || 'defecto', imagen: null, imagenNueva: undefined };
+      if (PZ.sel && PZ.sel.tipo && !PZ.sel.codigo) PZ.sel.codigo = PZ.sel.tipo;
+      if (!neg) PZ.imagen = await imagenPropia();
+      else if (NEG.tiene_imagen_fondo) {
+        try { const { data } = await db.rpc('agenda_config', { p_negocio: NEG.slug }); PZ.imagen = data?.negocio?.estilo?.fondo?.imagen || null; } catch(e) {}
+      }
+      cerrarDetalle(true);
+      $('hojaPz').classList.remove('oculto'); document.body.classList.add('hoja-abierta');
+      dibujarPz(); previewPz();
     }
-    function cambiarFondo(k, v, sinRedibujar){
-      if (k === 'codigo') fondoMio = v ? { codigo: v, intensidad: fondoMio?.intensidad || 3, velocidad: fondoMio?.velocidad || 2, vidrio: fondoMio?.vidrio ?? true } : null;
-      else if (k === 'reset' && fondoMio) { delete fondoMio.color; delete fondoMio.color2; delete fondoMio.color3; delete fondoMio.forma; }
-      else if (fondoMio) fondoMio = { ...fondoMio, [k]: v };
-      FondoAnim.poner(fondoMio);
-      if (!sinRedibujar) $('fondosMios').innerHTML = selectorFondo();
+    function cerrarPz(){
+      $('hojaPz').classList.add('oculto'); $('pzVolver').classList.add('oculto'); document.body.classList.remove('hoja-abierta');
+      PZ = null; aplicarFondoActual();
     }
-    async function guardarMiFondo(){
-      const { error } = await db.rpc('guardar_mi_fondo', { p: fondoMio || { codigo: 'ninguno' } });
-      if (error && !/guardar_mi_fondo/.test(error.message || '')) return estado('estadoCuenta', 'Error: ' + error.message, 'error');
-      yo.mi_fondo = fondoMio; aplicarFondoActual();
-      estado('estadoCuenta', error ? '✓ Fondo guardado en este dispositivo (instala la Fase 21 para que se vea en todos).' : '✓ Listo, tu fondo quedó guardado (en todos tus dispositivos).', 'ok');
+    function previewPz(){
+      if (!PZ) return;
+      aplicarFuente(PZ.fuente);
+      const img = PZ.imagenNueva !== undefined ? PZ.imagenNueva : PZ.imagen;
+      FondoAnim.poner(PZ.sel, PZ.sel && PZ.sel.codigo === 'propio' ? resolverFondo(PZ.sel, img) : undefined);
     }
+    function tabPz(t){ PZ.tab = t; dibujarPz(); if (t === 'fuente') Object.keys(FUENTES_ESTILO).forEach(k => { if (k !== 'defecto') cargarFuenteMuestra(k); }); }
+    function cargarFuenteMuestra(k){
+      const f = FUENTES_ESTILO[k]; if (!f.g || document.getElementById('fuenteEst-' + k)) return;
+      const l = document.createElement('link'); l.id = 'fuenteEst-' + k; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + f.g + '&display=swap'; document.head.appendChild(l);
+    }
+    const tarjetaMini = f => f.imagen ? `background-image:url('${f.imagen}');background-size:cover;background-position:center;`
+      : `background:linear-gradient(160deg, ${f.params?.c1 || '#444'}, ${f.params?.c2 || '#222'} 70%, ${f.params?.c3 || f.params?.c1 || '#444'});`;
+    function dibujarPz(){
+      const s = PZ.sel, img = PZ.imagenNueva !== undefined ? PZ.imagenNueva : PZ.imagen, neg = PZ.para === 'negocio';
+      $('pzTitulo').textContent = neg ? 'Personalizar mi página' : 'Personalizar mi panel';
+      $('pzSub').textContent = neg ? 'Lo verán tus clientes en tu agenda, tienda y página. Mientras eliges, se ve aquí detrás.' : 'Solo cambia tu panel. Mientras eliges, se ve aquí detrás.';
+      document.querySelectorAll('#hojaPz .pz-tab').forEach(b => b.classList.toggle('sel', b.dataset.t === PZ.tab));
+      if (PZ.tab === 'fuente'){
+        $('pzCuerpo').innerHTML = `<div class="pz-fuentes">${Object.entries(FUENTES_ESTILO).map(([k, f]) => `<button class="pz-fuente ${PZ.fuente === k ? 'sel' : ''}" onclick="PZ.fuente='${k}'; dibujarPz(); previewPz()"
+            style="${f.tit ? `font-family:${f.tit},${f.txt},sans-serif;` : ''}">${f.n}</button>`).join('')}</div>`;
+        return;
+      }
+      const cat = FONDOS_CAT.filter(x => x.activo !== false);
+      $('pzCuerpo').innerHTML = `<div class="pz-estilos">
+          <button class="pz-est ${s?.codigo === 'propio' ? 'sel' : ''}" onclick="elegirPz('propio')">
+            <span class="pz-img" style="${img ? `background-image:url('${img}');background-size:cover;background-position:center;` : 'background:var(--panel2);'}">${img ? '' : '📷'}</span>
+            <b>${neg ? 'Tu imagen' : 'Tu foto'}</b></button>
+          <button class="pz-est ${!s ? 'sel' : ''}" onclick="elegirPz('')"><span class="pz-img" style="background:var(--grafito);">⬛</span><b>Sin fondo</b></button>
+          ${cat.map(f => `<button class="pz-est ${s?.codigo === f.codigo ? 'sel' : ''}" onclick="elegirPz('${f.codigo}')">
+            <span class="pz-img" style="${tarjetaMini(f)}">${f.imagen ? '' : esc(f.icono || '✨')}</span><b>${esc(f.nombre)}</b></button>`).join('')}
+        </div>
+        <input type="file" id="pzArchivo" accept="image/*" class="oculto" onchange="subirFotoPz(this)">
+        ${s ? ajustesPz() : ''}`;
+    }
+    function ajustesPz(){
+      const s = PZ.sel, propio = s.codigo === 'propio', f = propio ? null : fondoDe(s.codigo), mot = f ? MOTORES[f.motor] : null;
+      const chip = (k, v, t) => `<button class="chip ${String(s[k] ?? '') === String(v) ? 'sel' : ''}" onclick="ajustePz('${k}', ${typeof v === 'number' ? v : `'${v}'`})">${t}</button>`;
+      const efectos = FONDOS_CAT.filter(x => x.activo !== false && x.motor !== 'imagen');
+      return `<div class="fondo-ajustes">
+        ${propio ? `<div><button class="boton-linea" onclick="$('pzArchivo').click()">📷 ${(PZ.imagenNueva ?? PZ.imagen) ? 'Cambiar foto' : 'Elegir foto de la galería'}</button>
+            <span class="nota"> Se mueve suavemente, como un video.</span></div>
+          <div><small>Efecto encima</small> ${chip('efecto', '', 'Ninguno')}${efectos.map(x => chip('efecto', x.codigo, (x.icono || '') + ' ' + esc(x.nombre))).join('')}</div>` : ''}
+        ${mot ? `<div class="colores-fondo">${[['color', 'c1'], ['color2', 'c2'], ['color3', 'c3']].slice(0, mot.colores).map(([k, pk], i) =>
+            `<label class="check-linea" style="margin:0;">Color ${i + 1} <input type="color" value="${s[k] || f.params?.[pk] || f.params?.c1 || '#888888'}" oninput="ajustePz('${k}', this.value, true)"></label>`).join('')}
+            <button class="link" style="margin:0;" onclick="ajustePz('reset', 1)">Colores originales</button></div>` : ''}
+        <div><small>Intensidad</small> ${chip('intensidad', 1, 'Suave')}${chip('intensidad', 2, 'Media')}${chip('intensidad', 3, 'Fuerte')}${chip('intensidad', 4, '🔥 Máxima')}</div>
+        <div><small>Velocidad</small> ${chip('velocidad', 1, 'Lenta')}${chip('velocidad', 2, 'Normal')}${chip('velocidad', 3, 'Rápida')}</div>
+        ${mot && mot.forma && (f.params?.particula || 'forma') === 'forma' ? `<div><small>Forma</small> ${Object.entries(FORMAS_FONDO).map(([k, t]) => chip('forma', k, t)).join('')}</div>` : ''}
+        <label class="check-linea" style="margin:0;"><input type="checkbox" ${s.vidrio !== false ? 'checked' : ''} onchange="ajustePz('vidrio', this.checked, true)"> Tarjetas de vidrio (el fondo se ve a través)</label>
+      </div>`;
+    }
+    function elegirPz(cod){
+      if (cod === 'propio' && !(PZ.imagenNueva ?? PZ.imagen)){ $('pzArchivo').click(); return; }
+      PZ.sel = cod ? { codigo: cod, intensidad: PZ.sel?.intensidad || 3, velocidad: PZ.sel?.velocidad || 2, vidrio: PZ.sel?.vidrio ?? true, ...(cod === 'propio' ? { efecto: PZ.sel?.efecto || '' } : {}) } : null;
+      dibujarPz(); previewPz();
+    }
+    function ajustePz(k, v, sinRedibujar){
+      if (!PZ.sel) return;
+      if (k === 'reset'){ ['color', 'color2', 'color3', 'forma'].forEach(x => delete PZ.sel[x]); }
+      else PZ.sel[k] = v;
+      previewPz(); if (!sinRedibujar) dibujarPz();
+    }
+    async function subirFotoPz(input){
+      try {
+        const d = await comprimirImagen(input.files[0], 1600, 650000);
+        PZ.imagenNueva = d; PZ.sel = { codigo: 'propio', intensidad: PZ.sel?.intensidad || 3, velocidad: PZ.sel?.velocidad || 2, vidrio: PZ.sel?.vidrio ?? true, efecto: PZ.sel?.efecto || '' };
+        dibujarPz(); previewPz();
+      } catch (e) { alert(e.message); }
+      input.value = '';
+    }
+    function vistaPreviaPz(){ $('hojaPz').classList.add('oculto'); $('pzVolver').classList.remove('oculto'); }
+    function volverPz(){ $('pzVolver').classList.add('oculto'); $('hojaPz').classList.remove('oculto'); }
+    async function aplicarPz(){
+      const b = $('pzAplicar'); b.disabled = true; b.textContent = 'Guardando…';
+      const fondo = PZ.sel ? { ...PZ.sel } : { codigo: 'ninguno' };
+      let r;
+      if (PZ.para === 'negocio'){
+        r = await db.rpc('guardar_mi_negocio', { p: { estilo: fondo, fuente: PZ.fuente, ...(PZ.imagenNueva !== undefined ? { imagen_fondo: PZ.imagenNueva || '' } : {}) } });
+        if (!r.error){ const { data } = await db.rpc('mi_sesion'); if (data?.negocio) NEG = data.negocio; }
+      } else {
+        r = await db.rpc('guardar_mi_estilo', { p: { fondo, fuente: PZ.fuente, ...(PZ.imagenNueva !== undefined ? { imagen: PZ.imagenNueva || '' } : {}) } });
+        if (!r.error){
+          yo.mi_fondo = PZ.sel; yo.mi_fuente = PZ.fuente === 'defecto' ? null : PZ.fuente;
+          if (PZ.imagenNueva !== undefined){ MI_IMG = PZ.imagenNueva || null; guardarLS('twoweb-fondo-img', MI_IMG); }
+        }
+      }
+      b.disabled = false; b.textContent = 'Aplicar';
+      if (r.error) return alert(/guardar_mi_estilo|estilo|fuente/.test(r.error.message || '') && /function|schema/i.test(r.error.message || '') ? 'Falta instalar la Fase 22 en la base de datos.' : r.error.message);
+      const neg = PZ.para === 'negocio'; cerrarPz();
+      mostrarToast({ id: 0, tipo: 'completada', titulo: neg ? 'Tu página quedó con su nuevo estilo' : 'Listo, tu panel quedó personalizado',
+        detalle: neg ? 'Ábrela con "Ver cómo quedó" en Mi página.' : 'Se ve igual en todos tus dispositivos.' });
+      if (neg && document.querySelector('.tab.sel')?.dataset.tab === 'marca') dibujarMarca();
+    }
+    const resumenEstilo = (sel, fuente) => `${sel ? (sel.codigo === 'propio' ? '📷 Imagen propia' + (sel.efecto ? ' + ' + (fondoDe(sel.efecto)?.nombre || '') : '') : (fondoDe(sel.codigo)?.icono || '') + ' ' + (fondoDe(sel.codigo)?.nombre || sel.codigo)) : 'Sin fondo'} · Fuente ${FUENTES_ESTILO[fuente || 'defecto']?.n || 'Default'}`;
 
-    // ================= SUPER ADMIN: CATÁLOGO DE FONDOS =================
-    let FONDO_ED = null;            // fondo que se está editando
+    // ================= SUPER ADMIN: CATÁLOGO DE ESTILOS =================
+    let FONDO_ED = null, PROBANDO = false;
     async function cargarFondosSuper(){
       await cargarFondos();
-      $('listaFondos').innerHTML = FONDOS_CAT.map(f => `<div class="fondo-card ${f.activo === false ? 'off' : ''}">
-          ${miniFondo(f)}
-          <div class="fc-txt"><b>${esc(f.nombre)}</b><small>${esc(f.descripcion || (MOTORES[f.motor]?.n || f.motor).split(' (')[0])}${f.usan != null ? ` · ${f.usan} persona${f.usan === 1 ? '' : 's'}` : ''}${f.activo === false ? ' · apagado' : ''}</small></div>
-          <div class="fc-acc"><button class="boton-linea" onclick="probarFondoCat('${f.codigo}')">👁 Probar</button><button class="boton-linea" onclick="editarFondo('${f.codigo}')">✏️ Editar</button></div>
+      $('listaFondos').innerHTML = FONDOS_CAT.map(f => `<div class="pz-est super ${f.activo === false ? 'off' : ''}">
+          <span class="pz-img" style="${tarjetaMini(f)}" onclick="probarFondoCat('${f.codigo}')">${f.imagen ? '' : esc(f.icono || '✨')}</span>
+          <b>${esc(f.nombre)}</b><small>${esc(f.descripcion || (MOTORES[f.motor]?.n || f.motor).split(' (')[0])}${f.usan != null ? ` · ${f.usan} 👤` : ''}${f.activo === false ? ' · apagado' : ''}</small>
+          <div class="fc-acc"><button class="boton-linea" onclick="probarFondoCat('${f.codigo}')">👁</button><button class="boton-linea" onclick="editarFondo('${f.codigo}')">✏️ Editar</button></div>
         </div>`).join('');
     }
-    let PROBANDO = false;
-    function probarFondoCat(cod){ PROBANDO = true; const f = fondoDe(cod); FondoAnim.poner({ codigo: cod, intensidad: 3, velocidad: 2 }, f);
-      mostrarToast({ id: 0, tipo: 'nueva', titulo: 'Probando: ' + f.nombre, detalle: 'Así se ve con intensidad fuerte. Al cerrar o cambiar de pestaña vuelve tu fondo.' }); }
+    function probarFondoCat(cod){ PROBANDO = true; FondoAnim.poner({ codigo: cod, intensidad: 3, velocidad: 2 });
+      mostrarToast({ id: 0, tipo: 'nueva', titulo: 'Probando: ' + fondoDe(cod).nombre, detalle: 'Al cambiar de pestaña vuelve tu fondo.' }); }
+    // Subir una imagen y convertirla en estilo en un paso
+    async function subirEstiloImagen(input){
+      try {
+        const d = await comprimirImagen(input.files[0], 1600, 650000), nombre = (input.files[0].name || 'Imagen').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').slice(0, 30);
+        FONDO_ED = { codigo: '', nombre: nombre.length >= 2 ? nombre : 'Imagen nueva', icono: '🖼', descripcion: 'Imagen con movimiento', motor: 'imagen', imagen: d, activo: true, orden: 5,
+                     params: { c1: '#000000', c2: '#000000', tinte: 'degradado', tinte_alpha: 0.1 } };
+        dibujarEditorFondo(); $('fondoDetalle').classList.remove('oculto');
+      } catch (e) { alert(e.message); }
+      input.value = '';
+    }
     function editarFondo(cod){
       const f = cod ? JSON.parse(JSON.stringify(fondoDe(cod))) : { codigo: '', nombre: '', icono: '✨', descripcion: '', motor: 'particulas', activo: true, orden: 500,
         params: { c1: '#f472b6', c2: '#60a5fa', c3: '#facc15', direccion: 'arriba', particula: 'forma', forma: 'mezcla', estilo: 'relleno', giro: true, tmin: 6, tmax: 22, densidad: 1.2, vel: 1, alpha: 0.8 } };
@@ -2485,42 +2427,44 @@
     }
     function dibujarEditorFondo(){
       const f = FONDO_ED, p = f.params, mot = MOTORES[f.motor];
-      const num = (k, t, min, max, paso) => `<label>${t} <b id="v_${k}">${p[k] ?? ''}</b></label><input type="range" min="${min}" max="${max}" step="${paso}" value="${p[k] ?? min}" oninput="p_(${JSON.stringify(k).replace(/"/g, "'")}, Number(this.value)); $('v_${k}').textContent = this.value">`;
-      const opc = (k, lista) => `<select onchange="p_('${k}', this.value, 1)">${Object.entries(lista).map(([v, t]) => `<option value="${v}" ${p[k] === v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
-      $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">${f.codigo ? '✏️ Editar fondo' : '➕ Nuevo fondo'}</h3>
-        <p class="nota">Lo que cambies se ve al instante detrás de esta ventana. Guarda para que todos puedan elegirlo.</p>
+      const num = (k, t, min, max, paso) => `<label>${t} <b id="v_${k}">${p[k] ?? ''}</b></label><input type="range" min="${min}" max="${max}" step="${paso}" value="${p[k] ?? min}" oninput="p_('${k}', Number(this.value)); $('v_${k}').textContent = this.value">`;
+      const opc = (k, lista) => `<select onchange="p_('${k}', this.value, 1)">${Object.entries(lista).map(([v, t]) => `<option value="${v}" ${(p[k] ?? '') === v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+      const efectos = Object.fromEntries([['', 'Ninguno'], ...FONDOS_CAT.filter(x => x.motor !== 'imagen').map(x => [x.codigo, (x.icono || '') + ' ' + x.nombre])]);
+      $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">${f.codigo ? '✏️ Editar estilo' : '➕ Nuevo estilo'}</h3>
+        <p class="nota">Lo que cambies se ve al instante detrás de esta ventana. Guarda para que todos puedan elegirlo en "Personalizar".</p>
         <div class="form-grid">
           <div><label>Nombre</label><input id="feNombre" maxlength="40" value="${esc(f.nombre)}" oninput="FONDO_ED.nombre = this.value"></div>
           <div><label>Ícono (emoji)</label><input maxlength="4" value="${esc(f.icono)}" oninput="FONDO_ED.icono = this.value"></div>
           <div class="full"><label>Descripción corta</label><input maxlength="60" value="${esc(f.descripcion || '')}" oninput="FONDO_ED.descripcion = this.value"></div>
           <div class="full"><label>Motor (tipo de animación)</label><select onchange="FONDO_ED.motor = this.value; dibujarEditorFondo()">${Object.entries(MOTORES).map(([k, x]) => `<option value="${k}" ${f.motor === k ? 'selected' : ''}>${x.n}</option>`).join('')}</select></div>
-          <div class="full colores-fondo">${['c1', 'c2', 'c3'].slice(0, mot.colores).map((k, i) => `<label class="check-linea" style="margin:0;">Color ${i + 1} <input type="color" value="${p[k] || '#888888'}" oninput="p_('${k}', this.value)"></label>`).join('')}</div>
+          ${mot.imagen ? `<div class="full"><label>Imagen (se mueve lentamente, como un video)</label><input type="file" accept="image/*" onchange="subirImagenFondo(this)">
+            ${f.imagen ? `<img src="${f.imagen}" alt="" style="width:100%;max-height:140px;object-fit:cover;border-radius:10px;margin-top:6px;">` : '<span class="nota">Sube una foto (se achica sola).</span>'}</div>
+            <div class="full"><label>Efecto encima de la imagen</label>${opc('capa', efectos)}</div>` : `
+          <div class="full colores-fondo">${['c1', 'c2', 'c3'].slice(0, mot.colores).map((k, i) => `<label class="check-linea" style="margin:0;">Color ${i + 1} <input type="color" value="${p[k] || '#888888'}" oninput="p_('${k}', this.value)"></label>`).join('')}</div>`}
           ${mot.particulas ? `
             <div><label>Partícula</label>${opc('particula', { forma: 'Formas', emoji: 'Emojis', linea: 'Líneas (lluvia)' })}</div>
             <div><label>Dirección</label>${opc('direccion', { arriba: '⬆ Sube', abajo: '⬇ Cae', diagonal: '↘ Diagonal', izquierda: '⬅ Izquierda', derecha: '➡ Derecha', flotar: '〰 Flota' })}</div>
-            ${p.particula === 'emoji' ? `<div class="full"><label>Emojis (los que quieras, juntos)</label><input maxlength="24" value="${esc(p.emojis || '')}" placeholder="🌸✂️💈⭐" oninput="p_('emojis', this.value, 1)"></div>` : ''}
+            ${p.particula === 'emoji' ? `<div class="full"><label>Emojis (los que quieras, juntos)</label><input maxlength="24" value="${esc(p.emojis || '')}" placeholder="🌸✂️💈⭐" oninput="p_('emojis', this.value)"></div>` : ''}
             ${p.particula !== 'emoji' && p.particula !== 'linea' ? `<div><label>Forma</label>${opc('forma', { circulo: '● Círculo', cuadrado: '■ Cuadrado', triangulo: '▲ Triángulo', rombo: '◆ Rombo', estrella: '★ Estrella', corazon: '♥ Corazón', mezcla: '✦ Mezcla' })}</div>
             <div><label>Estilo</label>${opc('estilo', { relleno: 'Relleno', contorno: 'Contorno', burbuja: 'Burbuja' })}</div>` : ''}
             <div class="full">${num('tmin', 'Tamaño mínimo', 1, 60, 0.5)}${num('tmax', 'Tamaño máximo', 1, 80, 0.5)}</div>
             <label class="check-linea"><input type="checkbox" ${p.giro ? 'checked' : ''} onchange="p_('giro', this.checked)"> Giran</label>
             <label class="check-linea"><input type="checkbox" ${p.brillo ? 'checked' : ''} onchange="p_('brillo', this.checked)"> Brillan</label>` : ''}
           ${mot.forma && !mot.particulas ? `<div><label>Forma</label>${opc('forma', { circulo: '● Círculo', estrella: '★ Estrella', corazon: '♥ Corazón', rombo: '◆ Rombo', mezcla: '✦ Mezcla' })}</div>` : ''}
-          ${mot.imagen ? `<div class="full"><label>Imagen (se mueve lentamente, como un video)</label><input type="file" accept="image/*" onchange="subirImagenFondo(this)">
-            <span class="nota">${f.imagen ? '✓ Imagen cargada' : 'Sube una foto (se achica sola).'}</span></div>` : ''}
-          <div class="full">${num('densidad', 'Cantidad', 0.2, 4, 0.1)}${num('vel', 'Velocidad base', 0.1, 4, 0.1)}${num('alpha', 'Opacidad', 0.05, 1, 0.05)}${num('blur', 'Desenfoque', 0, 40, 1)}</div>
+          ${mot.imagen ? '' : `<div class="full">${num('densidad', 'Cantidad', 0.2, 4, 0.1)}${num('vel', 'Velocidad base', 0.1, 4, 0.1)}${num('alpha', 'Opacidad', 0.05, 1, 0.05)}${num('blur', 'Desenfoque', 0, 40, 1)}</div>`}
           <div><label>Tinte de pantalla</label>${opc('tinte', { ninguno: 'Ninguno', degradado: 'Degradado', radial: 'Luz al centro', solido: 'Color parejo' })}</div>
           <div>${num('tinte_alpha', 'Fuerza del tinte', 0, 0.9, 0.05)}</div>
           <div><label>Orden en la lista</label><input type="number" value="${f.orden ?? 500}" oninput="FONDO_ED.orden = Number(this.value)"></div>
           <label class="check-linea"><input type="checkbox" ${f.activo !== false ? 'checked' : ''} onchange="FONDO_ED.activo = this.checked"> Disponible para todos</label>
         </div>
-        <div class="det-acciones"><button class="boton" onclick="guardarFondoSuper()">Guardar fondo</button>
+        <div class="det-acciones"><button class="boton" onclick="guardarFondoSuper()">Guardar estilo</button>
           ${f.codigo ? `<button class="boton-linea rojo" onclick="eliminarFondoSuper('${f.codigo}')">Eliminar</button>` : ''}
           <button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
         <p class="estado" id="estadoFondoEd"></p>`;
       previewFondoEd();
     }
     function p_(k, v, redibujar){ FONDO_ED.params[k] = v; if (redibujar) dibujarEditorFondo(); else previewFondoEd(); }
-    function previewFondoEd(){ FondoAnim.poner({ codigo: '_prueba', intensidad: 3, velocidad: 2, vidrio: true }, FONDO_ED); }
+    function previewFondoEd(){ FondoAnim.poner({ codigo: '_prueba', intensidad: 3, velocidad: 2, vidrio: true }, { ...FONDO_ED, capaItem: FONDO_ED.params?.capa ? fondoDe(FONDO_ED.params.capa) : null }); }
     async function subirImagenFondo(input){
       try { estado('estadoFondoEd', 'Preparando imagen…'); FONDO_ED.imagen = await comprimirImagen(input.files[0], 1600, 650000); dibujarEditorFondo(); estado('estadoFondoEd', 'Imagen lista. Falta Guardar.', 'ok'); }
       catch (e) { estado('estadoFondoEd', e.message, 'error'); }
@@ -2533,10 +2477,10 @@
         params: f.params, activo: f.activo !== false, orden: f.orden ?? 500, ...(f.imagen !== undefined ? { imagen: f.imagen || '' } : {}) } });
       if (error) return estado('estadoFondoEd', /super_guardar_fondo/.test(error.message || '') ? 'Falta instalar la Fase 21.' : error.message, 'error');
       cerrarDetalle(); cargarFondosSuper();
-      mostrarToast({ id: 0, tipo: 'completada', titulo: 'Fondo guardado', detalle: `"${f.nombre}" ya aparece para todos en Mi cuenta → Fondo con movimiento.` });
+      mostrarToast({ id: 0, tipo: 'completada', titulo: 'Estilo guardado', detalle: `"${f.nombre}" ya aparece para todos en "Personalizar".` });
     }
     async function eliminarFondoSuper(cod){
-      const f = fondoDe(cod); if (!confirm(`¿Eliminar el fondo "${f?.nombre}"?${f?.usan ? `\n\n${f.usan} persona(s) lo usan: quedarán sin fondo.` : ''}\n\nSi solo quieres ocultarlo, desmarca "Disponible para todos".`)) return;
+      const f = fondoDe(cod); if (!confirm(`¿Eliminar el estilo "${f?.nombre}"?${f?.usan ? `\n\n${f.usan} persona(s) lo usan: quedarán sin fondo.` : ''}\n\nSi solo quieres ocultarlo, desmarca "Disponible para todos".`)) return;
       const { error } = await db.rpc('super_eliminar_fondo', { p_codigo: cod });
       if (error) return estado('estadoFondoEd', error.message, 'error');
       cerrarDetalle(); cargarFondosSuper();
