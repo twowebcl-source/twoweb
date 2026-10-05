@@ -356,6 +356,7 @@
             <li>${p.max_productos == null ? 'Productos sin límite' : `Hasta ${p.max_productos} productos en tu tienda`}</li>
             <li>Página web con tu marca</li>
             <li>${p.dominio_incluido ? 'Dominio propio incluido' : 'Link twoweb.cl/tunegocio'}</li>
+            ${p.fidelidad ? '<li>Tarjeta de fidelidad para tus clientes</li>' : ''}
             <li>Soporte por WhatsApp</li>
           </ul>
           <a class="btn ${p.destacado ? 'prim' : 'sec'}" target="_blank" rel="noopener" href="${linkWsp(`Hola TwoWeb, me interesa el ${p.nombre} (${clp(p.precio)}/mes).`)}">Lo quiero</a>

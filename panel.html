@@ -303,6 +303,12 @@
     .tabla-horario tr.no-trabaja input[type=time] { opacity:.3; }
     .detalle-horario { margin-top:10px; }
     .detalle-horario summary { cursor:pointer; color:var(--voltaje); font-size:13px; font-weight:600; }
+    .fid-adm { margin-top:16px; padding:14px; border:1px solid var(--voltaje); border-radius:14px; background:color-mix(in srgb, var(--voltaje) 7%, var(--panel2)); }
+    .fid-adm.bloqueada { border-style:dashed; border-color:var(--linea); background:var(--panel2); }
+    .fid-adm .check-linea input { width:auto; }
+    .fid-campos { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0; }
+    .fid-campos .full { grid-column:1 / -1; }
+    @media (max-width:640px){ .fid-campos { grid-template-columns:1fr; } }
     .serv-top { display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center; margin-bottom:10px; }
     .serv-crear { display:flex; flex-wrap:wrap; gap:8px; }
     .boton-promo { background:linear-gradient(135deg, #ff7a45, #ff3d77); border-color:transparent; color:#fff; }
@@ -1785,7 +1791,7 @@
         ${r.creado_por ? `<div class="det-fila"><span>Agendada por</span><span>${esc(r.creado_por)}${r.origen === 'panel' ? ' (panel)' : ''}</span></div>` : ''}
         <div class="det-fila"><span>Servicios</span><span>${esc(r.servicios || '—')}</span></div>
         ${atencionReal(r)}
-        ${r.descuento_pct ? `<div class="det-fila"><span>Descuento</span><span>🎁 ${r.descuento_pct}% primera visita (inscrito)</span></div>` : ''}
+        ${r.descuento_pct ? `<div class="det-fila"><span>Descuento</span><span>${r.fid_canje ? `🎟 ${r.descuento_pct}% premio tarjeta de fidelidad` : r.fid_canje === false ? `🎁 ${r.descuento_pct}% primera visita (inscrito)` : `🎁 ${r.descuento_pct}% de descuento`}</span></div>` : ''}
         <div class="det-fila"><span>${admin ? 'Total' : 'Valor del servicio'}</span><span>${r.total ? clp(r.total) : '—'}</span></div>
         ${est === 'completada' && r.propina ? `<div class="det-fila"><span>Propina</span><span>${clp(r.propina)}</span></div>` : ''}
         ${!admin && est === 'completada' ? `<div class="det-fila"><span>Tu parte</span><span><b>${clp(r.ganancia || 0)}</b></span></div>` : ''}
@@ -2279,7 +2285,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F24 · 05-10 b';
+    const VERSION_PANEL = 'F25 · 05-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -2400,6 +2406,7 @@
           </div>
           <p class="nota">Las imágenes se achican solas para que tu agenda cargue rápido.</p>
           <p class="nota" style="margin-top:6px;">🎁 Descuento 10% primera visita para clientes nuevos: <b>${NEG.promo_10 ? 'activo en tu agenda' : 'apagado'}</b>${yo.super ? '' : ' · para activarlo o apagarlo, escríbele a ' + esc(MARCA)}.</p>
+          <div id="fidAdmin"></div>
           
           <h3 style="margin-top:22px;">✨ Estilo de tu página</h3>
           <p class="nota">Fondo con movimiento o una imagen tuya (con efecto encima) y la fuente de tu agenda${conTienda() ? ', tienda' : ''} y página web. Tus clientes lo verán así.</p>
@@ -2427,6 +2434,7 @@
             <a class="boton-linea" href="${esc(linkWeb())}" target="_blank" rel="noopener">👁 Ver cómo quedó</a></div>
           <p class="estado" id="estadoMarca"></p>
         </div>`;
+      cargarFidelidadAdmin();
     }
     // ================= ESTILO Y FUENTE (como "Personalizar" de Instagram) =================
     // El motor de fondos y las fuentes están en fondos.js (compartido con agenda, tienda y página).
@@ -3054,6 +3062,39 @@
                                                      : `✓ Contraseña cambiada. Avísale a ${t.nombre} la nueva contraseña.`, 'ok');
     }
 
+    // ================= TARJETA DE FIDELIDAD (admin, Fase 25) =================
+    async function cargarFidelidadAdmin(){
+      const el = $('fidAdmin'); if (!el) return;
+      const { data: f, error } = await db.rpc('mi_fidelidad');
+      if (error){ el.innerHTML = (error.message || '').includes('mi_fidelidad') ? '<p class="nota" style="margin-top:14px;">🎟 Tarjeta de fidelidad: falta instalar la Fase 25.</p>' : ''; return; }
+      if (!f) return;
+      if (!f.permitido){ el.innerHTML = `<div class="fid-adm bloqueada"><b>🎟 Tarjeta de fidelidad</b><p class="nota">Tu plan (${esc(f.plan || '')}) no la incluye. Premia a tus clientes frecuentes con sellos y un descuento automático: pídela a ${esc(MARCA)} para subir de plan.</p></div>`; return; }
+      el.innerHTML = `<div class="fid-adm">
+          <label class="check-linea" style="margin:0;"><input type="checkbox" id="fidActiva" ${f.activa ? 'checked' : ''} onchange="vistaFid()"> <span><b>🎟 Tarjeta de fidelidad</b> activa en mi agenda</span></label>
+          <p class="nota">Cada atención terminada suma un sello al cliente (por su teléfono). Al completar la tarjeta, su siguiente reserva online trae el premio aplicado solo. El cliente la ve en "Mis reservas".</p>
+          <div class="fid-campos">
+            <div><label>Atenciones para el premio</label><select id="fidMeta" onchange="vistaFid()">${Array.from({ length: 10 }, (_, i) => i + 1).map(k => `<option value="${k}" ${k === f.meta ? 'selected' : ''}>${k} ${k === 1 ? 'atención' : 'atenciones'}</option>`).join('')}</select></div>
+            <div><label>Premio (descuento)</label><select id="fidPct" onchange="vistaFid()">${[10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100].map(k => `<option value="${k}" ${k === f.pct ? 'selected' : ''}>${k === 100 ? '100% · gratis' : k + '% de descuento'}</option>`).join('')}</select></div>
+            <div class="full"><label>Texto del premio (opcional)</label><input id="fidTexto" maxlength="80" value="${esc(f.texto || '')}" placeholder="Ej: Tu corte n° 11 gratis" oninput="vistaFid()"></div>
+          </div>
+          <p class="nota" id="fidVista"></p>
+          <button class="boton" onclick="guardarFidelidad()">Guardar tarjeta</button> <span class="estado" id="estadoFid"></span>
+        </div>`;
+      vistaFid();
+    }
+    function vistaFid(){
+      const m = Number($('fidMeta').value), p = Number($('fidPct').value), t = $('fidTexto').value.trim();
+      $('fidVista').innerHTML = $('fidActiva').checked
+        ? `Así queda: después de <b>${m} ${m === 1 ? 'atención' : 'atenciones'}</b>, la siguiente reserva lleva <b>${p >= 100 ? 'el servicio gratis' : p + '% de descuento'}</b>${t ? ` («${esc(t)}»)` : ''}.`
+        : 'Apagada: tus clientes no ven la tarjeta.';
+    }
+    async function guardarFidelidad(){
+      const p = { activa: $('fidActiva').checked, meta: Number($('fidMeta').value), pct: Number($('fidPct').value), texto: $('fidTexto').value.trim() };
+      const { error } = await db.rpc('guardar_fidelidad', { p });
+      if (error) return estado('estadoFid', 'Error: ' + error.message, 'error');
+      estado('estadoFid', p.activa ? '✓ Guardada. Ya se ve en "Mis reservas" de tu agenda.' : '✓ Guardada (apagada).', 'ok');
+    }
+
     // ================= SERVICIOS Y PROMOCIONES (admin) =================
     const FSERV = { tipo: 'todos', local: 0 };
     const esPromo = c => /^promo/i.test((c || '').trim());
@@ -3288,16 +3329,19 @@
     // Ficha: historial del cliente
     async function fichaCliente(id){
       const c = clientes.find(x => x.id === id); if (!c) return;
-      const { data: hist } = await db.from('reservas').select('id,fecha,hora,inicio,fin,servicios,total,propina,estado,trabajador,metodo_pago,local_id,descuento_pct').eq('cliente_id', id).order('fecha', { ascending: false }).limit(60);
+      const { data: hist } = await db.from('reservas').select('*').eq('cliente_id', id).order('fecha', { ascending: false }).limit(60);
       const tel = (c.telefono || '').replace(/\D/g, '');
+      const { data: fid } = await db.rpc('fidelidad_cliente', { p_cliente: id }).then(r => r, () => ({}));
+      const fidTxt = fid ? (fid.pendiente ? '🎁 premio reservado en su próxima hora' : fid.listo ? '🎉 tarjeta completa: el premio va en su próxima reserva' : `${fid.sellos} de ${fid.meta} sellos`) : '';
       $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">${esc(c.nombre)} ${esc(c.apellido || '')}</h3>
+        ${fidTxt ? `<div class="det-fila"><span>🎟 Fidelidad</span><span>${fidTxt}</span></div>` : ''}
         <div class="det-fila"><span>WhatsApp</span><span>${esc(c.telefono || '—')}${c.whatsapp ? ' · acepta avisos' : ''}</span></div>
         <div class="det-fila"><span>Correo</span><span>${esc(c.correo || '—')}</span></div>
         <div class="det-fila"><span>Registrado</span><span>${(c.creado || '').slice(0, 10)} · ${c.origen === 'inscripcion' ? 'se inscribió en la web' : c.origen === 'panel' ? 'desde el panel' : 'al reservar online'}</span></div>
         <div class="det-fila"><span>Visitas</span><span>${c.atendidas} atendidas · ${c.no_asistio} no asistió · ${c.canceladas} canceladas · ${clp(c.gastado)}</span></div>
         <label class="check-linea" style="margin-top:10px;"><input type="checkbox" id="fPromos" ${c.acepta_promos ? 'checked' : ''}> Acepta recibir promociones</label>
         <h3 style="margin-top:14px;">Historial</h3>
-        <div style="max-height:260px;overflow:auto;">${(hist || []).map(r => `<div class="det-fila" style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><span>${fechaCorta(r.fecha)} ${aHora(rangoDe(r)[0])} · ${esc(r.servicios || '')} · ${esc(r.trabajador || '')}${r.descuento_pct ? ' · 🎁' + r.descuento_pct + '%' : ''}</span><span>${ESTADOS[r.estado] || r.estado}${r.total ? ' · ' + clp(r.total) : ''}</span></div>`).join('') || '<p class="nota">Sin reservas aún.</p>'}</div>
+        <div style="max-height:260px;overflow:auto;">${(hist || []).map(r => `<div class="det-fila" style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><span>${fechaCorta(r.fecha)} ${aHora(rangoDe(r)[0])} · ${esc(r.servicios || '')} · ${esc(r.trabajador || '')}${r.descuento_pct ? (r.fid_canje ? ' · 🎟' : ' · 🎁') + r.descuento_pct + '%' : ''}</span><span>${ESTADOS[r.estado] || r.estado}${r.total ? ' · ' + clp(r.total) : ''}</span></div>`).join('') || '<p class="nota">Sin reservas aún.</p>'}</div>
         <div class="det-acciones">${tel ? `<a class="boton-linea" href="https://wa.me/${tel}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
           ${c.correo ? `<a class="boton-linea" href="mailto:${esc(c.correo)}">✉ Correo</a>` : ''}
           <button class="boton" onclick="guardarFichaCliente(${c.id})">Guardar</button>
@@ -3802,6 +3846,7 @@
           <div><label>Máx. productos</label><input data-k="max_productos" type="number" min="0" placeholder="sin límite" value="${vNum(p.max_productos)}"></div>
           <div class="acc"><button class="boton" onclick="guardarPlan(this)">Guardar</button>${p.negocios ? '' : `<button class="boton-linea rojo" onclick="eliminarPlan('${esc(p.codigo)}')">✕</button>`}</div>
           <div class="checks"><label><input type="checkbox" data-k="dominio_incluido" ${p.dominio_incluido ? 'checked' : ''}> Dominio propio incluido</label>
+            <label><input type="checkbox" data-k="fidelidad" ${p.fidelidad ? 'checked' : ''}> 🎟 Tarjeta de fidelidad</label>
             <label><input type="checkbox" data-k="publico" ${p.publico ? 'checked' : ''}> Público (twoweb.cl)</label>
             <label><input type="checkbox" data-k="activo" ${p.activo ? 'checked' : ''}> Disponible para negocios nuevos</label>
             <label><input type="checkbox" data-k="destacado" ${p.destacado ? 'checked' : ''}> ⭐ Recomendado</label>

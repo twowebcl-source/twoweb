@@ -206,6 +206,16 @@
     @keyframes pop { 0% { transform:scale(.4); } 80% { transform:scale(1.1); } 100% { transform:scale(1); } }
     .item-res { background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:14px 16px; margin-top:10px; text-align:left; font-size:14px; }
     .item-res b { color:var(--voltaje); }
+    .fid { background:linear-gradient(135deg, var(--voltaje-suave), var(--panel)); border:1px solid var(--voltaje); border-radius:var(--r); padding:16px; margin-top:14px; text-align:left; }
+    .fid-cab { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+    .fid-cab b { font-size:16px; }
+    .fid-cab span { color:var(--gris); font-size:12.5px; white-space:nowrap; }
+    .fid-sellos { display:grid; grid-template-columns:repeat(auto-fill, minmax(42px, 1fr)); gap:8px; margin:14px 0 10px; }
+    .fid-sello { aspect-ratio:1; border-radius:50%; border:2px dashed color-mix(in srgb, var(--hueso) 30%, transparent); display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--gris); }
+    .fid-sello.on { border:2px solid var(--voltaje); background:var(--voltaje); color:var(--sobre); }
+    .fid-sello.premio { border-style:solid; border-color:var(--voltaje); font-size:22px; }
+    .fid-msg { font-size:13.5px; }
+    .fid-msg.listo { color:var(--verde); font-weight:700; }
     .acciones { display:grid; gap:10px; margin-top:16px; }
     .acciones a { text-decoration:none; text-align:center; display:block; }
     .promo { display:flex; align-items:center; gap:14px; background:linear-gradient(120deg, var(--voltaje-suave), color-mix(in srgb, var(--hueso) 2%, transparent)); border:1px solid var(--voltaje);
@@ -926,7 +936,7 @@
             <div class="junto"><select id="fCod" onchange="cambiarPais()">${PAISES.map(([v, t]) => `<option value="${v}" ${v === cod ? 'selected' : ''}>${t}</option>`).join('')}</select>
               <input id="fTel" type="tel" inputmode="tel" autocomplete="tel-national" value="${esc(d.tel ?? (cod === '+56' ? '9 ' : ''))}" placeholder="${cod === '+56' ? '9 1234 5678' : 'Número'}" oninput="formatoTel()"></div></div>
           <label class="check"><input type="checkbox" id="fWsp" ${d.wsp === false ? '' : 'checked'}><span>Quiero recibir la confirmación y recordatorios por <b>WhatsApp</b></span></label>
-          <label class="check"><input type="checkbox" id="fPromos" ${d.promos ? 'checked' : ''}><span>Quiero recibir promociones y descuentos</span></label>
+          <label class="check"><input type="checkbox" id="fPromos" ${d.promos === false ? '' : 'checked'}><span>Quiero recibir promociones y descuentos</span></label>
           ${promoActiva() && leerLocal(K_INSCRITO) ? '<p class="nota" style="margin:-6px 0 12px;">🎁 Si es tu primera visita, tu 10% se aplica al confirmar.</p>' : ''}
           <div class="campo"><label class="lbl" for="fObs">Observaciones (opcional)</label><textarea id="fObs" placeholder="${esBarberia() ? 'Ej: degradado bajo, dejar largo arriba…' : 'Ej: algo que debamos saber antes de tu hora…'}">${esc(d.obs || '')}</textarea></div>
           <label class="lbl">Foto de referencia (opcional)</label>
@@ -1112,7 +1122,7 @@
       $('vistaListo').classList.remove('oculto');
       $('vistaListo').innerHTML = `<div class="listo"><div class="ok">✓</div><h2>¡Reserva confirmada!</h2>
         <p class="ayuda" style="margin-bottom:6px;">Te esperamos en <b style="color:var(--hueso)">${esc(l.nombre)}</b> · ${esc(l.direccion || '')}${l.referencia ? ' · ' + esc(l.referencia) : ''}</p></div>
-        ${data.map(r => `<div class="item-res"><b>${fechaLinda(r.fecha)} · ${esc(r.desde)} – ${esc(r.hasta)}</b> · ${esc(r.nombre)}<br>${esc(r.servicios)} con ${esc(r.trabajador)} · ${clp(r.total)}${r.descuento ? ` <span class="descuento">🎁 ${r.descuento}% primera visita aplicado</span>` : ''}</div>`).join('')}
+        ${data.map(r => `<div class="item-res"><b>${fechaLinda(r.fecha)} · ${esc(r.desde)} – ${esc(r.hasta)}</b> · ${esc(r.nombre)}<br>${esc(r.servicios)} con ${esc(r.trabajador)} · ${clp(r.total)}${r.descuento ? ` <span class="descuento">🎁 ${r.fidelidad ? (r.descuento >= 100 ? 'Premio de tu tarjeta de fidelidad: ¡gratis!' : r.descuento + '% premio de tu tarjeta de fidelidad') : r.descuento + '% primera visita'} aplicado</span>` : ''}</div>`).join('')}
         <div class="total" style="margin-top:14px;"><div><small>Total${PEDIDO ? ' (hora + productos)' : ''}</small><strong>${clp(data.reduce((a,r)=>a+r.total,0) + (PEDIDO ? PEDIDO.total : 0))}</strong></div><div style="text-align:right;"><small>Se paga en el local</small></div></div>
         ${resultadoProductos()}
         <div class="acciones">
@@ -1146,13 +1156,30 @@
       const correo = $('misCorreo').value.trim(), tel = $('misTelefono').value.trim();
       if (!correo || tel.replace(/\D/g,'').length < 8){ cont.innerHTML = '<p class="aviso">Escribe tu correo y teléfono.</p>'; return; }
       cont.innerHTML = '<p class="nota">Buscando…</p>';
-      const { data, error } = await rpcNeg('mis_reservas', { p_correo: correo, p_telefono: tel, p_negocio: SLUG || null });
+      const [{ data, error }, tj] = await Promise.all([
+        rpcNeg('mis_reservas', { p_correo: correo, p_telefono: tel, p_negocio: SLUG || null }),
+        rpcNeg('mi_tarjeta', { p_correo: correo, p_telefono: tel, p_negocio: SLUG || null }).catch(() => ({}))]);
       if (error){ cont.innerHTML = `<p class="aviso">Error: ${esc(error.message)}</p>`; return; }
-      if (!data.length){ cont.innerHTML = '<div class="vacio">No encontramos reservas próximas con esos datos.</div>'; return; }
+      const tarjeta = tarjetaFidelidad(tj && !tj.error ? tj.data : null);
+      if (!data.length){ cont.innerHTML = '<div class="vacio">No encontramos reservas próximas con esos datos.</div>' + tarjeta; return; }
       const est = { confirmada:'Confirmada', en_atencion:'En atención', completada:'Atendida', cancelada:'Cancelada', no_asistio:'No asistió' };
       cont.innerHTML = data.map(r => `<div class="item-res"><b>${fechaLinda(r.fecha)} · ${esc(r.desde)} – ${esc(r.hasta)}</b> · ${esc(r.nombre)}<br>
         ${esc(r.servicios || 'Reserva')} con ${esc(r.trabajador)}${r.total ? ' · ' + clp(r.total) : ''} · ${est[r.estado] || esc(r.estado)}
-        ${r.local ? `<br><span class="nota">📍 ${esc(r.local)} · ${esc(r.direccion || '')}</span>` : ''}</div>`).join('');
+        ${r.local ? `<br><span class="nota">📍 ${esc(r.local)} · ${esc(r.direccion || '')}</span>` : ''}</div>`).join('') + tarjeta;
+    }
+    // Tarjeta de fidelidad (Fase 25): sellos por atención terminada; el premio se aplica solo al reservar
+    function tarjetaFidelidad(t){
+      if (!t || !t.activa) return '';
+      const meta = t.meta || 10, n = Math.min(t.sellos || 0, meta), icono = esBarberia() ? '✂️' : '★';
+      const premio = t.texto || (t.pct >= 100 ? 'Tu próxima atención gratis' : `${t.pct}% de descuento en tu próxima atención`);
+      const faltan = meta - n;
+      const msg = t.pendiente ? `<p class="fid-msg listo">🎁 Tu premio ya está aplicado en tu próxima hora.</p>`
+                : t.listo ? `<p class="fid-msg listo">🎉 ¡Completaste tu tarjeta! El premio se aplica solo en tu próxima reserva.</p>`
+                : `<p class="fid-msg">Te ${faltan === 1 ? 'falta <b>1 atención</b>' : `faltan <b>${faltan} atenciones</b>`} para tu premio.</p>`;
+      return `<div class="fid"><div class="fid-cab"><b>🎟 Tu tarjeta de fidelidad</b><span>${n} de ${meta}</span></div>
+        <div class="fid-sellos">${Array.from({ length: meta }, (_, i) => `<div class="fid-sello ${i < n || t.pendiente || t.listo ? 'on' : ''}">${i < n || t.pendiente || t.listo ? '✓' : icono}</div>`).join('')}<div class="fid-sello premio">🎁</div></div>
+        <p class="fid-msg"><b>Premio:</b> ${esc(premio)}</p>${msg}
+        <p class="nota" style="margin-top:6px;">Cada atención terminada con este teléfono suma un sello.</p></div>`;
     }
 
     // Si algo falla, se muestra en pantalla en vez de quedar en blanco
