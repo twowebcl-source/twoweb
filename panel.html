@@ -826,7 +826,10 @@
     const fechaTexto = f => `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')}`;
     const hoyTxt = () => fechaTexto(new Date());
     const deTexto = t => { const [a,m,d] = t.split('-').map(Number); return new Date(a, m-1, d); };
-    function estado(id, texto, tipo){ const e = $(id); e.textContent = texto; e.className = 'estado ' + (tipo||''); }
+    function estado(id, texto, tipo){
+      if (tipo === 'error' && /permission denied for table/i.test(texto || ''))
+        texto += ' — Falta dar permisos en la base: corre supabase/fase16-permisos.sql en Supabase.';
+      const e = $(id); e.textContent = texto; e.className = 'estado ' + (tipo||''); }
 
     let yo = null;               // { rol, nombre, trabajador_id, correo, super, negocio }
     let NEG = {};                // negocio con el que se está trabajando { id, nombre, slug, plan, estado, color }
