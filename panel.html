@@ -500,6 +500,30 @@
     .fondo-card .fc-txt b { display:block; } .fondo-card .fc-txt small { color:var(--gris); font-size:12px; }
     .fondo-card .fc-acc { grid-column:1 / -1; display:flex; gap:6px; }
     .fondo-card .fc-acc button { flex:1; padding:6px 8px; font-size:13px; }
+    /* Informe de liquidación */
+    .informe { margin-top:0; }
+    .inf-cab { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; align-items:flex-start; }
+    .inf-cab small { color:var(--gris); text-transform:uppercase; letter-spacing:.6px; font-size:11px; font-weight:700; }
+    .inf-cab h2 { margin:2px 0; font-size:24px; }
+    .inf-acc { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .wsp-btn { background:#25d366 !important; color:#06260f !important; border-color:#25d366 !important; }
+    .liq { margin-top:16px; border:1px solid var(--linea); border-radius:var(--r); padding:6px 16px 12px; max-width:520px; }
+    .liq-fila { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px dashed var(--linea); font-size:15px; }
+    .liq-fila small { color:var(--gris); font-size:12px; }
+    .liq-fila.mas b { color:var(--verde); }
+    .liq-fila.total { border-bottom:none; border-top:2px solid var(--hueso); margin-top:4px; font-size:18px; }
+    .liq-fila.total b { color:var(--voltaje); font-size:22px; }
+    .inf-metodos { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; max-width:520px; }
+    .inf-metodos div { border:1px solid var(--linea); border-radius:var(--r-s); padding:8px 12px; } .inf-metodos small { display:block; color:var(--gris); font-size:12px; }
+    .inf-pie { margin-top:14px; font-size:11px; }
+    @media print {
+      body.imprimiendo * { visibility:hidden !important; }
+      body.imprimiendo #informeCaja, body.imprimiendo #informeCaja * { visibility:visible !important; }
+      body.imprimiendo #informeCaja { position:absolute; left:0; top:0; width:100%; }
+      body.imprimiendo .no-print, body.imprimiendo #fondoAnim { display:none !important; }
+      body.imprimiendo .informe { background:#fff !important; color:#111 !important; border:none; box-shadow:none; }
+      body.imprimiendo .informe * { color:#111 !important; background:transparent !important; }
+    }
   </style>
 </head>
 <body>
@@ -724,6 +748,7 @@
           <button class="boton-linea" onclick="cajaHoy()">Hoy</button>
           <select id="cajaTrab" class="solo-admin" style="width:auto;" onchange="dibujarCaja()"></select>
         </div>
+        <div id="informeCaja" class="oculto"></div>
         <div class="kpis" id="kpisCaja"></div>
         <div class="grid-caja">
           <div class="tarjeta" style="margin-top:0;"><h3>Por método de pago</h3><div id="cajaMetodos"></div></div>
@@ -2040,6 +2065,12 @@
       const sumaParte = l => l.filter(r => r.estado === 'completada').reduce((a, r) => a + parteDe(r), 0);
       const tarjetas = document.querySelectorAll('#tab-caja .grid-caja > .tarjeta');
 
+      const tarjetaLista = $('cajaLista').closest('.tarjeta'), grid = $('tab-caja').querySelector('.grid-caja');
+      const informe = !admin || tid;
+      $('informeCaja').classList.toggle('oculto', !informe); $('kpisCaja').classList.toggle('oculto', informe);
+      grid.classList.toggle('oculto', informe); tarjetaLista.classList.toggle('oculto', informe);
+      if (informe){ informeLiquidacion(lista, tid || yo.trabajador_id, txt); return; }
+
       if (!admin){
         // ----- Vista del profesional: solo lo que le corresponde -----
         tarjetas[0].classList.add('oculto');
@@ -2093,7 +2124,7 @@
         // Con "todos los locales": subtotal por local y luego por profesional
         const porLocal = !LOCAL_PANEL && locales.length > 1;
         cuerpo = (porLocal ? locales.map(l => fila(`📍 <b>${esc(l.nombre)}</b>`, lista.filter(r => localDe(r.trabajador_id) === l.id))).join('') : '') +
-                 trabsFiltro().map(t => fila(`${esc(t.nombre)} <span class="nota">${t.comision ?? 50}%${porLocal ? ' · ' + esc(nombreLocal(t.local_id)) : ''}</span>`, lista.filter(r => r.trabajador_id === t.id))).join('') + fila('Total', lista, true);
+                 trabsFiltro().map(t => fila(`<button class="link" style="margin:0;" onclick="$('cajaTrab').value='${t.id}'; dibujarCaja()" title="Ver su liquidación">${esc(t.nombre)}</button> <span class="nota">${t.comision ?? 50}%${porLocal ? ' · ' + esc(nombreLocal(t.local_id)) : ''}</span>`, lista.filter(r => r.trabajador_id === t.id))).join('') + fila('Total', lista, true);
       } else if (cajaPeriodo !== 'dia'){
         $('cajaTituloDetalle').textContent = 'Por día';
         cuerpo = [...new Set(lista.map(r => r.fecha))].sort().map(d => fila(deTexto(d).toLocaleDateString('es-CL', { weekday:'short', day:'numeric', month:'short' }), lista.filter(r => r.fecha === d))).join('') + fila('Total', lista, true);
@@ -2110,6 +2141,83 @@
           <td>${r.metodo_pago ? PAGOS[r.metodo_pago] : '<span class="error">Registrar</span>'}</td><td class="num">${clp(r.total)}</td><td class="num">${r.propina ? clp(r.propina) : '—'}</td><td class="num">${clp(parteDe(r))}</td></tr>`).join('')}
         </table></div>` : '<p class="vacio">No hay atenciones completadas en este período.</p>';
     }
+
+    // ----- Informe de liquidación: servicios × % + propinas = total a pagar (transparente y separado) -----
+    let ULTIMO_INFORME = null;
+    const fechaDiaCaja = f => deTexto(f).toLocaleDateString('es-CL', { weekday:'short', day:'numeric', month:'short' });
+    function informeLiquidacion(lista, tid, periodoTxt){
+      const admin = yo.rol === 'admin', t = trabajadores.find(x => x.id === tid) || {};
+      const pct = t.comision ?? 50;
+      const hechas = lista.filter(r => r.estado === 'completada').sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+      // parte por servicios: el trabajador la recibe calculada desde la base (ganancia - propina); el admin la calcula con el %
+      const parte = r => admin ? Math.round((r.total || 0) * pct / 100) : Math.max(0, (r.ganancia || 0) - (r.propina || 0));
+      const sum = (l, f) => l.reduce((a, r) => a + f(r), 0);
+      const S = { n: hechas.length, serv: sum(hechas, r => r.total || 0), parte: sum(hechas, parte), prop: sum(hechas, r => r.propina || 0),
+                  llegadas: hechas.filter(r => r.origen === 'llegada').length, noVino: lista.filter(r => r.estado === 'no_asistio').length };
+      S.total = S.parte + S.prop;
+      const metodos = ['efectivo', 'debito', 'transferencia'].map(k => [k, sum(hechas.filter(r => r.metodo_pago === k), r => (r.total || 0) + (r.propina || 0))]);
+      const dias = [...new Set(hechas.map(r => r.fecha))].sort();
+      const nombre = t.nombre || yo.nombre || '';
+      ULTIMO_INFORME = { nombre, periodo: periodoTxt, ...S, pct, tid, telefono: t.telefono || '' };
+      const accion = admin
+        ? (t.telefono ? `<button class="boton wsp-btn" onclick="enviarInforme()">💬 Enviar liquidación a ${esc(nombre)}</button>`
+                      : `<span class="nota">Para enviarle su liquidación por WhatsApp, agrega su teléfono en Equipo y horarios.</span>`)
+        : (NEG.whatsapp ? `<button class="boton wsp-btn" onclick="enviarInforme()">💬 Enviar mi informe al administrador</button>` : '<span class="nota">El negocio no tiene WhatsApp registrado.</span>');
+      $('informeCaja').innerHTML = `
+        <div class="tarjeta informe">
+          <div class="inf-cab"><div><small>${admin ? 'Liquidación de' : 'Tu informe'} · ${esc(cajaPeriodo === 'dia' ? 'día' : cajaPeriodo === 'semana' ? 'semana (lunes a domingo)' : 'mes')}</small>
+            <h2>${esc(nombre)}</h2><p class="nota">${esc(periodoTxt)} · ${esc(NEG.nombre || '')} · comisión ${pct}%</p></div>
+            <div class="inf-acc no-print">${accion}<button class="boton-linea" onclick="copiarInforme()">📋 Copiar</button><button class="boton-linea" onclick="imprimirInforme()">🖨 PDF</button></div></div>
+
+          <div class="liq">
+            <div class="liq-fila"><span>Servicios realizados <small>(${S.n} atenci${S.n === 1 ? 'ón' : 'ones'})</small></span><b>${clp(S.serv)}</b></div>
+            <div class="liq-fila"><span>${admin ? 'Su' : 'Tu'} comisión <small>(${pct}% de los servicios)</small></span><b>${clp(S.parte)}</b></div>
+            <div class="liq-fila mas"><span>+ Propinas <small>(100% ${admin ? 'suyas' : 'tuyas'})</small></span><b>${clp(S.prop)}</b></div>
+            <div class="liq-fila total"><span>Total a pagar</span><b>${clp(S.total)}</b></div>
+            <p class="nota" style="margin-top:6px;">${clp(S.parte)} por servicios + ${clp(S.prop)} en propinas = <b>${clp(S.total)}</b>${S.llegadas ? ` · ${S.llegadas} por orden de llegada` : ''}${S.noVino ? ` · ${S.noVino} no asistieron` : ''}</p>
+          </div>
+
+          ${dias.length > 1 ? `<h3 style="margin-top:18px;">Por día</h3>
+          <div style="overflow-x:auto;"><table class="tabla-caja">
+            <tr><th>Día</th><th class="num">Atenc.</th><th class="num">Servicios</th><th class="num">Comisión ${pct}%</th><th class="num">Propinas</th><th class="num">Total</th></tr>
+            ${dias.map(d => { const x = hechas.filter(r => r.fecha === d), p = sum(x, parte), pr = sum(x, r => r.propina || 0);
+              return `<tr><td>${fechaDiaCaja(d)}</td><td class="num">${x.length}</td><td class="num">${clp(sum(x, r => r.total || 0))}</td><td class="num">${clp(p)}</td><td class="num">${pr ? clp(pr) : '—'}</td><td class="num"><b>${clp(p + pr)}</b></td></tr>`; }).join('')}
+            <tr class="total"><td>Total</td><td class="num">${S.n}</td><td class="num">${clp(S.serv)}</td><td class="num">${clp(S.parte)}</td><td class="num">${clp(S.prop)}</td><td class="num">${clp(S.total)}</td></tr>
+          </table></div>` : ''}
+
+          <h3 style="margin-top:18px;">Detalle de atenciones</h3>
+          ${hechas.length ? `<div style="overflow-x:auto;"><table class="tabla-caja">
+            <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicios</th><th>Pago</th><th class="num">Valor</th><th class="num">Comisión</th><th class="num">Propina</th><th class="num">Total</th></tr>
+            ${hechas.map(r => `<tr style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><td>${deTexto(r.fecha).toLocaleDateString('es-CL', { day:'numeric', month:'short' })}</td><td>${aHora(rangoDe(r)[0])}</td>
+              <td>${esc(r.nombre)}${r.origen === 'llegada' ? ' ⚡' : ''}</td><td>${esc(r.servicios || '')}</td><td>${r.metodo_pago ? PAGOS[r.metodo_pago] : '—'}</td>
+              <td class="num">${clp(r.total)}</td><td class="num">${clp(parte(r))}</td><td class="num">${r.propina ? clp(r.propina) : '—'}</td><td class="num"><b>${clp(parte(r) + (r.propina || 0))}</b></td></tr>`).join('')}
+          </table></div>` : '<p class="vacio">No hay atenciones terminadas en este período.</p>'}
+
+          <h3 style="margin-top:18px;">Cómo pagaron los clientes</h3>
+          <div class="inf-metodos">${metodos.map(([k, v]) => `<div><small>${PAGOS[k]}</small><b>${clp(v)}</b></div>`).join('')}</div>
+          <p class="nota">Lo que pagaron los clientes (servicio + propina) por cada medio. Sirve para cuadrar el efectivo que recibiste.</p>
+          <p class="nota inf-pie">Generado el ${new Date().toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' })} · TwoWeb</p>
+        </div>`;
+    }
+    function textoInforme(){
+      const I = ULTIMO_INFORME, admin = yo.rol === 'admin';
+      const lineas = [`• Atenciones: ${I.n}`, `• Servicios: ${clp(I.serv)}`, `• Comisión (${I.pct}%): ${clp(I.parte)}`, `• Propinas: ${clp(I.prop)}`, `• *Total a pagar: ${clp(I.total)}*`];
+      return admin
+        ? `Hola ${I.nombre} 👋\nTu liquidación de ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\nCualquier duda me avisas.`
+        : `Hola 👋 soy ${I.nombre}.\nMi informe en ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\n¡Gracias!`;
+    }
+    function enviarInforme(){
+      const I = ULTIMO_INFORME; if (!I) return;
+      let n = String(yo.rol === 'admin' ? I.telefono : NEG.whatsapp || '').replace(/\D/g, '');
+      if (/^9\d{8}$/.test(n)) n = '56' + n;
+      if (n.length < 8) return alert('El número de WhatsApp no es válido.');
+      window.open('https://wa.me/' + n + '?text=' + encodeURIComponent(textoInforme()), '_blank', 'noopener');
+    }
+    async function copiarInforme(){
+      try { await navigator.clipboard.writeText(textoInforme().replace(/\*/g, '')); mostrarToast({ id: 0, tipo: 'completada', titulo: 'Informe copiado', detalle: 'Pégalo donde quieras.' }); }
+      catch (e) { alert(textoInforme()); }
+    }
+    function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
@@ -2664,6 +2772,7 @@
             <div class="avatar" ${t.foto_url ? `style="background:url('${esc(t.foto_url)}') center/cover;color:transparent;"` : ''}>${esc(t.nombre[0] || '?')}</div>
             <input value="${esc(t.nombre)}" data-campo="nombre" aria-label="Nombre">
             <input value="${esc(t.correo || '')}" data-campo="correo" type="email" placeholder="correo@gmail.com" aria-label="Correo">
+            <input value="${esc(t.telefono || '')}" data-campo="telefono" type="tel" placeholder="WhatsApp +56 9…" aria-label="WhatsApp" style="max-width:170px;">
             <label style="margin:0;display:flex;gap:6px;align-items:center;white-space:nowrap;" title="% de lo cobrado que le corresponde">Comisión <input type="number" min="0" max="100" data-campo="comision" value="${t.comision ?? 50}" style="width:70px;padding:7px 8px;"> %</label>
             <label style="margin:0;display:flex;gap:6px;align-items:center;white-space:nowrap;"><input type="checkbox" data-campo="activo" ${t.activo?'checked':''}> Activo</label>
             <button class="boton-linea ancho-full" onclick="guardarTrabajador(${t.id})">Guardar</button>
@@ -2775,6 +2884,7 @@
       const c = document.querySelector(`#trab-${tid} .trab-cab`), id = 'estado-trab-' + tid;
       const nombre = c.querySelector('[data-campo=nombre]').value.trim();
       const correo = c.querySelector('[data-campo=correo]').value.trim().toLowerCase() || null;
+      const telefono = (c.querySelector('[data-campo=telefono]')?.value || '').trim().slice(0, 30) || null;
       const activo = c.querySelector('[data-campo=activo]').checked;
       const comision = parseInt(c.querySelector('[data-campo=comision]').value);
       const caja = $('trab-' + tid), local_id = Number(caja.querySelector('[data-campo=local_id]')?.value) || null;
@@ -2785,7 +2895,7 @@
       const antes = trabDe(tid);
       if (antes && local_id && antes.local_id !== local_id &&
           !confirm(`¿Mover a ${nombre} a ${nombreLocal(local_id)}? Sus servicios pasan a ser los de ese local (todos marcados; luego ajustas).`)) return;
-      const { error } = await db.from('trabajadores').update({ nombre, correo, activo, comision, local_id, foto_url }).eq('id', tid);
+      const { error } = await db.from('trabajadores').update({ nombre, correo, activo, comision, local_id, foto_url, ...(c.querySelector('[data-campo=telefono]') ? { telefono } : {}) }).eq('id', tid);
       if (error) return estado(id, error.code === '23505' ? 'Ese correo ya lo usa otro trabajador.' : 'Error: ' + error.message, 'error');
       await cargarEquipo();
       estado('estado-trab-' + tid, '✓ Guardado', 'ok');
