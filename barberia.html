@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="google" content="notranslate">
-  <title>Barbería</title>
+  <title>Reserva tu hora</title>
   <meta name="description" content="Reserva tu hora online.">
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -150,6 +150,13 @@
     html[data-tema="minimal"] :is(.serv, .barbero, .local, .contacto a) { box-shadow:0 1px 2px rgba(15,20,30,0.06); }
     html[data-tema="organico"] .serv:nth-child(even), html[data-tema="organico"] .barbero:nth-child(even) { border-radius:8px 28px 8px 28px; }
     html[data-tema="organico"] .barbero:nth-child(even) .foto { border-radius:45% 55% 42% 58% / 55% 45% 58% 42%; }
+    /* Vitrina de productos en la página del negocio */
+    .vitrina { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:14px; }
+    .vit { background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); overflow:hidden; text-decoration:none; color:inherit; transition:transform .15s, border-color .15s; }
+    .vit:hover { transform:translateY(-2px); border-color:var(--voltaje); }
+    .vit .img { aspect-ratio:1/1; background:var(--panel2) center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-size:36px; font-weight:800; color:var(--voltaje); }
+    .vit .txt { padding:12px; } .vit b { display:block; font-size:14px; line-height:1.3; }
+    .vit .p { margin-top:4px; font-weight:800; } .vit s { color:var(--gris); font-weight:400; font-size:12px; margin-right:4px; }
   </style>
 </head>
 <body>
@@ -174,6 +181,18 @@
     const $ = id => document.getElementById(id);
     const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const clp = x => "$" + Number(x || 0).toLocaleString("es-CL");
+    // Muestra hasta 8 productos de la tienda (destacados primero)
+    async function cargarVitrina(){
+      try {
+        const { data } = await db.rpc('tienda_config', { p_negocio: SLUG || null });
+        const prods = (data?.productos || []).filter(p => !p.agotado).slice(0, 8);
+        if (!prods.length || !$('vitrina')) return;
+        $('listaVitrina').innerHTML = prods.map(p => `<a class="vit" href="${tiendaUrl()}">
+          <div class="img" ${p.imagen_url ? `style="background-image:url('${esc(p.imagen_url)}')"` : ''}>${p.imagen_url ? '' : esc((p.nombre || '?')[0])}</div>
+          <div class="txt"><b>${esc(p.nombre)}</b><div class="p">${p.precio_oferta != null ? `<s>${clp(p.precio)}</s>` : ''}${clp(p.precio_oferta ?? p.precio)}</div></div></a>`).join('');
+        $('vitrina').classList.remove('oculto');
+      } catch (e) {}
+    }
     // Links a la agenda de ESTA barbería (en su dominio no hace falta ?b=)
     const CORTO = QS.has('_c') && SLUG && !DOMINIO_PROPIO;     // se llegó por twoweb.cl/minadeoro
     const agendaUrl = extra => CORTO ? '/' + SLUG + '/reservar' + (extra ? '?' + extra : '') : agendaUrlLarga(extra);
@@ -230,7 +249,7 @@
     }
 
     function pintarCabecera(n){
-      const nombre = n.nombre || 'Barbería';
+      const nombre = n.nombre || 'Reserva tu hora';
       document.title = nombre + (n.bienvenida ? ' — ' + n.bienvenida : ' — Reserva tu hora online');
       document.querySelector('meta[name="description"]').content = n.bienvenida || `Reserva tu hora en ${nombre}.`;
       $('marca').innerHTML = (n.logo_url ? `<img src="${esc(n.logo_url)}" alt="">` : '') + `<span>${esc(nombre)}</span>`;
@@ -258,7 +277,7 @@
           <div class="caja">
             ${n.logo_url ? `<img class="logo-grande" src="${esc(n.logo_url)}" alt="">` : ''}
             <h1>${esc(n.nombre)}</h1>
-            <p>${esc(n.bienvenida || (locales.length ? 'Barbería en ' + locales.map(l => l.nombre).join(' y ') + '. Reserva tu hora online en segundos.' : 'Reserva tu hora online en segundos.'))}</p>
+            <p>${esc(n.bienvenida || (locales.length ? 'Estamos en ' + locales.map(l => l.nombre).join(' y ') + '. Reserva tu hora online en segundos.' : 'Reserva tu hora online en segundos.'))}</p>
             <div class="acciones">
               <a class="boton" href="${agendaUrl()}">📅 Reservar hora</a>
               ${n.mod_tienda ? `<a class="boton sec" href="${tiendaUrl()}">🛍 Tienda online</a>` : ''}
@@ -275,10 +294,15 @@
         </section>
 
         ${trabs.length ? `<section class="bloque caja" id="equipo">
-          <div class="titulo"><div><small>Nuestro equipo</small><h2>${trabs.length === 1 ? 'Tu barbero' : 'Los barberos'}</h2></div></div>
+          <div class="titulo"><div><small>Nuestro equipo</small><h2>${trabs.length === 1 ? 'Tu ' + esc((n.pro || 'Profesional').toLowerCase()) : 'Nuestros ' + esc((n.pros || 'Profesionales').toLowerCase())}</h2></div></div>
           <div class="equipo">${trabs.map(t => `<div class="barbero">
               <div class="foto" ${t.foto_url ? `style="background-image:url('${esc(t.foto_url)}')"` : ''}>${t.foto_url ? '' : esc((t.nombre || '?')[0].toUpperCase())}</div>
               <b>${esc(t.nombre)}</b>${locales.length > 1 ? `<small>${esc(nombreLocal(t.local_id))}</small>` : ''}</div>`).join('')}</div>
+        </section>` : ''}
+
+        ${n.mod_tienda ? `<section class="bloque caja oculto" id="vitrina">
+          <div class="titulo"><div><small>Tienda online</small><h2>También puedes comprar</h2></div><a class="boton sec" href="${tiendaUrl()}">Ver toda la tienda →</a></div>
+          <div class="vitrina" id="listaVitrina"></div>
         </section>` : ''}
 
         ${locales.length ? `<section class="bloque caja" id="ubicacion">
@@ -303,9 +327,10 @@
           </div>
         </section>` : ''}
 
-        <section class="cierre"><div class="caja"><h2>Tu próximo corte está a un clic</h2><a class="boton" href="${agendaUrl()}">📅 Reservar hora</a></div></section>
-        <footer class="caja">© ${new Date().getFullYear()} ${esc(n.nombre)} · <a href="${agendaUrl()}">Reservar</a>${n.mod_tienda ? ` · <a href="${tiendaUrl()}">Tienda</a>` : ''} · <a href="panel.html">Acceso equipo</a><br>
+        <section class="cierre"><div class="caja"><h2>Tu próxima hora está a un clic</h2><a class="boton" href="${agendaUrl()}">📅 Reservar hora</a></div></section>
+        <footer class="caja">© ${new Date().getFullYear()} ${esc(n.nombre)} · <a href="${agendaUrl()}">Reservar</a>${n.mod_tienda ? ` · <a href="${tiendaUrl()}">Tienda</a>` : ''} · <a href="panel.html?n=${encodeURIComponent(n.slug || '')}">Acceso equipo</a><br>
           <span style="opacity:.75;">Página y agenda online con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener">${esc(CONF.MARCA || 'TwoWeb')}</a></span></footer>`;
+      if (n.mod_tienda) cargarVitrina();
       if (n.mod_tienda && !document.getElementById('navTienda')) $('menu').insertAdjacentHTML('afterbegin', `<a id="navTienda" href="${tiendaUrl()}">Tienda</a>`);
       if (!trabs.length) document.querySelector('#menu a[href="#equipo"]').classList.add('oculto');
       if (!locales.length) document.querySelector('#menu a[href="#ubicacion"]').classList.add('oculto');

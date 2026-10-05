@@ -179,6 +179,7 @@
     html[data-tema="neon"] .prod:hover { box-shadow:0 0 0 1px var(--voltaje), 0 0 18px color-mix(in srgb, var(--voltaje) 50%, transparent); }
     html[data-tema="burbuja"] :is(.prod, .contacto a) { border-color:transparent; box-shadow:0 10px 28px rgba(0,0,0,0.28); }
     html[data-tema="minimal"] :is(.prod, .contacto a) { box-shadow:0 1px 2px rgba(15,20,30,0.06); }
+    .hero .logo-grande { width:84px; height:84px; object-fit:contain; border-radius:var(--r); background:color-mix(in srgb, var(--fondo) 50%, transparent); margin-bottom:14px; display:block; }
   </style>
 </head>
 <body>
@@ -278,6 +279,7 @@
         <section class="hero ${n.portada_url ? 'con-foto' : ''}" id="inicio">
           ${n.portada_url ? `<div class="foto-fondo" style="background-image:url('${esc(n.portada_url)}')"></div>` : ''}
           <div class="caja">
+            ${n.logo_url ? `<img class="logo-grande" src="${esc(n.logo_url)}" alt="">` : ''}
             <h1>${esc(n.nombre)}</h1>
             <p>${esc(n.bienvenida || 'Elige tus productos, envía tu pedido y te confirmamos por WhatsApp.')}</p>
             <div class="acciones">
@@ -306,7 +308,7 @@
             ${n.correo ? `<a href="mailto:${esc(n.correo)}"><span class="ic">✉️</span><span>Correo<small>${esc(n.correo)}</small></span></a>` : ''}
           </div></section>` : ''}
 
-        <footer class="caja">© ${new Date().getFullYear()} ${esc(n.nombre)}${n.mod_agenda ? ` · <a href="${agendaUrl()}">Reservar hora</a>` : ''} · <a href="panel.html">Acceso equipo</a><br>
+        <footer class="caja">© ${new Date().getFullYear()} ${esc(n.nombre)}${n.mod_agenda ? ` · <a href="${agendaUrl()}">Reservar hora</a>` : ''} · <a href="panel.html?n=${encodeURIComponent(n.slug || '')}">Acceso equipo</a><br>
           <span style="opacity:.75;">Tienda online con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener">${esc(CONF.MARCA || 'TwoWeb')}</a></span></footer>`;
       $('navInfo').classList.toggle('oculto', !n.tienda_info);
       $('navContacto').classList.toggle('oculto', !(wsp || insta || n.correo));

@@ -518,6 +518,7 @@
         <button class="tab solo-admin" data-tab="equipo" onclick="verTab('equipo')" id="tabEquipo">Equipo y horarios</button>
         <button class="tab solo-admin mod-agenda" data-tab="servicios" onclick="verTab('servicios')">Servicios</button>
         <button class="tab solo-admin mod-agenda" data-tab="clientes" onclick="verTab('clientes')">Clientes</button>
+        <button class="tab solo-admin" data-tab="marca" onclick="verTab('marca')">🎨 Mi página</button>
         <button class="tab solo-super oculto" data-tab="negocios" onclick="verTab('negocios')">🏢 Negocios</button>
         <button class="tab solo-super oculto" data-tab="cobros" onclick="verTab('cobros')">💳 Planes y cobros</button>
         <button class="tab solo-trab mod-agenda" data-tab="mihorario" onclick="verTab('mihorario')">Mi horario</button>
@@ -599,7 +600,7 @@
           <div class="grid-2">
             <div><label for="nuevoNombre">Nombre (así aparece en la agenda)</label><input id="nuevoNombre" placeholder="Ej: Diego"></div>
             <div><label for="nuevoCorreo">Correo (con este entra al panel)</label><input id="nuevoCorreo" type="email" placeholder="diego@gmail.com"></div>
-            <div><label for="nuevaClaveTrab">Contraseña inicial (mín. 6)</label><input id="nuevaClaveTrab" type="text" placeholder="Ej: Barber2026"></div>
+            <div><label for="nuevaClaveTrab">Contraseña inicial (mín. 6)</label><input id="nuevaClaveTrab" type="text" placeholder="Ej: Equipo2026"></div>
             <div><label for="nuevaComision">Comisión del profesional (%)</label><input id="nuevaComision" type="number" min="0" max="100" value="50"></div>
             <div><label for="nuevoLocal">Local donde atiende</label><select id="nuevoLocal"></select></div>
           </div>
@@ -617,7 +618,7 @@
           <div id="listaServ"></div>
           <button class="boton-linea" style="margin-top:12px;" onclick="nuevoServicio()">+ Nuevo servicio</button>
           <p class="estado" id="estadoServ"></p>
-          <p class="nota">Cada servicio es de un local (así el mismo "Corte" puede costar distinto en cada sucursal). Al crear uno, lo hacen todos los barberos de ese local; en "Equipo y horarios" eliges quién hace qué.
+          <p class="nota">Cada servicio es de un local (así el mismo "Corte" puede costar distinto en cada sucursal). Al crear uno, lo hace todo el equipo de ese local; en "Equipo y horarios" eliges quién hace qué.
             La categoría agrupa las tarjetas en la agenda (ej: "Promociones" aparece primero). Los inactivos no aparecen en la agenda pública, pero se conservan en reservas antiguas.</p>
         </div>
       </div>
@@ -675,15 +676,15 @@
           <h3>Nuevo negocio</h3>
           <p class="nota" style="margin-bottom:10px;">Crea el negocio completo: su link, su primer local, la cuenta del administrador (entra de inmediato con ese correo y contraseña) y, si tiene agenda, servicios de ejemplo que después ajusta.</p>
           <div class="grid-2">
-            <div><label for="nnNombre">Nombre del negocio</label><input id="nnNombre" placeholder="Ej: Barbería Norte" oninput="sugerirSlug()"></div>
-            <div><label for="nnSlug">Nombre del link (cómo aparece: twoweb.cl/NOMBRE)</label><input id="nnSlug" placeholder="barberia-norte"><p class="nota" id="nnLink"></p></div>
+            <div><label for="nnNombre">Nombre del negocio</label><input id="nnNombre" placeholder="Ej: Estética Luna" oninput="sugerirSlug()"></div>
+            <div><label for="nnSlug">Nombre del link (cómo aparece: twoweb.cl/NOMBRE)</label><input id="nnSlug" placeholder="estetica-luna"><p class="nota" id="nnLink"></p></div>
             <div><label for="nnRubro">Categoría del negocio</label><select id="nnRubro" onchange="sugerirModulos()"></select></div>
             <div><label for="nnPlan">Plan</label><select id="nnPlan" onchange="pintarPrecioNuevo()"></select><p class="nota" id="nnPrecio"></p></div>
             <div><label for="nnEspecial">Precio especial mensual (opcional)</label><input id="nnEspecial" type="number" min="0" step="10" placeholder="Vacío = precio del plan" oninput="pintarPrecioNuevo()"></div>
             <div><label for="nnEstado">Estado</label><select id="nnEstado"><option value="prueba">Prueba gratis</option><option value="activo">Activo (pagando)</option></select></div>
             <div><label for="nnAdmin">Nombre del administrador</label><input id="nnAdmin" placeholder="Ej: Nicolás"></div>
             <div><label for="nnCorreo">Correo del administrador (con este entra)</label><input id="nnCorreo" type="email" placeholder="dueño@gmail.com"></div>
-            <div><label for="nnClave">Contraseña inicial (mín. 6)</label><input id="nnClave" type="text" placeholder="Ej: Barber2026"></div>
+            <div><label for="nnClave">Contraseña inicial (mín. 6)</label><input id="nnClave" type="text" placeholder="Ej: Equipo2026"></div>
             <div><label for="nnWsp">WhatsApp del negocio</label><input id="nnWsp" type="tel" placeholder="+56 9 1234 5678"></div>
             <div><label for="nnLocal">Nombre del local</label><input id="nnLocal" placeholder="Igual al negocio si lo dejas vacío"></div>
             <div><label for="nnDir">Dirección</label><input id="nnDir" placeholder="Ej: Av. Siempre Viva 123, Maipú"></div>
@@ -780,6 +781,8 @@
       </div>
 
       <!-- Mi horario (trabajador) -->
+      <div id="tab-marca" class="oculto"><div id="marcaCont"></div></div>
+
       <div id="tab-mihorario" class="oculto">
         <div class="tarjeta"><div id="miHorario"></div><p class="nota" style="margin-top:10px;">Si necesitas un cambio, pídeselo al administrador.</p></div>
       </div>
@@ -869,7 +872,7 @@
     const TEMAS = {
       clasico:  { n:'Clásico',          d:'Oscuro y ordenado',              fondo:'#111318', panel:'#262a33', acento:'#ff7a2f', r:'6px',  rb:'4px' },
       burbuja:  { n:'Burbuja',          d:'Todo redondo y suave',           fondo:'#131726', panel:'#262c44', acento:'#7c83ff', r:'14px', rb:'99px' },
-      vintage:  { n:'Barbería clásica', d:'Papel crema y poste de barbero', fondo:'#efe6d6', panel:'#fbf6ec', acento:'#a4161a', r:'1px',  rb:'1px' },
+      vintage:  { n:'Vintage', d:'Papel crema y bordes dobles', fondo:'#efe6d6', panel:'#fbf6ec', acento:'#a4161a', r:'1px',  rb:'1px' },
       neon:     { n:'Urbano neón',      d:'Negro, recto y con brillo',      fondo:'#07080c', panel:'#161a24', acento:'#00e5ff', r:'0',    rb:'0' },
       minimal:  { n:'Minimal claro',    d:'Blanco, limpio y simple',        fondo:'#f4f5f7', panel:'#ffffff', acento:'#111827', r:'5px',  rb:'3px' },
       organico: { n:'Orgánico',         d:'Formas de hoja, tonos tierra',   fondo:'#171512', panel:'#2d2923', acento:'#d9a05b', r:'14px 3px', rb:'10px 2px' },
@@ -979,10 +982,24 @@
       const { data } = await db.auth.getSession(); cargarSesion(data.session);
     }
 
+    // Login con la marca del negocio cuando se entra desde su página (panel.html?n=link-del-negocio)
+    async function marcaLogin(){
+      const slug = new URLSearchParams(location.search).get('n'); if (!slug || marcaLogin.hecho) return; marcaLogin.hecho = true;
+      try {
+        const { data } = await db.rpc('agenda_config', { p_negocio: slug });
+        const n = data?.negocio; if (!n?.nombre) return;
+        document.querySelectorAll('#vistaLogin h1.marca-neg span').forEach(e => e.textContent = n.nombre);
+        const img = document.querySelector('#vistaLogin .logo-neg');
+        if (img && n.logo_url){ img.src = n.logo_url; img.classList.remove('oculto'); }
+        document.querySelector('#vistaLogin .sub').textContent = 'Acceso para el equipo de ' + n.nombre + '.';
+        document.title = n.nombre + ' — Acceso equipo';
+        aplicarTema(n.tema, n.color);
+      } catch (e) {}
+    }
     async function cargarSesion(session){
       if (modoRecuperacion){ mostrar('vistaNuevaClave'); return; }
       if (!session){
-        yo = null; mostrar('vistaLogin');
+        yo = null; mostrar('vistaLogin'); marcaLogin();
         $('modoPestanaLogin').innerHTML = MODO_PESTANA
           ? `<p class="nota">🔒 Esta pestaña usa una sesión propia: puedes entrar con otra cuenta sin cerrar la de las demás pestañas. <button class="link" style="margin:0;" onclick="usarPestanaIndependiente(false)">Volver a la sesión normal</button></p>`
           : `<p class="nota">¿Necesitas otra cuenta abierta al mismo tiempo en este navegador? <button class="link" style="margin:0;" onclick="usarPestanaIndependiente(true)">Entrar solo en esta pestaña</button></p>`;
@@ -1005,7 +1022,7 @@
       pintarNegocio();
       $('yoAvatar').textContent = (yo.nombre || '?')[0].toUpperCase();
       $('yoNombre').textContent = yo.nombre || yo.correo;
-      $('yoRol').textContent = yo.rol; $('yoRol').className = 'rol ' + yo.rol;
+      $('yoRol').textContent = yo.super ? 'super admin' : yo.rol; $('yoRol').className = 'rol ' + yo.rol;
       $('yoPestana').classList.toggle('oculto', !MODO_PESTANA);
       aplicarVisibilidad();
       mostrar('vistaPanel');
@@ -1066,7 +1083,7 @@
     }
     function verTab(t){
       document.querySelectorAll('.tab').forEach(b => b.classList.toggle('sel', b.dataset.tab === t));
-      ['midia','dia','semana','lista','caja','equipo','servicios','clientes','negocios','mihorario','pedidos','productos','cobros'].forEach(x => $('tab-'+x).classList.toggle('oculto', x !== t));
+      ['midia','dia','semana','lista','caja','equipo','servicios','clientes','negocios','mihorario','pedidos','productos','cobros','marca'].forEach(x => $('tab-'+x).classList.toggle('oculto', x !== t));
       if (t === 'cobros') cargarCobros();
       if (t === 'pedidos') cargarPedidos();
       if (t === 'productos') cargarProductos();
@@ -1080,6 +1097,7 @@
       if (t === 'clientes') cargarClientes();
       if (t === 'negocios') cargarNegocios();
       if (t === 'mihorario') dibujarMiHorario();
+      if (t === 'marca') dibujarMarca();
     }
 
     // ================= GRILLA DE AGENDA (se usa en "día" y en "semana") =================
@@ -1844,32 +1862,8 @@
         <button class="boton-linea" style="margin-top:10px;" onclick="guardarMiTema()">Guardar mi apariencia</button>
         ${yo.rol === 'admin' && !yo.super ? `<h3 style="margin-top:18px;">💳 Mi plan</h3><div id="miPlan"><p class="nota">Cargando…</p></div>` : ''}
         ${yo.rol === 'admin' ? `<h3 style="margin-top:18px;">Mi negocio</h3>
-          <label>🌐 Tu página web (portada, servicios, equipo, ubicación y botón de reservar)</label>
-          <div style="display:flex;gap:6px;"><input id="fLinkWeb" readonly value="${esc(linkWeb())}"><button class="boton-linea" onclick="copiarLink('fLinkWeb')">Copiar</button><a class="boton-linea" href="${esc(linkWeb())}" target="_blank" rel="noopener">Abrir</a></div>
-          ${conAgenda() ? `<label>📅 Link directo a tu agenda (para la bio de Instagram y WhatsApp)</label>
-          <div style="display:flex;gap:6px;"><input id="fLinkAgenda" readonly value="${esc(linkAgenda())}"><button class="boton-linea" onclick="copiarLink('fLinkAgenda')">Copiar</button></div>` : ''}
-          ${conTienda() ? `<label>🛍 Link de tu tienda online</label>
-          <div style="display:flex;gap:6px;"><input id="fLinkTienda" readonly value="${esc(linkTienda())}"><button class="boton-linea" onclick="copiarLink('fLinkTienda')">Copiar</button><a class="boton-linea" href="${esc(linkTienda())}" target="_blank" rel="noopener">Abrir</a></div>` : ''}
-          ${NEG.dominio ? '' : `<p class="nota" style="margin-top:6px;">💡 ¿Quieres tu propio dominio, como <b>${esc(NEG.slug || 'tubarberia')}.cl</b>? Pídeselo a ${esc(MARCA)}.</p>`}
-          <div class="form-grid" style="margin-top:8px;">
-            <div class="full"><label>Nombre que ven tus clientes</label><input id="fNegNombre" value="${esc(NEG.nombre || '')}"></div>
-            <div><label>WhatsApp</label><input id="fNegWsp" value="${esc(NEG.whatsapp || '')}" placeholder="+56 9 …"></div>
-            <div><label>Color de tu marca</label><input id="fNegColor" type="color" value="${/^#[0-9a-f]{6}$/i.test(NEG.color || '') ? NEG.color : '#ff7a2f'}" style="height:42px;padding:4px;" oninput="pintarSelectorNeg()"></div>
-            <div class="full"><label>Tema de tu agenda de reservas (lo que ven tus clientes)</label>
-              <div class="temas" id="temasNeg">${selectorNeg()}</div>
-              <a class="link" id="verTemaAgenda" style="display:inline-block;margin-top:6px;" target="_blank" rel="noopener" href="${linkPrueba()}">👁 Ver mi agenda con este tema</a></div>
-            <div><label>Instagram</label><input id="fNegInsta" value="${esc(NEG.instagram || '')}" placeholder="@tubarberia"></div>
-            <div class="full"><label>Frase de bienvenida en tu agenda (opcional, máx. 160)</label><input id="fNegBienv" maxlength="160" value="${esc(NEG.bienvenida || '')}" placeholder="Ej: Cortes clásicos y fade desde 2015 · Te esperamos"></div>
-            <div class="full"><label>Logo (cuadrado, se ve arriba en tu panel y agenda)</label>
-              <input type="file" id="fNegLogoArch" accept="image/*" onchange="subirImagenNegocio('logo', this)">
-              <div class="prev-img" id="prevLogo">${NEG.logo_url ? `<img src="${esc(NEG.logo_url)}" alt="logo"><button class="link" style="margin:0;" onclick="quitarImagenNegocio('logo')">Quitar logo</button>` : '<span class="nota">Sin logo: se muestra el nombre.</span>'}</div></div>
-            <div class="full"><label>Imagen de portada (foto de tu local o de un corte; se ve arriba de tu agenda)</label>
-              <input type="file" id="fNegPortadaArch" accept="image/*" onchange="subirImagenNegocio('portada', this)">
-              <div class="prev-img" id="prevPortada">${NEG.portada_url ? `<img src="${esc(NEG.portada_url)}" alt="portada"><button class="link" style="margin:0;" onclick="quitarImagenNegocio('portada')">Quitar portada</button>` : '<span class="nota">Sin portada.</span>'}</div></div>
-          </div>
-          <p class="nota">Las imágenes se achican solas para que tu agenda cargue rápido.</p>
-          <p class="nota" style="margin-top:6px;">🎁 Descuento 10% primera visita para clientes nuevos: <b>${NEG.promo_10 ? 'activo en tu agenda' : 'apagado'}</b>${yo.super ? '' : ' · para activarlo o apagarlo, escríbele a ' + esc(MARCA)}.</p>
-          <button class="boton" style="margin-top:8px;" onclick="guardarMiNegocio()">Guardar datos del negocio</button>` : ''}
+          <p class="nota">El nombre, logo, portada, colores y cómo se ve tu agenda ahora están en la pestaña <b>🎨 Mi página</b>.</p>
+          <button class="boton-linea" style="margin-top:8px;" onclick="cerrarDetalle(); verTab('marca')">Ir a 🎨 Mi página</button>` : ''}
         <div class="det-acciones"><button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
         <p class="estado" id="estadoCuenta"></p>`;
       $('fondoDetalle').classList.remove('oculto');
@@ -1890,8 +1884,8 @@
         <p class="nota" style="margin-top:6px;">Para cambiar de plan o pagar tu mensualidad: <a class="link" style="margin:0;" target="_blank" rel="noopener" href="https://wa.me/${esc(CONF.WHATSAPP || '')}?text=${encodeURIComponent('Hola TwoWeb, quiero consultar por mi plan de ' + (NEG.nombre || ''))}">escríbele a ${esc(MARCA)}</a>.</p>`;
     }
     async function copiarLink(id){
-      try { await navigator.clipboard.writeText($(id).value); estado('estadoCuenta', '✓ Link copiado', 'ok'); }
-      catch(e) { $(id).select(); estado('estadoCuenta', 'Selecciona y copia el link', ''); }
+      try { await navigator.clipboard.writeText($(id).value); estado('estadoMarca', '✓ Link copiado', 'ok'); }
+      catch(e) { $(id).select(); estado('estadoMarca', 'Selecciona y copia el link', ''); }
     }
     // Achica una imagen en el navegador y la devuelve como texto (data:image/...) liviano
     function comprimirImagen(archivo, lado, maxLargo){
@@ -1920,23 +1914,74 @@
     async function subirImagenNegocio(tipo, input){
       const t = IMG_NEG[tipo];
       try {
-        estado('estadoCuenta', 'Preparando imagen…');
+        estado('estadoMarca', 'Preparando imagen…');
         const d = await comprimirImagen(input.files[0], t.lado, t.max);
         imgNegNueva[t.campo] = d;
         $(t.prev).innerHTML = `<img src="${d}" alt="${t.txt}"><span class="nota">${Math.round(d.length / 1024)} KB · falta Guardar</span>`;
-        estado('estadoCuenta', 'Listo. Presiona "Guardar datos del negocio".', 'ok');
-      } catch(e) { estado('estadoCuenta', e.message, 'error'); input.value = ''; }
+        estado('estadoMarca', 'Listo. Presiona "Guardar mi página".', 'ok');
+      } catch(e) { estado('estadoMarca', e.message, 'error'); input.value = ''; }
     }
     function quitarImagenNegocio(tipo){
       const t = IMG_NEG[tipo]; imgNegNueva[t.campo] = '';
       $(t.prev).innerHTML = `<span class="nota">Se quitará al guardar.</span>`;
+    }
+    // ----- Pestaña 🎨 Mi página (solo admin) -----
+    function dibujarMarca(){
+      if (yo.rol !== 'admin') return;
+      imgNegNueva = {}; temaNegNuevo = '';
+      $('marcaCont').innerHTML = `<div class="tarjeta">
+          <h2 style="margin:0 0 4px;">🎨 Mi página</h2>
+          <p class="nota" style="margin-bottom:10px;">Así te ven tus clientes: tu nombre, logo, portada, colores y la agenda${conTienda() ? ' y tienda' : ''}. Solo el administrador puede cambiarlo.</p>
+
+
+          <div class="form-grid" style="margin-top:8px;">
+            <div class="full"><label>Nombre que ven tus clientes</label><input id="fNegNombre" value="${esc(NEG.nombre || '')}"></div>
+            <div><label>WhatsApp</label><input id="fNegWsp" value="${esc(NEG.whatsapp || '')}" placeholder="+56 9 …"></div>
+            <div><label>Color de tu marca</label><input id="fNegColor" type="color" value="${/^#[0-9a-f]{6}$/i.test(NEG.color || '') ? NEG.color : '#ff7a2f'}" style="height:42px;padding:4px;" oninput="pintarSelectorNeg()"></div>
+            <div class="full"><label>Tema de tu agenda de reservas (lo que ven tus clientes)</label>
+              <div class="temas" id="temasNeg">${selectorNeg()}</div>
+              <a class="link" id="verTemaAgenda" style="display:inline-block;margin-top:6px;" target="_blank" rel="noopener" href="${linkPrueba()}">👁 Ver mi agenda con este tema</a></div>
+            <div><label>Instagram</label><input id="fNegInsta" value="${esc(NEG.instagram || '')}" placeholder="@tunegocio"></div>
+            <div class="full"><label>Frase de bienvenida en tu agenda (opcional, máx. 160)</label><input id="fNegBienv" maxlength="160" value="${esc(NEG.bienvenida || '')}" placeholder="Ej: Atención personalizada desde 2015 · Te esperamos"></div>
+            <div class="full"><label>Logo (cuadrado, se ve arriba en tu panel y agenda)</label>
+              <input type="file" id="fNegLogoArch" accept="image/*" onchange="subirImagenNegocio('logo', this)">
+              <div class="prev-img" id="prevLogo">${NEG.logo_url ? `<img src="${esc(NEG.logo_url)}" alt="logo"><button class="link" style="margin:0;" onclick="quitarImagenNegocio('logo')">Quitar logo</button>` : '<span class="nota">Sin logo: se muestra el nombre.</span>'}</div></div>
+            <div class="full"><label>Imagen de portada (foto de tu local o de tu trabajo; se ve arriba de tu página y agenda)</label>
+              <input type="file" id="fNegPortadaArch" accept="image/*" onchange="subirImagenNegocio('portada', this)">
+              <div class="prev-img" id="prevPortada">${NEG.portada_url ? `<img src="${esc(NEG.portada_url)}" alt="portada"><button class="link" style="margin:0;" onclick="quitarImagenNegocio('portada')">Quitar portada</button>` : '<span class="nota">Sin portada.</span>'}</div></div>
+          </div>
+          <p class="nota">Las imágenes se achican solas para que tu agenda cargue rápido.</p>
+          <p class="nota" style="margin-top:6px;">🎁 Descuento 10% primera visita para clientes nuevos: <b>${NEG.promo_10 ? 'activo en tu agenda' : 'apagado'}</b>${yo.super ? '' : ' · para activarlo o apagarlo, escríbele a ' + esc(MARCA)}.</p>
+          
+          <h3 style="margin-top:22px;">🗣 Cómo llamas a tu equipo</h3>
+          <p class="nota">Se usa en tu agenda y tu página (ej: "Elige tu ${esc((NEG.pro || 'profesional').toLowerCase())}"). Por tu rubro${NEG.rubro ? ' (' + esc(NEG.rubro) + ')' : ''} sugerimos <b>${esc(NEG.rubro_pro || 'Profesional')}</b>.</p>
+          <div class="form-grid" style="margin-top:8px;">
+            <div><label>En singular</label><input id="fNegPro" maxlength="30" value="${esc(NEG.palabra_pro || '')}" placeholder="${esc(NEG.rubro_pro || 'Profesional')}"></div>
+            <div><label>En plural</label><input id="fNegPros" maxlength="30" value="${esc(NEG.palabra_pros || '')}" placeholder="${esc(NEG.pros || 'Profesionales')}"></div>
+          </div>
+          ${conAgenda() && conTienda() ? `<h3 style="margin-top:22px;">🛍 Productos al reservar</h3>
+          <label class="check-linea"><input type="checkbox" id="fNegTrasReserva" ${NEG.tienda_tras_reserva !== false ? 'checked' : ''}>
+            Al terminar de reservar, ofrecer mis productos para que el cliente los retire y pague en su hora</label>
+          <p class="nota">Aparecen tus productos activos con stock (los destacados primero). El pedido te llega a 🛒 Pedidos con su hora.</p>` : ''}
+          <h3 style="margin-top:22px;">🔗 Tus links para compartir</h3>
+          <label>🌐 Tu página web (portada, servicios, equipo, ubicación y botón de reservar)</label>
+          <div style="display:flex;gap:6px;"><input id="fLinkWeb" readonly value="${esc(linkWeb())}"><button class="boton-linea" onclick="copiarLink('fLinkWeb')">Copiar</button><a class="boton-linea" href="${esc(linkWeb())}" target="_blank" rel="noopener">Abrir</a></div>
+          ${conAgenda() ? `<label>📅 Link directo a tu agenda (para la bio de Instagram y WhatsApp)</label>
+          <div style="display:flex;gap:6px;"><input id="fLinkAgenda" readonly value="${esc(linkAgenda())}"><button class="boton-linea" onclick="copiarLink('fLinkAgenda')">Copiar</button></div>` : ''}
+          ${conTienda() ? `<label>🛍 Link de tu tienda online</label>
+          <div style="display:flex;gap:6px;"><input id="fLinkTienda" readonly value="${esc(linkTienda())}"><button class="boton-linea" onclick="copiarLink('fLinkTienda')">Copiar</button><a class="boton-linea" href="${esc(linkTienda())}" target="_blank" rel="noopener">Abrir</a></div>` : ''}
+          ${NEG.dominio ? '' : `<p class="nota" style="margin-top:6px;">💡 ¿Quieres tu propio dominio, como <b>${esc(NEG.slug || 'tunegocio')}.cl</b>? Pídeselo a ${esc(MARCA)}.</p>`}
+          <div class="det-acciones" style="margin-top:16px;"><button class="boton" onclick="guardarMiNegocio()">Guardar mi página</button>
+            <a class="boton-linea" href="${esc(linkWeb())}" target="_blank" rel="noopener">👁 Ver cómo quedó</a></div>
+          <p class="estado" id="estadoMarca"></p>
+        </div>`;
     }
     // ----- Temas en Mi cuenta -----
     let temaMio = '', temaNegNuevo = '';
     function selectorMio(){
       const hereda = !temaMio, tb = TEMAS[NEG.tema] || TEMAS.clasico;
       return `<button class="tema-op ${hereda ? 'sel' : ''}" onclick="elegirMio('')"><div class="mini" style="background:${tb.fondo};border-radius:${tb.r};align-items:center;justify-content:center;color:#fff;font-size:22px;">🏢</div>
-          <b>Igual que la barbería</b><small>${esc(tb.n)}</small></button>` +
+          <b>Igual que mi negocio</b><small>${esc(tb.n)}</small></button>` +
         Object.keys(TEMAS).map(k => tarjetaTema(k, temaMio === k, `elegirMio('${k}')`)).join('');
     }
     function colorMio(){ return $('miColorPropio')?.checked ? $('miColor').value : ''; }
@@ -1953,18 +1998,19 @@
     function pintarSelectorNeg(){ if ($('temasNeg')) { $('temasNeg').innerHTML = selectorNeg(); $('verTemaAgenda').href = linkPrueba(); } }
     function elegirTemaNeg(k){
       temaNegNuevo = k; $('fNegColor').value = TEMAS[k].acento;       // color sugerido del tema (se puede cambiar)
-      pintarSelectorNeg(); estado('estadoCuenta', `Tema "${TEMAS[k].n}" elegido con su color sugerido. Presiona "Guardar datos del negocio".`, 'ok');
+      pintarSelectorNeg(); estado('estadoMarca', `Tema "${TEMAS[k].n}" elegido con su color sugerido. Presiona "Guardar mi página".`, 'ok');
     }
     async function guardarMiNegocio(){
       const p = { nombre: $('fNegNombre').value.trim(), whatsapp: $('fNegWsp').value.trim(), color: $('fNegColor').value,
                   instagram: $('fNegInsta').value.trim().replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/[/?].*$/, '').replace(/^@?/, '@').replace(/^@$/, ''),
-                  bienvenida: $('fNegBienv').value.trim(), ...imgNegNueva, ...(temaNegNuevo ? { tema: temaNegNuevo } : {}) };
-      estado('estadoCuenta', 'Guardando…');
+                  bienvenida: $('fNegBienv').value.trim(), palabra_pro: $('fNegPro').value.trim(), palabra_pros: $('fNegPros').value.trim(),
+                  ...($('fNegTrasReserva') ? { tienda_tras_reserva: $('fNegTrasReserva').checked } : {}), ...imgNegNueva, ...(temaNegNuevo ? { tema: temaNegNuevo } : {}) };
+      estado('estadoMarca', 'Guardando…');
       const { error } = await db.rpc('guardar_mi_negocio', { p });
-      if (error) return estado('estadoCuenta', 'Error: ' + error.message, 'error');
+      if (error) return estado('estadoMarca', 'Error: ' + error.message, 'error');
       imgNegNueva = {}; temaNegNuevo = '';
       const { data } = await db.rpc('mi_sesion'); NEG = data.negocio || NEG; yo.mi_tema = data.mi_tema; yo.mi_color = data.mi_color; pintarNegocio();
-      estado('estadoCuenta', '✓ Guardado. Tu agenda ya muestra estos datos.', 'ok');
+      dibujarMarca(); estado('estadoMarca', '✓ Guardado. Tu página y tu agenda ya muestran estos cambios.', 'ok');
     }
     async function cambiarMiClave(){
       const a = $('mcClave').value, b = $('mcClave2').value;
@@ -2425,7 +2471,7 @@
     function listaEnvio(){ return envio.lista.filter(c => !envio.soloPromos || c.acepta_promos); }
     function dibujarEnvio(){
       const wsp = envio.tipo === 'whatsapp', l = listaEnvio(), prev = { asunto: $('envAsunto')?.value, msg: $('envMsg')?.value };
-      const msg = prev.msg ?? (wsp ? `Hola {nombre} 👋 Te escribimos de ${NEG.nombre || 'la barbería'}: ` : 'Hola {nombre},\n\n');
+      const msg = prev.msg ?? (wsp ? `Hola {nombre} 👋 Te escribimos de ${NEG.nombre || 'tu negocio'}: ` : 'Hola {nombre},\n\n');
       $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">${wsp ? '💬 Mensaje por WhatsApp' : '✉ Correo'} a ${l.length} cliente${l.length === 1 ? '' : 's'}</h3>
         <label class="check-linea"><input type="checkbox" ${envio.soloPromos ? 'checked' : ''} onchange="envio.soloPromos = this.checked; dibujarEnvio()"> Solo a quienes aceptaron promociones
           <span class="nota">(desmárcalo solo para avisos importantes, ej: cambio de horario)</span></label>
@@ -2522,7 +2568,7 @@
             <a class="link" style="margin:0;" href="${esc(linkWeb(n))}" target="_blank" rel="noopener">🌐 ${esc(n.dominio || linkWeb(n).replace(/^https?:\/\//, ''))}</a>
             ${esPrincipal(n) ? '' : `<label class="mini-lbl">Nombre del link</label><input class="dominio-neg" value="${esc(n.slug)}" title="Cómo aparece en twoweb.cl/NOMBRE (solo letras, números y guiones)" onchange="cambiarSlug(${n.id}, this)">
             <label class="mini-lbl">Dominio propio</label>`}
-            <input class="dominio-neg ${esPrincipal(n) ? 'oculto' : ''}" placeholder="dominio.cl (opcional)" value="${esc(n.dominio || '')}" title="Dominio propio de la barbería. Déjalo vacío si no tiene."
+            <input class="dominio-neg ${esPrincipal(n) ? 'oculto' : ''}" placeholder="dominio.cl (opcional)" value="${esc(n.dominio || '')}" title="Dominio propio del negocio. Déjalo vacío si no tiene."
               onchange="cambiarDominio(${n.id}, this)"></td>
           <td style="min-width:170px;"><select onchange="actualizarNegocio(${n.id}, { plan: this.value })">${(PLANES_L.length ? PLANES_L : [{ codigo: n.plan, nombre: n.plan_nombre || n.plan }]).map(p => `<option value="${esc(p.codigo)}" ${p.codigo === n.plan ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('')}</select>
             <select style="margin-top:6px;" onchange="actualizarNegocio(${n.id}, { rubro_id: this.value })"><option value="">Sin categoría</option>${RUBROS_L.map(r => `<option value="${r.id}" ${r.id === n.rubro_id ? 'selected' : ''}>${esc(r.icono)} ${esc(r.nombre)}</option>`).join('')}</select>
@@ -2571,7 +2617,7 @@
       const s = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
       input.value = s;
       if (!s || s === n.slug) return;
-      if (!confirm(`¿Cambiar el link de "${n.nombre}" a:\n${linkWeb({ ...n, slug: s, dominio: null })}\n\nOjo: el link antiguo (${n.slug}) deja de funcionar. Avísale a la barbería para que actualice su Instagram.`)) { input.value = n.slug; return; }
+      if (!confirm(`¿Cambiar el link de "${n.nombre}" a:\n${linkWeb({ ...n, slug: s, dominio: null })}\n\nOjo: el link antiguo (${n.slug}) deja de funcionar. Avísale al negocio para que actualice su Instagram.`)) { input.value = n.slug; return; }
       if (['agenda', 'panel', 'barberia', 'index', 'imagenes', 'supabase', 'tienda', 'reservar', 'config'].includes(s)) { alert('Ese nombre está reservado por el sistema.'); input.value = n.slug; return; }
       actualizarNegocio(id, { slug: s });
     }

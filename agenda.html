@@ -306,6 +306,29 @@
     html[data-tema="organico"] :is(.local, .barbero):hover { transform:rotate(-0.8deg) translateY(-2px); }
     html[data-tema="organico"] .cat::after { height:0; border-top:2px dotted color-mix(in srgb, var(--voltaje) 45%, transparent); background:none; }
     html[data-tema="organico"] h2 { font-size:25px; font-weight:800; }
+    /* Productos después de reservar */
+    .extra { margin-top:18px; background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:16px; }
+    .extra-cab { display:flex; gap:12px; align-items:flex-start; margin-bottom:12px; }
+    .extra-cab h3, .extra-ok h3 { font-size:17px; margin:0 0 4px; }
+    .extra-ic { font-size:26px; line-height:1; }
+    .prods { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+    .prod { border:1px solid var(--borde); border-radius:calc(var(--r) - 4px); overflow:hidden; display:flex; flex-direction:column; background:color-mix(in srgb, var(--panel) 85%, var(--hueso) 4%); transition:border-color .2s; }
+    .prod.sel { border-color:var(--voltaje); }
+    .prod-img { aspect-ratio:1/1; background:color-mix(in srgb, var(--voltaje) 14%, transparent) center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-size:34px; font-weight:800; color:var(--voltaje); position:relative; }
+    .prod-tag { position:absolute; top:8px; left:8px; background:var(--voltaje); color:var(--sobre); font-size:11px; font-weight:800; padding:3px 8px; border-radius:99px; text-transform:uppercase; }
+    .prod-info { padding:10px 10px 6px; flex:1; }
+    .prod-info b { display:block; font-size:14px; line-height:1.3; }
+    .prod-precio { margin-top:4px; font-size:14px; } .prod-precio s { color:var(--gris); font-size:12px; }
+    .prod-quedan { color:#f87171; font-size:11px; font-weight:700; }
+    .prod-cant { padding:0 10px 10px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+    .prod-cant button { border:1px solid var(--borde); background:transparent; color:var(--hueso); border-radius:10px; height:34px; min-width:34px; font-size:16px; cursor:pointer; }
+    .prod-cant .prod-add { width:100%; font-size:13px; font-weight:700; border-color:color-mix(in srgb, var(--voltaje) 55%, transparent); color:var(--voltaje); }
+    .prod-cant span { font-weight:800; }
+    .extra-pie { margin-top:12px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .extra-pie small { display:block; color:var(--gris); } .extra-pie strong { font-size:20px; }
+    .extra-pie .boton { width:auto; margin:0; padding:12px 18px; }
+    .extra-ok { display:flex; gap:12px; align-items:center; }
+    .extra-ok .ok { flex:none; width:46px; height:46px; font-size:22px; margin:0; }
   </style>
 </head>
 <body>
@@ -356,7 +379,7 @@
       </div>
     </div>
 
-    <footer>Agenda online <span id="creditos"></span> · <a href="panel.html">Acceso equipo</a></footer>
+    <footer>Agenda online <span id="creditos"></span> · <a id="accesoEquipo" href="panel.html">Acceso equipo</a></footer>
   </main>
 
   <div class="barra" id="barra"><div class="caja"><div class="barra-txt" id="barraTxt"></div><button class="boton" id="barraBtn">Continuar</button></div></div>
@@ -387,7 +410,12 @@
     const DIAS_ADELANTE = 120;
     const AUTO = "auto";          // "Cualquiera disponible"
     const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-    const PASOS = ['Sucursal', 'Servicio', 'Barbero', 'Fecha', 'Datos'];
+    // Palabras del rubro de cada negocio (Barbero, Estilista, Manicurista, Profesional…)
+    const PRO  = () => CFG.negocio?.pro  || 'Profesional';
+    const PROS = () => CFG.negocio?.pros || 'Profesionales';
+    const pro = () => PRO().toLowerCase(), pros = () => PROS().toLowerCase();
+    const esBarberia = () => /^barber/i.test(PRO());
+    const PASOS = () => ['Local', 'Servicio', PRO(), 'Fecha', 'Datos'];
     const DOMINIOS = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.cl'];
     const PAISES = [['+56','🇨🇱 +56'],['+54','🇦🇷 +54'],['+51','🇵🇪 +51'],['+57','🇨🇴 +57'],['+58','🇻🇪 +58'],['+593','🇪🇨 +593'],
                     ['+591','🇧🇴 +591'],['+595','🇵🇾 +595'],['+598','🇺🇾 +598'],['+55','🇧🇷 +55'],['+1','🇺🇸 +1'],['+34','🇪🇸 +34']];
@@ -496,6 +524,7 @@
       const tema = TEMAS.includes(QS.get('tema')) ? QS.get('tema') : n.tema, color = /^#[0-9a-f]{6}$/i.test(QS.get('color') || '') ? QS.get('color') : n.color;
       aplicarTema(tema, color);
       if (!QS.get('tema')) try { localStorage.setItem(K_TEMA, JSON.stringify({ tema, color })); } catch(e) {}
+      if (n.slug && $('accesoEquipo')) $('accesoEquipo').href = 'panel.html?n=' + encodeURIComponent(n.slug);
       $('creditos').innerHTML = (n.slug || PRINCIPAL) !== PRINCIPAL ? `· con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener" style="color:inherit;">${esc(CONF.MARCA || 'TwoWeb')}</a>` : '';
     }
     // ---------- TEMAS: colores, formas y letras de cada barbería ----------
@@ -569,7 +598,7 @@
     }
 
     function dibujar(haciaAtras){
-      $('stepper').innerHTML = PASOS.map((p, i) => {
+      $('stepper').innerHTML = PASOS().map((p, i) => {
         const k = i + 1, cls = k < paso ? 'hecho' : k === paso ? 'actual' : '';
         return `<button class="st ${cls}" onclick="irAPaso(${k})" ${k < paso ? '' : 'tabindex="-1"'}><span class="st-num">${k < paso ? '✓' : k}</span><span class="st-txt">${p.toUpperCase()}</span></button>`;
       }).join('');
@@ -642,7 +671,7 @@
 
     // ---------- 1) SUCURSAL ----------
     function capaSucursal(){
-      $('vista').innerHTML = `<h2>¿Dónde te quieres atender?</h2><p class="ayuda">Elige la barbería. Cada local tiene su propio equipo y precios.</p>
+      $('vista').innerHTML = `<h2>¿Dónde te quieres atender?</h2><p class="ayuda">Elige el local. Cada uno tiene su propio equipo y precios.</p>
         <div class="locales">${CFG.locales.map(l => {
           const nb = CFG.trabajadores.filter(t => t.local_id === l.id).length;
           const mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.direccion || l.nombre);
@@ -650,7 +679,7 @@
             <div class="local-ic">📍</div><b>${esc(l.nombre)}</b>
             <div class="dir">${esc(l.direccion || '')}</div>
             ${l.referencia ? `<div class="ref">🚇 ${esc(l.referencia)}</div>` : ''}
-            <div class="pie-local"><span>${nb} ${nb === 1 ? 'barbero' : 'barberos'}</span><a href="${mapa}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Cómo llegar ↗</a></div>
+            <div class="pie-local"><span>${nb} ${nb === 1 ? pro() : pros()}</span><a href="${mapa}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Cómo llegar ↗</a></div>
           </button>`; }).join('')}</div>`;
     }
     function elegirLocal(id){
@@ -672,7 +701,7 @@
           `<button class="chip ${k === n ? 'sel' : ''}" onclick="elegirPersonas(${k})">${k} ${k === 1 ? 'persona' : 'personas'}</button>`).join('')}</div>` : ''}
         ${cats.map(c => `<div class="cat">${esc(c)}</div><div class="servicios">${servs.filter(s => (s.categoria || 'Servicios') === c).map(s => {
           const sel = draft.servicios.includes(s.id), ok = sel || posible(s.id);
-          return `<button class="serv ${sel ? 'sel' : ''} ${ok ? '' : 'no'}" ${ok ? `onclick="toggleServicio(${s.id})"` : 'title="Ningún barbero hace este servicio junto a lo que ya elegiste"'}>
+          return `<button class="serv ${sel ? 'sel' : ''} ${ok ? '' : 'no'}" ${ok ? `onclick="toggleServicio(${s.id})"` : `title="Ningún ${esc(pro())} hace este servicio junto a lo que ya elegiste"`}>
             <span class="serv-check">${sel ? '✓' : ''}</span>
             <span class="serv-info"><span class="serv-nom">${esc(s.nombre)}</span>${s.descripcion ? `<span class="serv-desc" style="display:block">${esc(s.descripcion)}</span>` : ''}
               <span class="serv-meta"><span class="dur">⏱ ${s.duracion} min</span><span class="precio">${clp(s.precio)}</span></span></span>
@@ -702,12 +731,12 @@
       const lista = aptos(draft.servicios);
       const foto = t => t.foto_url ? `style="background-image:url('${esc(t.foto_url)}')"` : '';
       $('vista').innerHTML = `<button class="volver" onclick="atras()">← Volver a servicios</button>
-        <h2>¿Con quién agendas?</h2><p class="ayuda">Solo aparecen los barberos de ${esc(localSel().nombre)} que realizan lo que elegiste.</p>
+        <h2>¿Con quién agendas?</h2><p class="ayuda">Solo aparecen los ${esc(pros())} de ${esc(localSel().nombre)} que realizan lo que elegiste.</p>
         ${lista.length ? `<div class="barberos">
           <button class="barbero cualquiera ${draft.eleccion === AUTO ? 'sel' : ''}" onclick="elegirBarbero('${AUTO}')"><div class="foto">⚡</div><b>Cualquiera disponible</b><small>Más horas para elegir</small></button>
           ${lista.map(t => `<button class="barbero ${draft.eleccion === t.id ? 'sel' : ''}" onclick="elegirBarbero(${t.id})">
             <div class="foto" ${foto(t)}>${t.foto_url ? '' : esc(t.nombre[0])}</div><b>${esc(t.nombre)}</b><small>Ver sus horas</small></button>`).join('')}
-        </div>` : '<div class="vacio">Ningún barbero de este local realiza todos esos servicios juntos. Vuelve y quita alguno.</div>'}`;
+        </div>` : `<div class="vacio">Ningún ${esc(pro())} de este local realiza todos esos servicios juntos. Vuelve y quita alguno.</div>`}`;
     }
     function elegirBarbero(v){
       const e = v === AUTO ? AUTO : Number(v);
@@ -738,8 +767,8 @@
       if (draft.fecha && !dias.some(f => fechaTexto(f) === draft.fecha)) dias.push(deTexto(draft.fecha));
       if (!draft.fecha){ const primero = dias.find(f => trabaja(f.getDay())); if (primero) draft.fecha = fechaTexto(primero); }
       const top = (f, i) => i === 0 && fechaTexto(f) === hoyTxt() ? 'Hoy' : i === 1 ? 'Mañana' : f.toLocaleDateString('es-CL', { weekday:'short' }).replace('.', '');
-      $('vista').innerHTML = `<button class="volver" onclick="atras()">${aptos(draft.servicios).length === 1 ? "← Volver a servicios" : "← Volver a barberos"}</button>
-        <h2>Elige fecha y hora</h2><p class="ayuda">${draft.eleccion === AUTO ? 'Te asignamos al barbero con menos reservas ese día; si está ocupado a esa hora, pasa al siguiente.' : 'Horas libres de ' + esc(nombreTrab(draft.eleccion)) + '.'}</p>
+      $('vista').innerHTML = `<button class="volver" onclick="atras()">${aptos(draft.servicios).length === 1 ? "← Volver a servicios" : "← Volver a " + esc(pros())}</button>
+        <h2>Elige fecha y hora</h2><p class="ayuda">${draft.eleccion === AUTO ? 'Te asignamos al ' + esc(pro()) + ' con menos reservas ese día; si está ocupado a esa hora, pasa al siguiente.' : 'Horas libres de ' + esc(nombreTrab(draft.eleccion)) + '.'}</p>
         <div class="dias" id="dias">${dias.map((f, i) => {
           const ft = fechaTexto(f), abre = trabaja(f.getDay());
           return `<button class="dia ${ft === draft.fecha ? 'sel' : ''} ${abre ? '' : 'off'}" ${abre ? `onclick="elegirDia('${ft}')"` : 'title="Cerrado"'}>
@@ -842,8 +871,8 @@
           <label class="check"><input type="checkbox" id="fWsp" ${d.wsp === false ? '' : 'checked'}><span>Quiero recibir la confirmación y recordatorios por <b>WhatsApp</b></span></label>
           <label class="check"><input type="checkbox" id="fPromos" ${d.promos ? 'checked' : ''}><span>Quiero recibir promociones y descuentos</span></label>
           ${promoActiva() && leerLocal(K_INSCRITO) ? '<p class="nota" style="margin:-6px 0 12px;">🎁 Si es tu primera visita, tu 10% se aplica al confirmar.</p>' : ''}
-          <div class="campo"><label class="lbl" for="fObs">Observaciones (opcional)</label><textarea id="fObs" placeholder="Ej: degradado bajo, dejar largo arriba…">${esc(d.obs || '')}</textarea></div>
-          <label class="lbl">Foto del corte que quieres (opcional)</label>
+          <div class="campo"><label class="lbl" for="fObs">Observaciones (opcional)</label><textarea id="fObs" placeholder="${esBarberia() ? 'Ej: degradado bajo, dejar largo arriba…' : 'Ej: algo que debamos saber antes de tu hora…'}">${esc(d.obs || '')}</textarea></div>
+          <label class="lbl">Foto de referencia (opcional)</label>
           <label class="subir" id="subir">${cajaFoto()}<input type="file" accept="image/*" class="oculto" onchange="cargarFoto(this.files[0])"></label>
         </div>
 
@@ -855,7 +884,7 @@
     }
     function cajaFoto(){
       return foto ? `<img src="${foto}" alt="Foto de referencia"><span style="flex:1;">Foto agregada ✓<br><span class="nota">Toca para cambiarla</span></span><button class="link" onclick="event.preventDefault(); quitarFoto()">Quitar</button>`
-                  : `<span class="ic">📷</span><span style="flex:1;">Agregar foto de referencia<br><span class="nota">Así tu barbero sabe qué corte quieres</span></span>`;
+                  : `<span class="ic">📷</span><span style="flex:1;">Agregar foto de referencia<br><span class="nota">Así tu ${esc(pro())} sabe lo que quieres</span></span>`;
     }
     function quitarFoto(){ foto = null; $('subir').innerHTML = cajaFoto() + '<input type="file" accept="image/*" class="oculto" onchange="cargarFoto(this.files[0])">'; }
     // La foto se achica en el teléfono (máx. 800 px, ~200 KB) para que suba rápido y no llene la base de datos
@@ -958,7 +987,58 @@
           body: JSON.stringify({ _subject:`Nueva reserva ${l.nombre} (${data.length} persona${data.length>1?'s':''})`, local: l.nombre, reservas: detalle,
             total: clp(data.reduce((a,r)=>a+r.total,0)), nombre, correo, telefono: tel.texto, whatsapp: d.wsp ? 'sí' : 'no', observaciones: d.obs, foto: foto ? 'sí (ver en el panel)' : 'no' }) });
       } catch(e) {}
+      CLIENTE = { nombre, correo, telefono: tel.texto };
       mostrarConfirmacion(data);
+    }
+
+    // ---------- PRODUCTOS DESPUÉS DE RESERVAR (se retiran y pagan en la hora) ----------
+    let CLIENTE = null, carritoR = {}, horaR = '';
+    const precioP = p => p.precio_oferta ?? p.precio;
+    function bloqueProductos(r0){
+      const prods = CFG.productos_reserva || [];
+      if (!prods.length || !CFG.negocio?.tienda_tras_reserva) return '';
+      horaR = `${fechaLinda(r0.fecha)} a las ${r0.desde}`;
+      return `<section class="extra" id="extraProd">
+        <div class="extra-cab"><span class="extra-ic">🛍</span><div><h3>¿Te llevas algo en tu visita?</h3>
+          <p class="ayuda" style="margin:0;">Apártalo ahora y lo <b>retiras y pagas en tu hora</b>. Si cambias de opinión, solo avísanos.</p></div></div>
+        <div class="prods">${prods.map(p => `<div class="prod" id="pr${p.id}">
+            <div class="prod-img" ${p.imagen_url ? `style="background-image:url('${esc(p.imagen_url)}')"` : ''}>${p.imagen_url ? '' : esc((p.nombre || '?')[0])}
+              ${p.precio_oferta != null ? '<span class="prod-tag">Oferta</span>' : ''}</div>
+            <div class="prod-info"><b>${esc(p.nombre)}</b>
+              <div class="prod-precio">${p.precio_oferta != null ? `<s>${clp(p.precio)}</s> ` : ''}<strong>${clp(precioP(p))}</strong>${p.quedan ? ` <span class="prod-quedan">quedan ${p.quedan}</span>` : ''}</div></div>
+            <div class="prod-cant" id="pc${p.id}">${cantHtml(p)}</div></div>`).join('')}</div>
+        <div class="extra-pie" id="extraPie">${pieHtml()}</div>
+        <p class="estado" id="estadoProd"></p></section>`;
+    }
+    function cantHtml(p){
+      const c = carritoR[p.id] || 0;
+      return c ? `<button onclick="cambiarProd(${p.id},-1)" aria-label="Quitar">−</button><span>${c}</span><button onclick="cambiarProd(${p.id},1)" aria-label="Agregar">+</button>`
+               : `<button class="prod-add" onclick="cambiarProd(${p.id},1)">+ Agregar</button>`;
+    }
+    function pieHtml(){
+      const prods = CFG.productos_reserva || [], ids = Object.keys(carritoR).filter(k => carritoR[k] > 0);
+      const unid = ids.reduce((a, k) => a + carritoR[k], 0);
+      const total = ids.reduce((a, k) => a + carritoR[k] * precioP(prods.find(p => p.id == k)), 0);
+      return unid ? `<div><small>${unid} producto${unid > 1 ? 's' : ''} · se paga en tu hora</small><strong>${clp(total)}</strong></div>
+                     <button class="boton" id="btnApartar" onclick="apartarProductos()">Apartar para mi hora</button>`
+                  : `<small class="nota">Toca "+ Agregar" en lo que quieras llevar.</small>`;
+    }
+    function cambiarProd(id, d){
+      const p = (CFG.productos_reserva || []).find(x => x.id === id); if (!p) return;
+      const max = p.quedan || 20;
+      carritoR[id] = Math.max(0, Math.min(max, (carritoR[id] || 0) + d));
+      $('pc' + id).innerHTML = cantHtml(p); $('pr' + id).classList.toggle('sel', carritoR[id] > 0);
+      $('extraPie').innerHTML = pieHtml(); $('estadoProd').textContent = '';
+    }
+    async function apartarProductos(){
+      const items = Object.keys(carritoR).filter(k => carritoR[k] > 0).map(k => ({ id: Number(k), cantidad: carritoR[k] }));
+      if (!items.length || !CLIENTE) return;
+      $('btnApartar').disabled = true; $('estadoProd').textContent = 'Apartando…';
+      const { data, error } = await db.rpc('crear_pedido', { p: { negocio: SLUG || CFG.negocio?.slug || null, nombre: CLIENTE.nombre, telefono: CLIENTE.telefono,
+        correo: CLIENTE.correo, entrega: 'retiro', para_hora: horaR, items } });
+      if (error){ $('btnApartar').disabled = false; $('estadoProd').textContent = 'No se pudo apartar: ' + error.message; return; }
+      $('extraProd').innerHTML = `<div class="extra-ok"><div class="ok">✓</div><div><h3>¡Productos apartados!</h3>
+        <p class="ayuda" style="margin:0;">Pedido #${data.numero} · ${data.unidades} producto${data.unidades > 1 ? 's' : ''} · <b>${clp(data.total)}</b>. Te esperan en tu hora del ${esc(horaR)}; los pagas allá.</p></div></div>`;
     }
 
     function mostrarConfirmacion(data){
@@ -975,6 +1055,7 @@
         <p class="ayuda" style="margin-bottom:6px;">Te esperamos en <b style="color:var(--hueso)">${esc(l.nombre)}</b> · ${esc(l.direccion || '')}${l.referencia ? ' · ' + esc(l.referencia) : ''}</p></div>
         ${data.map(r => `<div class="item-res"><b>${fechaLinda(r.fecha)} · ${esc(r.desde)} – ${esc(r.hasta)}</b> · ${esc(r.nombre)}<br>${esc(r.servicios)} con ${esc(r.trabajador)} · ${clp(r.total)}${r.descuento ? ` <span class="descuento">🎁 ${r.descuento}% primera visita aplicado</span>` : ''}</div>`).join('')}
         <div class="total" style="margin-top:14px;"><div><small>Total</small><strong>${clp(data.reduce((a,r)=>a+r.total,0))}</strong></div><div style="text-align:right;"><small>Se paga en el local</small></div></div>
+        ${bloqueProductos(r0)}
         <div class="acciones">
           <a class="boton sec" href="${cal}" target="_blank" rel="noopener">📅 Agregar a mi calendario</a>
           <a class="boton sec" href="${mapa}" target="_blank" rel="noopener">📍 Cómo llegar</a>
