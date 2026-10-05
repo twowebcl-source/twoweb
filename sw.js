@@ -2,7 +2,7 @@
 // · Siempre intenta la red primero (así cada cambio que subas se ve al tiro) y usa la copia guardada solo sin internet.
 // · Nunca guarda datos de Supabase (reservas, clientes): solo los archivos del sitio.
 // · Muestra los avisos y, al tocarlos, abre el panel.
-const CACHE = 'twoweb-app-v1';
+const CACHE = 'twoweb-app-v2';
 const BASICOS = ['/panel', '/panel.html', '/config.js', '/fondos.js', '/manifest.webmanifest', '/imagenes/app-192.png'];
 
 self.addEventListener('install', e => {
@@ -14,7 +14,9 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET' || u.origin !== location.origin) return;      // Supabase y otros: directo a la red
-  e.respondWith(fetch(e.request).then(r => {
+  // páginas y scripts: siempre la versión más nueva del servidor (sin caché del navegador)
+  const fresco = e.request.mode === 'navigate' || /\.(html|js)$/.test(u.pathname) || !u.pathname.includes('.');
+  e.respondWith(fetch(e.request, fresco ? { cache: 'no-store' } : {}).then(r => {
     if (r.ok && r.type === 'basic') { const copia = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copia)); }
     return r;
   }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match('/panel'))));

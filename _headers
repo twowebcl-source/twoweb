@@ -9,6 +9,7 @@
 /panel*
   X-Robots-Tag: noindex, nofollow
   X-Frame-Options: DENY
+  Cache-Control: no-cache
 
 # La configuración siempre fresca (si cambias config.js, se aplica al tiro)
 /config.js
@@ -21,4 +22,8 @@
 
 /manifest.webmanifest
   Content-Type: application/manifest+json
+  Cache-Control: no-cache
+
+# fondos.js siempre fresco
+/fondos.js
   Cache-Control: no-cache

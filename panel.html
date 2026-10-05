@@ -2209,6 +2209,9 @@
       const S = { n: hechas.length, serv: sum(hechas, r => r.total || 0), parte: sum(hechas, parte), prop: sum(hechas, r => r.propina || 0),
                   llegadas: hechas.filter(r => r.origen === 'llegada').length, noVino: lista.filter(r => r.estado === 'no_asistio').length };
       S.total = S.parte + S.prop;
+      // Servicios que ejecutó (nombre × veces), sin montos: es lo que ve el trabajador
+      const cuentaServ = {}; hechas.forEach(r => { const k = (r.servicios || 'Atención').trim(); cuentaServ[k] = (cuentaServ[k] || 0) + 1; });
+      S.lista = Object.entries(cuentaServ).sort((a, b) => b[1] - a[1]).map(([k, v]) => v > 1 ? `${k} x${v}` : k);
       const metodos = ['efectivo', 'debito', 'transferencia'].map(k => [k, sum(hechas.filter(r => r.metodo_pago === k), r => (r.total || 0) + (r.propina || 0))]);
       const dias = [...new Set(hechas.map(r => r.fecha))].sort();
       const nombre = t.nombre || yo.nombre || '';
@@ -2225,8 +2228,8 @@
 
           <div class="liq">
             ${admin ? `<div class="liq-fila"><span>Servicios realizados <small>(${S.n} atenci${S.n === 1 ? 'ón' : 'ones'})</small></span><b>${clp(S.serv)}</b></div>`
-                    : `<div class="liq-fila"><span>Atenciones realizadas <small>(${esc(categoriaLocal())})</small></span><b>${S.n}</b></div>`}
-            <div class="liq-fila"><span>${admin ? `Su comisión <small>(${pct}% de los servicios)</small>` : 'Tu comisión'}</span><b>${clp(S.parte)}</b></div>
+                    : `<div class="liq-fila"><span>Servicios realizados <small>(${S.n} atenci${S.n === 1 ? 'ón' : 'ones'})</small>${S.lista.length ? `<small style="display:block;margin-top:3px;">${esc(S.lista.join(' · '))}</small>` : ''}</span><b></b></div>`}
+            <div class="liq-fila"><span>${admin ? `Su comisión <small>(${pct}% de los servicios)</small>` : 'Tu ganancia por servicios'}</span><b>${clp(S.parte)}</b></div>
             <div class="liq-fila mas"><span>+ Propinas <small>(100% ${admin ? 'suyas' : 'tuyas'})</small></span><b>${clp(S.prop)}</b></div>
             <div class="liq-fila total"><span>Total a pagar</span><b>${clp(S.total)}</b></div>
             <p class="nota" style="margin-top:6px;">${clp(S.parte)} por servicios + ${clp(S.prop)} en propinas = <b>${clp(S.total)}</b>${S.llegadas ? ` · ${S.llegadas} por orden de llegada` : ''}${S.noVino ? ` · ${S.noVino} no asistieron` : ''}</p>
@@ -2234,7 +2237,7 @@
 
           ${dias.length > 1 ? `<h3 style="margin-top:18px;">Por día</h3>
           <div style="overflow-x:auto;"><table class="tabla-caja">
-            <tr><th>Día</th><th class="num">Atenc.</th>${admin ? '<th class="num">Servicios</th>' : ''}<th class="num">${admin ? `Comisión ${pct}%` : "Comisión"}</th><th class="num">Propinas</th><th class="num">Total</th></tr>
+            <tr><th>Día</th><th class="num">Atenc.</th>${admin ? '<th class="num">Servicios</th>' : ''}<th class="num">${admin ? `Comisión ${pct}%` : 'Tu parte'}</th><th class="num">Propinas</th><th class="num">Total</th></tr>
             ${dias.map(d => { const x = hechas.filter(r => r.fecha === d), p = sum(x, parte), pr = sum(x, r => r.propina || 0);
               return `<tr><td>${fechaDiaCaja(d)}</td><td class="num">${x.length}</td>${admin ? `<td class="num">${clp(sum(x, r => r.total || 0))}</td>` : ''}<td class="num">${clp(p)}</td><td class="num">${pr ? clp(pr) : '—'}</td><td class="num"><b>${clp(p + pr)}</b></td></tr>`; }).join('')}
             <tr class="total"><td>Total</td><td class="num">${S.n}</td>${admin ? `<td class="num">${clp(S.serv)}</td>` : ''}<td class="num">${clp(S.parte)}</td><td class="num">${clp(S.prop)}</td><td class="num">${clp(S.total)}</td></tr>
@@ -2242,7 +2245,7 @@
 
           <h3 style="margin-top:18px;">Detalle de atenciones</h3>
           ${hechas.length ? `<div style="overflow-x:auto;"><table class="tabla-caja">
-            <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicios</th><th>Pago</th>${admin ? '<th class="num">Valor</th>' : ''}<th class="num">Comisión</th><th class="num">Propina</th><th class="num">Total</th></tr>
+            <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicios</th><th>Pago</th>${admin ? '<th class="num">Valor</th>' : ''}<th class="num">${admin ? 'Comisión' : 'Tu parte'}</th><th class="num">Propina</th><th class="num">Total</th></tr>
             ${hechas.map(r => `<tr style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><td>${deTexto(r.fecha).toLocaleDateString('es-CL', { day:'numeric', month:'short' })}</td><td>${aHora(rangoDe(r)[0])}</td>
               <td>${esc(r.nombre)}${r.origen === 'llegada' ? ' ⚡' : ''}</td><td>${esc(r.servicios || '')}</td><td>${r.metodo_pago ? PAGOS[r.metodo_pago] : '—'}</td>
               ${admin ? `<td class="num">${clp(r.total)}</td>` : ''}<td class="num">${clp(parte(r))}</td><td class="num">${r.propina ? clp(r.propina) : '—'}</td><td class="num"><b>${clp(parte(r) + (r.propina || 0))}</b></td></tr>`).join('')}
@@ -2258,7 +2261,7 @@
     const categoriaLocal = () => NEG.rubro || NEG.nombre || 'Servicios';
     function textoInforme(){
       const I = ULTIMO_INFORME, admin = yo.rol === 'admin';
-      const lineas = [`• Atenciones: ${I.n}`, `• Servicios: ${categoriaLocal()}`, `• Comisión: ${clp(I.parte)}`, `• Propinas: ${clp(I.prop)}`, `• *Total a pagar: ${clp(I.total)}*`];
+      const lineas = [`• Atenciones: ${I.n}`, `• Servicios: ${(I.lista && I.lista.length) ? I.lista.join(', ') : categoriaLocal()}`, `• ${admin ? 'Comisión' : 'Mi ganancia por servicios'}: ${clp(I.parte)}`, `• Propinas: ${clp(I.prop)}`, `• *Total a pagar: ${clp(I.total)}*`];
       return admin
         ? `Hola ${I.nombre},\nTu liquidación de ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\nCualquier duda me avisas.`
         : `Hola, soy ${I.nombre}.\nMi informe en ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\n¡Gracias!`;
@@ -2276,6 +2279,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
+    const VERSION_PANEL = 'F24 · 05-10 b';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -2284,6 +2288,7 @@
         ${msg ? `<p class="ok" style="font-size:14px;margin-bottom:8px;">${esc(msg)}</p>` : ''}
         <div class="det-fila"><span>Correo</span><span>${esc(yo.correo)}</span></div>
         <div class="det-fila"><span>Rol</span><span>${esc(yo.rol)}</span></div>
+        <div class="det-fila"><span>Versión del panel</span><span>${VERSION_PANEL}</span></div>
         <label for="mcClave">Nueva contraseña (mínimo 6)</label><input type="password" id="mcClave" autocomplete="new-password">
         <label for="mcClave2">Repítela</label><input type="password" id="mcClave2" autocomplete="new-password" onkeydown="if(event.key==='Enter')cambiarMiClave()">
         <div class="det-acciones"><button class="boton" onclick="cambiarMiClave()">Guardar contraseña</button></div>
