@@ -5,7 +5,7 @@
 window.TWOWEB = {
   // Supabase › Project Settings › API (o "API Keys")
   SUPABASE_URL: 'https://krckrwuwqsiybsoncjsg.supabase.co',
-  SUPABASE_KEY: 'PEGA_AQUI_LA_LLAVE_PUBLISHABLE_DE_TWOWEB',   // la "publishable" (sb_publishable_...). NUNCA la secret/service_role.
+  SUPABASE_KEY: 'sb_publishable_WKTQY94olXvMNOSbl4kDqQ_wzfYsMjW',   // la "publishable" (sb_publishable_...). NUNCA la secret/service_role.
 
   MARCA: 'TwoWeb',                    // nombre de la plataforma (pie de página de cada negocio, avisos del panel)
   SITIO: 'https://twoweb.cl',         // link del "con TwoWeb" en el pie de cada página
