@@ -4,11 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="google" content="notranslate">
-  <title>Reserva tu hora — TwoWeb</title>
+  <title>Reserva tu hora</title>
+  <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root { --fondo:#111318; --panel:#1b1e25; --panel2:#232730; --borde:rgba(255,255,255,0.09); --hueso:#f1eee8; --voltaje:#ff7a2f;
-            --voltaje-suave:rgba(255,122,47,0.13); --gris:#9aa0a8; --verde:#4ade80; --rojo:#f87171; }
+    :root { --voltaje:#ff7a2f; }
+    /* ===== TEMAS (Fase 12): colores, formas y letras. El tema se elige en el panel ===== */
+    :root { --fondo:#111318; --panel:#1b1e25; --panel2:#232730; --hueso:#f1eee8; --gris:#9aa0a8;
+      --borde:color-mix(in srgb, var(--hueso) 9%, transparent); --verde:#4ade80; --rojo:#f87171; --azul:#60a5fa; --rojo-suave:#fca5a5;
+      --esquema:dark; --r:16px; --r-s:10px; --r-pill:999px; --r-foto:50%; --r-paso:50%; --r-check:7px; --r-cita:7px;
+      --fuente:'Inter',system-ui,-apple-system,sans-serif; --fuente-tit:inherit; --sobre:#111;
+      --voltaje-suave:color-mix(in srgb, var(--voltaje) 13%, transparent); }
+    html[data-tema="burbuja"] { --fondo:#131726; --panel:#1c2135; --panel2:#262c44; --hueso:#eef1fb; --gris:#9aa3bf;
+      --borde:color-mix(in srgb, var(--hueso) 8%, transparent); --verde:#4ade80; --rojo:#f87171; --azul:#60a5fa; --rojo-suave:#fca5a5;
+      --esquema:dark; --r:28px; --r-s:18px; --r-pill:999px; --r-foto:50%; --r-paso:50%; --r-check:50%; --r-cita:12px;
+      --fuente:'Nunito',system-ui,sans-serif; --fuente-tit:'Nunito',system-ui,sans-serif; }
+    html[data-tema="vintage"] { --fondo:#efe6d6; --panel:#fbf6ec; --panel2:#f1e7d4; --hueso:#2a1f16; --gris:#76644f;
+      --borde:color-mix(in srgb, var(--hueso) 22%, transparent); --verde:#2f7d3b; --rojo:#b3261e; --azul:#1d4e89; --rojo-suave:#9b1c1c;
+      --esquema:light; --r:3px; --r-s:2px; --r-pill:3px; --r-foto:50%; --r-paso:50%; --r-check:2px; --r-cita:2px;
+      --fuente:Georgia,'Times New Roman',serif; --fuente-tit:'Playfair Display',Georgia,serif; }
+    html[data-tema="neon"] { --fondo:#07080c; --panel:#0e1017; --panel2:#161a24; --hueso:#f4f6ff; --gris:#8a93a8;
+      --borde:color-mix(in srgb, var(--hueso) 11%, transparent); --verde:#39ff88; --rojo:#ff4d6d; --azul:#4dd8ff; --rojo-suave:#ff8fa3;
+      --esquema:dark; --r:0px; --r-s:0px; --r-pill:0px; --r-foto:0px; --r-paso:0px; --r-check:0px; --r-cita:0px;
+      --fuente:system-ui,-apple-system,sans-serif; --fuente-tit:'Oswald',Impact,sans-serif; }
+    html[data-tema="minimal"] { --fondo:#f4f5f7; --panel:#ffffff; --panel2:#f0f1f4; --hueso:#14161b; --gris:#6b7280;
+      --borde:color-mix(in srgb, var(--hueso) 11%, transparent); --verde:#15803d; --rojo:#dc2626; --azul:#2563eb; --rojo-suave:#b91c1c;
+      --esquema:light; --r:12px; --r-s:8px; --r-pill:999px; --r-foto:50%; --r-paso:50%; --r-check:6px; --r-cita:6px;
+      --fuente:'Inter',system-ui,-apple-system,sans-serif; --fuente-tit:'Inter',system-ui,sans-serif; }
+    html[data-tema="organico"] { --fondo:#171512; --panel:#221f1a; --panel2:#2d2923; --hueso:#f3ebe0; --gris:#a99d8d;
+      --borde:color-mix(in srgb, var(--hueso) 10%, transparent); --verde:#8fd18a; --rojo:#f08a7a; --azul:#8fb8de; --rojo-suave:#f5b1a5;
+      --esquema:dark; --r:28px 8px 28px 8px; --r-s:16px 5px 16px 5px; --r-pill:18px 6px 18px 6px; --r-foto:58% 42% 55% 45% / 50% 58% 42% 50%; --r-paso:60% 40% 55% 45% / 55% 45% 55% 45%; --r-check:8px 3px; --r-cita:12px 3px 12px 3px;
+      --fuente:system-ui,-apple-system,sans-serif; --fuente-tit:'Fraunces',Georgia,serif; }
     * { margin:0; padding:0; box-sizing:border-box; }
     html { scroll-behavior:smooth; }
     body { background:var(--fondo); color:var(--hueso); font-family:'Inter',system-ui,-apple-system,sans-serif; line-height:1.45; padding-bottom:110px; }
@@ -17,27 +43,27 @@
     .caja { max-width:760px; margin:0 auto; padding:0 16px; }
 
     /* ---------- CABECERA ---------- */
-    header { border-bottom:1px solid var(--borde); background:rgba(17,19,24,0.92); backdrop-filter:blur(8px); position:sticky; top:0; z-index:20; }
+    header { border-bottom:1px solid var(--borde); background:color-mix(in srgb, var(--fondo) 92%, transparent); backdrop-filter:blur(8px); position:sticky; top:0; z-index:20; }
     .cab { display:flex; align-items:center; justify-content:space-between; height:58px; }
     .marca { font-weight:800; font-size:19px; letter-spacing:.3px; }
     .marca span { color:var(--voltaje); }
-    .cab-link { background:none; border:1px solid var(--borde); color:var(--hueso); padding:7px 14px; border-radius:999px; font-size:13px; cursor:pointer; }
+    .cab-link { background:none; border:1px solid var(--borde); color:var(--hueso); padding:7px 14px; border-radius:var(--r-pill); font-size:13px; cursor:pointer; }
     .cab-link:hover { border-color:var(--voltaje); }
 
     /* ---------- STEPPER ---------- */
     .stepper { display:flex; justify-content:space-between; margin:22px 0 18px; position:relative; }
     .stepper::before { content:''; position:absolute; top:15px; left:8%; right:8%; height:2px; background:var(--panel2); }
     .st { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; color:var(--gris); cursor:default; }
-    .st-num { width:32px; height:32px; border-radius:50%; background:var(--panel2); border:2px solid var(--panel2); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; color:var(--gris); transition:all .25s; }
+    .st-num { width:32px; height:32px; border-radius:var(--r-paso); background:var(--panel2); border:2px solid var(--panel2); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; color:var(--gris); transition:all .25s; }
     .st-txt { font-size:10.5px; font-weight:700; letter-spacing:.8px; }
     .st.hecho { cursor:pointer; color:var(--hueso); }
     .st.hecho .st-num { background:var(--voltaje-suave); border-color:var(--voltaje); color:var(--voltaje); }
     .st.actual { color:var(--voltaje); }
-    .st.actual .st-num { background:var(--voltaje); border-color:var(--voltaje); color:#111; box-shadow:0 0 0 5px rgba(255,122,47,0.18); }
+    .st.actual .st-num { background:var(--voltaje); border-color:var(--voltaje); color:var(--sobre); box-shadow:0 0 0 5px color-mix(in srgb, var(--voltaje) 18%, transparent); }
 
     .contexto { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; min-height:30px; }
-    .pill { display:inline-flex; align-items:center; gap:6px; background:var(--voltaje-suave); color:var(--voltaje); border:1px solid rgba(255,122,47,0.35);
-            padding:5px 12px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+    .pill { display:inline-flex; align-items:center; gap:6px; background:var(--voltaje-suave); color:var(--voltaje); border:1px solid color-mix(in srgb, var(--voltaje) 35%, transparent);
+            padding:5px 12px; border-radius:var(--r-pill); font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
     .pill button { background:none; border:none; color:var(--hueso); text-decoration:underline; font-size:11px; cursor:pointer; text-transform:none; letter-spacing:0; font-weight:500; }
     .pill.persona { background:var(--panel2); color:var(--hueso); border-color:var(--borde); }
     .subtitulo { color:var(--gris); font-size:13px; }
@@ -58,10 +84,10 @@
 
     /* Sucursal */
     .locales { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; }
-    .local { text-align:left; background:var(--panel); border:1px solid var(--borde); border-radius:16px; padding:20px; cursor:pointer; color:var(--hueso); transition:all .2s; position:relative; overflow:hidden; }
+    .local { text-align:left; background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:20px; cursor:pointer; color:var(--hueso); transition:all .2s; position:relative; overflow:hidden; }
     .local:hover { border-color:var(--voltaje); transform:translateY(-2px); }
     .local.sel { border-color:var(--voltaje); background:var(--voltaje-suave); }
-    .local-ic { width:44px; height:44px; border-radius:12px; background:var(--voltaje-suave); color:var(--voltaje); display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:12px; }
+    .local-ic { width:44px; height:44px; border-radius:var(--r-s); background:var(--voltaje-suave); color:var(--voltaje); display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:12px; }
     .local b { display:block; font-size:18px; }
     .local .dir { color:var(--gris); font-size:13.5px; margin-top:2px; }
     .local .ref { font-size:12.5px; margin-top:6px; color:var(--hueso); }
@@ -69,67 +95,67 @@
     .local a { color:var(--voltaje); text-decoration:none; font-weight:600; }
 
     /* Personas */
-    .personas { display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel); border:1px solid var(--borde); border-radius:14px; padding:12px 14px; }
+    .personas { display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:12px 14px; }
     .personas span { font-size:14px; margin-right:auto; }
-    .chip { background:var(--panel2); border:1px solid var(--borde); color:var(--hueso); padding:8px 14px; border-radius:999px; cursor:pointer; font-size:13.5px; }
-    .chip.sel { background:var(--voltaje); border-color:var(--voltaje); color:#111; font-weight:700; }
+    .chip { background:var(--panel2); border:1px solid var(--borde); color:var(--hueso); padding:8px 14px; border-radius:var(--r-pill); cursor:pointer; font-size:13.5px; }
+    .chip.sel { background:var(--voltaje); border-color:var(--voltaje); color:var(--sobre); font-weight:700; }
 
     /* Servicios */
     .servicios { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:10px; }
-    .serv { display:flex; gap:12px; align-items:flex-start; text-align:left; background:var(--panel); border:1px solid var(--borde); border-radius:14px; padding:14px; cursor:pointer; color:var(--hueso); transition:all .15s; }
-    .serv:hover { border-color:rgba(255,122,47,0.6); }
+    .serv { display:flex; gap:12px; align-items:flex-start; text-align:left; background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:14px; cursor:pointer; color:var(--hueso); transition:all .15s; }
+    .serv:hover { border-color:color-mix(in srgb, var(--voltaje) 60%, transparent); }
     .serv.sel { border-color:var(--voltaje); background:var(--voltaje-suave); }
     .serv.no { opacity:.35; cursor:not-allowed; }
-    .serv-check { width:22px; height:22px; border-radius:7px; border:2px solid var(--gris); flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#111; }
+    .serv-check { width:22px; height:22px; border-radius:var(--r-check); border:2px solid var(--gris); flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:var(--sobre); }
     .serv.sel .serv-check { background:var(--voltaje); border-color:var(--voltaje); }
     .serv-info { flex:1; min-width:0; }
     .serv-nom { font-weight:700; font-size:15px; }
     .serv-desc { color:var(--gris); font-size:12.5px; margin-top:2px; }
     .serv-meta { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
-    .dur { font-size:12px; color:var(--gris); background:var(--panel2); padding:3px 9px; border-radius:999px; }
+    .dur { font-size:12px; color:var(--gris); background:var(--panel2); padding:3px 9px; border-radius:var(--r-pill); }
     .precio { font-weight:800; font-size:16px; }
 
     /* Barberos */
     .barberos { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; }
-    .barbero { background:var(--panel); border:1px solid var(--borde); border-radius:16px; padding:18px 12px 16px; cursor:pointer; color:var(--hueso); text-align:center; transition:all .2s; }
+    .barbero { background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:18px 12px 16px; cursor:pointer; color:var(--hueso); text-align:center; transition:all .2s; }
     .barbero:hover { border-color:var(--voltaje); transform:translateY(-2px); }
     .barbero.sel { border-color:var(--voltaje); background:var(--voltaje-suave); }
-    .foto { width:76px; height:76px; border-radius:50%; margin:0 auto 10px; background:var(--panel2) center/cover no-repeat; display:flex; align-items:center; justify-content:center;
+    .foto { width:76px; height:76px; border-radius:var(--r-foto); margin:0 auto 10px; background:var(--panel2) center/cover no-repeat; display:flex; align-items:center; justify-content:center;
             font-size:28px; font-weight:800; color:var(--voltaje); border:2px solid var(--borde); }
-    .barbero.cualquiera .foto { background:linear-gradient(135deg, var(--voltaje), #ffb27f); color:#111; border:none; }
+    .barbero.cualquiera .foto { background:linear-gradient(135deg, var(--voltaje), color-mix(in srgb, var(--voltaje) 55%, #fff)); color:var(--sobre); border:none; }
     .barbero b { display:block; font-size:15px; }
     .barbero small { color:var(--gris); font-size:12px; }
 
     /* Fecha y hora */
     .dias { display:flex; gap:8px; overflow-x:auto; padding:2px 2px 10px; scroll-snap-type:x mandatory; }
-    .dias::-webkit-scrollbar { height:5px; } .dias::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:3px; }
-    .dia { flex-shrink:0; width:70px; scroll-snap-align:start; background:var(--panel); border:1px solid var(--borde); border-radius:14px; padding:10px 0 9px; text-align:center; cursor:pointer; color:var(--hueso); }
+    .dias::-webkit-scrollbar { height:5px; } .dias::-webkit-scrollbar-thumb { background:color-mix(in srgb, var(--hueso) 15%, transparent); border-radius:3px; }
+    .dia { flex-shrink:0; width:70px; scroll-snap-align:start; background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:10px 0 9px; text-align:center; cursor:pointer; color:var(--hueso); }
     .dia:hover { border-color:var(--voltaje); }
-    .dia.sel { background:var(--voltaje); border-color:var(--voltaje); color:#111; }
+    .dia.sel { background:var(--voltaje); border-color:var(--voltaje); color:var(--sobre); }
     .dia.off { opacity:.3; cursor:not-allowed; }
     .dia-top { font-size:10.5px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; }
     .dia-num { font-size:22px; font-weight:800; line-height:1.15; }
     .dia-mes { font-size:11px; text-transform:uppercase; opacity:.8; }
     .dia.sel .dia-top, .dia.sel .dia-mes { opacity:1; }
     .otra { display:flex; align-items:center; gap:10px; margin:6px 0 18px; flex-wrap:wrap; }
-    .otra button { background:none; border:1px dashed rgba(255,255,255,0.25); color:var(--hueso); padding:8px 14px; border-radius:10px; cursor:pointer; font-size:13px; }
-    .otra input { background:var(--panel2); border:1px solid var(--borde); color:var(--hueso); border-radius:10px; padding:8px 10px; font-family:inherit; color-scheme:dark; }
+    .otra button { background:none; border:1px dashed color-mix(in srgb, var(--hueso) 25%, transparent); color:var(--hueso); padding:8px 14px; border-radius:var(--r-s); cursor:pointer; font-size:13px; }
+    .otra input { background:var(--panel2); border:1px solid var(--borde); color:var(--hueso); border-radius:var(--r-s); padding:8px 10px; font-family:inherit; color-scheme:var(--esquema); }
     .tabs { display:flex; gap:6px; margin-bottom:12px; }
-    .tab { flex:1; background:var(--panel); border:1px solid var(--borde); color:var(--gris); padding:10px; border-radius:12px; cursor:pointer; font-size:14px; font-weight:600; }
-    .tab b { color:var(--hueso); margin-left:4px; background:var(--panel2); padding:1px 8px; border-radius:999px; font-size:12px; }
+    .tab { flex:1; background:var(--panel); border:1px solid var(--borde); color:var(--gris); padding:10px; border-radius:var(--r-s); cursor:pointer; font-size:14px; font-weight:600; }
+    .tab b { color:var(--hueso); margin-left:4px; background:var(--panel2); padding:1px 8px; border-radius:var(--r-pill); font-size:12px; }
     .tab.sel { border-color:var(--voltaje); color:var(--hueso); background:var(--voltaje-suave); }
-    .tab.sel b { background:var(--voltaje); color:#111; }
+    .tab.sel b { background:var(--voltaje); color:var(--sobre); }
     .tab:disabled { opacity:.4; cursor:not-allowed; }
     .horas { display:grid; grid-template-columns:repeat(auto-fill, minmax(82px, 1fr)); gap:8px; }
-    .hora { background:var(--panel); border:1px solid var(--borde); color:var(--hueso); border-radius:10px; padding:11px 4px; cursor:pointer; font-size:15px; font-weight:600; }
+    .hora { background:var(--panel); border:1px solid var(--borde); color:var(--hueso); border-radius:var(--r-s); padding:11px 4px; cursor:pointer; font-size:15px; font-weight:600; }
     .hora small { display:block; font-size:10.5px; color:var(--gris); font-weight:500; margin-top:1px; }
     .hora:hover { border-color:var(--verde); }
-    .hora.sel { background:var(--verde); border-color:var(--verde); color:#111; }
-    .hora.sel small { color:#111; }
-    .vacio { background:var(--panel); border:1px dashed var(--borde); border-radius:14px; padding:22px; text-align:center; color:var(--gris); font-size:14px; }
+    .hora.sel { background:var(--verde); border-color:var(--verde); color:var(--fondo); }
+    .hora.sel small { color:var(--fondo); }
+    .vacio { background:var(--panel); border:1px dashed var(--borde); border-radius:var(--r); padding:22px; text-align:center; color:var(--gris); font-size:14px; }
 
     /* Datos */
-    .tarjeta { background:var(--panel); border:1px solid var(--borde); border-radius:16px; padding:18px; margin-bottom:14px; }
+    .tarjeta { background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:18px; margin-bottom:14px; }
     .tarjeta h3 { font-size:14px; margin-bottom:12px; color:var(--gris); font-weight:600; text-transform:uppercase; letter-spacing:.8px; }
     .res-item { padding:10px 0; border-bottom:1px solid var(--borde); font-size:14px; }
     .res-item:last-child { border-bottom:none; padding-bottom:0; }
@@ -140,8 +166,8 @@
     .fila2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
     label.lbl { display:block; font-size:12.5px; color:var(--gris); margin:0 0 5px; font-weight:600; }
     .campo { margin-bottom:12px; }
-    input, textarea, select { width:100%; background:var(--panel2); border:1px solid var(--borde); border-radius:10px; padding:12px 13px; color:var(--hueso); font-size:15px; font-family:inherit; }
-    select { cursor:pointer; color-scheme:dark; }
+    input, textarea, select { width:100%; background:var(--panel2); border:1px solid var(--borde); border-radius:var(--r-s); padding:12px 13px; color:var(--hueso); font-size:15px; font-family:inherit; }
+    select { cursor:pointer; color-scheme:var(--esquema); }
     input:focus, textarea:focus, select:focus { outline:none; border-color:var(--voltaje); }
     textarea { min-height:76px; resize:vertical; }
     .junto { display:flex; }
@@ -151,20 +177,20 @@
     .junto input { flex:1; min-width:0; }
     .check { display:flex; gap:10px; align-items:flex-start; font-size:14px; cursor:pointer; margin:4px 0 14px; }
     .check input { width:20px; height:20px; accent-color:var(--voltaje); flex-shrink:0; margin-top:1px; }
-    .subir { display:flex; align-items:center; gap:12px; background:var(--panel2); border:1px dashed rgba(255,255,255,0.22); border-radius:12px; padding:12px; cursor:pointer; font-size:14px; }
+    .subir { display:flex; align-items:center; gap:12px; background:var(--panel2); border:1px dashed color-mix(in srgb, var(--hueso) 22%, transparent); border-radius:var(--r-s); padding:12px; cursor:pointer; font-size:14px; }
     .subir:hover { border-color:var(--voltaje); }
     .subir img { width:56px; height:56px; object-fit:cover; border-radius:8px; }
     .subir .ic { width:56px; height:56px; border-radius:8px; background:var(--panel); display:flex; align-items:center; justify-content:center; font-size:24px; }
-    .total { display:flex; justify-content:space-between; align-items:center; background:var(--voltaje-suave); border:1px solid rgba(255,122,47,0.35); border-radius:14px; padding:16px 18px; margin:6px 0 14px; }
+    .total { display:flex; justify-content:space-between; align-items:center; background:var(--voltaje-suave); border:1px solid color-mix(in srgb, var(--voltaje) 35%, transparent); border-radius:var(--r); padding:16px 18px; margin:6px 0 14px; }
     .total strong { font-size:24px; color:var(--voltaje); }
     .total small { display:block; color:var(--gris); font-size:12.5px; }
-    .boton { width:100%; background:var(--voltaje); color:#111; border:none; border-radius:12px; padding:15px; font-size:16px; font-weight:800; cursor:pointer; }
+    .boton { width:100%; background:var(--voltaje); color:var(--sobre); border:none; border-radius:var(--r-s); padding:15px; font-size:16px; font-weight:800; cursor:pointer; }
     .boton:disabled { opacity:.45; cursor:not-allowed; }
     .boton.sec { background:var(--panel2); color:var(--hueso); border:1px solid var(--borde); font-weight:600; }
     .estado { font-size:14px; margin-top:10px; min-height:20px; color:var(--rojo); }
 
     /* Barra inferior fija */
-    .barra { position:fixed; left:0; right:0; bottom:0; z-index:30; background:rgba(27,30,37,0.97); backdrop-filter:blur(8px); border-top:1px solid var(--borde); transform:translateY(110%); visibility:hidden; transition:transform .25s, visibility .25s; }
+    .barra { position:fixed; left:0; right:0; bottom:0; z-index:30; background:color-mix(in srgb, var(--panel) 97%, transparent); backdrop-filter:blur(8px); border-top:1px solid var(--borde); transform:translateY(110%); visibility:hidden; transition:transform .25s, visibility .25s; }
     .barra.ver { transform:none; visibility:visible; }
     .barra .caja { display:flex; align-items:center; gap:14px; padding-top:12px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
     .barra-txt { flex:1; min-width:0; font-size:13px; color:var(--gris); }
@@ -174,19 +200,29 @@
 
     /* Confirmación */
     .listo { text-align:center; padding-top:10px; }
-    .ok { width:68px; height:68px; border-radius:50%; background:var(--verde); color:#111; font-size:34px; font-weight:800; display:flex; align-items:center; justify-content:center; margin:10px auto 14px; animation:pop .4s ease; }
+    .ok { width:68px; height:68px; border-radius:50%; background:var(--verde); color:var(--fondo); font-size:34px; font-weight:800; display:flex; align-items:center; justify-content:center; margin:10px auto 14px; animation:pop .4s ease; }
     @keyframes pop { 0% { transform:scale(.4); } 80% { transform:scale(1.1); } 100% { transform:scale(1); } }
-    .item-res { background:var(--panel); border:1px solid var(--borde); border-radius:14px; padding:14px 16px; margin-top:10px; text-align:left; font-size:14px; }
+    .item-res { background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:14px 16px; margin-top:10px; text-align:left; font-size:14px; }
     .item-res b { color:var(--voltaje); }
     .acciones { display:grid; gap:10px; margin-top:16px; }
     .acciones a { text-decoration:none; text-align:center; display:block; }
-    .promo { display:flex; align-items:center; gap:14px; background:linear-gradient(120deg, rgba(255,122,47,0.18), rgba(255,122,47,0.04)); border:1px solid rgba(255,122,47,0.4);
-             border-radius:16px; padding:14px 16px; margin-bottom:18px; cursor:pointer; color:var(--hueso); text-align:left; width:100%; }
+    .promo { display:flex; align-items:center; gap:14px; background:linear-gradient(120deg, var(--voltaje-suave), color-mix(in srgb, var(--hueso) 2%, transparent)); border:1px solid var(--voltaje);
+             border-radius:var(--r); padding:14px 16px; margin-bottom:18px; cursor:pointer; color:var(--hueso); text-align:left; width:100%; }
     .promo .pct { font-size:26px; font-weight:900; color:var(--voltaje); line-height:1; flex-shrink:0; }
     .promo b { display:block; font-size:15px; }
     .promo span.s { color:var(--gris); font-size:12.5px; }
     .promo.ok { background:rgba(74,222,128,0.08); border-color:rgba(74,222,128,0.35); cursor:default; }
     .promo.ok .pct { color:var(--verde); }
+    .hero { position:relative; border-radius:var(--r); overflow:hidden; margin:4px 0 16px; background:var(--panel); border:1px solid var(--borde); }
+    .hero img { display:block; width:100%; height:190px; object-fit:cover; }
+    .hero .hero-txt { position:absolute; left:0; right:0; bottom:0; padding:40px 16px 14px; background:linear-gradient(transparent, rgba(0,0,0,0.78)); }
+    .hero.sin-foto .hero-txt { position:static; background:none; padding:14px 16px; }
+    .hero h1 { font-size:22px; font-weight:800; line-height:1.15; }
+    .hero:not(.sin-foto) .hero-txt { color:#fff; }
+    .hero.sin-foto p { color:var(--gris); }
+    .hero p { color:#e6e2da; font-size:14px; margin-top:4px; }
+    .hero a { color:var(--voltaje); font-size:13px; text-decoration:none; font-weight:600; }
+    @media (min-width:700px) { .hero img { height:240px; } }
     .descuento { color:var(--verde); font-weight:700; }
     footer { text-align:center; color:var(--gris); font-size:12px; margin-top:36px; }
     footer a { color:var(--gris); }
@@ -200,6 +236,76 @@
       .barberos { grid-template-columns:repeat(2, 1fr); }
       .fila2 { grid-template-columns:1fr; gap:0; }
     }
+
+    body { font-family:var(--fuente); }
+    h1, h2, .marca, .cat, .precio, .dia-num { font-family:var(--fuente-tit); }
+    input, textarea, select, .otra input, select { color-scheme:var(--esquema); }
+
+    /* Burbuja: todo redondo, suave y con sombras */
+    html[data-tema="burbuja"] body { background:radial-gradient(circle at 15% -5%, color-mix(in srgb, var(--voltaje) 22%, transparent), transparent 42%),
+                                     radial-gradient(circle at 100% 30%, color-mix(in srgb, var(--azul) 12%, transparent), transparent 40%), var(--fondo); background-attachment:fixed; }
+    html[data-tema="burbuja"] :is(.local, .serv, .barbero, .dia, .tarjeta, .personas, .item-res, .promo, .hora, .tab) { border-color:transparent; box-shadow:0 10px 28px rgba(0,0,0,0.28); }
+    html[data-tema="burbuja"] :is(.local, .serv, .barbero, .dia, .hora, .tab).sel { border-color:var(--voltaje); box-shadow:0 10px 28px color-mix(in srgb, var(--voltaje) 30%, transparent); }
+    html[data-tema="burbuja"] .hora { border-radius:999px; }
+    html[data-tema="burbuja"] .dia { border-radius:999px; padding:14px 0 13px; }
+    html[data-tema="burbuja"] .boton { border-radius:999px; }
+    html[data-tema="burbuja"] .cat { display:inline-flex; background:var(--voltaje-suave); padding:5px 14px; border-radius:999px; }
+    html[data-tema="burbuja"] .cat::after { display:none; }
+    html[data-tema="burbuja"] .serv:hover, html[data-tema="burbuja"] .hora:hover { transform:translateY(-2px); }
+
+    /* Barbería clásica: papel crema, bordes dobles, letra de cartel antiguo y franja de poste de barbero */
+    html[data-tema="vintage"] header::after { content:''; display:block; height:6px; background:repeating-linear-gradient(-45deg, #b3261e 0 10px, #fff 10px 20px, #1d4e89 20px 30px, #fff 30px 40px); }
+    html[data-tema="vintage"] header { border-bottom:none; }
+    html[data-tema="vintage"] :is(.local, .barbero, .tarjeta, .item-res, .personas, .hero, .promo) { border:4px double color-mix(in srgb, var(--hueso) 32%, transparent); }
+    html[data-tema="vintage"] :is(.local, .barbero).sel { border-color:var(--voltaje); }
+    html[data-tema="vintage"] .servicios { grid-template-columns:1fr; gap:0; }
+    html[data-tema="vintage"] .serv { background:transparent; border:none; border-bottom:1px dashed color-mix(in srgb, var(--hueso) 30%, transparent); border-radius:0; padding:14px 4px; }
+    html[data-tema="vintage"] .serv.sel { background:var(--voltaje-suave); }
+    html[data-tema="vintage"] .serv-nom { font-family:var(--fuente-tit); font-size:17px; }
+    html[data-tema="vintage"] .cat { justify-content:center; letter-spacing:3px; font-size:14px; }
+    html[data-tema="vintage"] .cat::before { content:''; flex:1; height:1px; background:var(--borde); }
+    html[data-tema="vintage"] .cat span, html[data-tema="vintage"] .cat { text-align:center; }
+    html[data-tema="vintage"] .boton { text-transform:uppercase; letter-spacing:2px; font-family:var(--fuente-tit); }
+    html[data-tema="vintage"] .foto { border:4px double var(--voltaje); }
+    html[data-tema="vintage"] .hora { font-family:var(--fuente-tit); font-size:16px; }
+    html[data-tema="vintage"] .hora.sel, html[data-tema="vintage"] .ok { color:#fff; }
+    html[data-tema="vintage"] h2 { font-size:26px; }
+
+    /* Urbano neón: negro, cuadrado, esquinas cortadas, brillo y letra condensada */
+    html[data-tema="neon"] body { background-color:var(--fondo);
+      background-image:linear-gradient(color-mix(in srgb, var(--hueso) 4%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--hueso) 4%, transparent) 1px, transparent 1px);
+      background-size:34px 34px; }
+    html[data-tema="neon"] :is(h2, .marca, .boton, .cat, .st-txt, .pill, .serv-nom, .barbero b, .tab) { text-transform:uppercase; letter-spacing:1px; }
+    html[data-tema="neon"] :is(h2, .boton, .serv-nom, .barbero b) { font-family:var(--fuente-tit); font-weight:600; }
+    html[data-tema="neon"] .foto { clip-path:polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); border:none; }
+    html[data-tema="neon"] :is(.boton, .chip.sel) { clip-path:polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
+    html[data-tema="neon"] :is(.local, .serv, .barbero, .dia, .tab, .hora).sel, html[data-tema="neon"] .st.actual .st-num {
+      box-shadow:0 0 0 1px var(--voltaje), 0 0 18px color-mix(in srgb, var(--voltaje) 55%, transparent); }
+    html[data-tema="neon"] .hora.sel { background:transparent; color:var(--verde); border-color:var(--verde); box-shadow:0 0 16px color-mix(in srgb, var(--verde) 55%, transparent); }
+    html[data-tema="neon"] .hora.sel small { color:var(--verde); }
+    html[data-tema="neon"] .stepper::before { background:color-mix(in srgb, var(--voltaje) 35%, transparent); }
+    html[data-tema="neon"] .precio { color:var(--voltaje); text-shadow:0 0 10px color-mix(in srgb, var(--voltaje) 55%, transparent); }
+    html[data-tema="neon"] .serv-check { border-radius:0; }
+
+    /* Minimal claro: blanco, limpio, barberos en lista */
+    html[data-tema="minimal"] :is(.local, .serv, .barbero, .dia, .tarjeta, .personas, .item-res, .hora, .tab) { box-shadow:0 1px 2px rgba(15,20,30,0.06); }
+    html[data-tema="minimal"] header { background:color-mix(in srgb, var(--panel) 92%, transparent); }
+    html[data-tema="minimal"] .cat { color:var(--gris); }
+    html[data-tema="minimal"] .barberos { grid-template-columns:1fr; gap:8px; }
+    html[data-tema="minimal"] .barbero { display:grid; grid-template-columns:52px 1fr; column-gap:14px; align-items:center; text-align:left; padding:12px 14px; }
+    html[data-tema="minimal"] .barbero .foto { width:52px; height:52px; margin:0; grid-row:span 2; font-size:20px; }
+    html[data-tema="minimal"] .hora.sel, html[data-tema="minimal"] .ok { color:#fff; }
+    html[data-tema="minimal"] .barra { background:color-mix(in srgb, var(--panel) 97%, transparent); }
+
+    /* Orgánico: formas de hoja/piedra, tonos tierra y letra con curvas */
+    html[data-tema="organico"] body { background:radial-gradient(ellipse at 90% 0%, color-mix(in srgb, var(--voltaje) 16%, transparent), transparent 45%),
+                                      radial-gradient(ellipse at 0% 100%, rgba(107,143,113,0.22), transparent 45%), var(--fondo); background-attachment:fixed; }
+    html[data-tema="organico"] .serv:nth-child(even), html[data-tema="organico"] .local:nth-child(even) { border-radius:8px 28px 8px 28px; }
+    html[data-tema="organico"] .hora:nth-child(even) { border-radius:5px 16px 5px 16px; }
+    html[data-tema="organico"] .barbero:nth-child(even) .foto { border-radius:45% 55% 42% 58% / 55% 45% 58% 42%; }
+    html[data-tema="organico"] :is(.local, .barbero):hover { transform:rotate(-0.8deg) translateY(-2px); }
+    html[data-tema="organico"] .cat::after { height:0; border-top:2px dotted color-mix(in srgb, var(--voltaje) 45%, transparent); background:none; }
+    html[data-tema="organico"] h2 { font-size:25px; font-weight:800; }
   </style>
 </head>
 <body>
@@ -212,6 +318,7 @@
 
   <main class="caja">
     <div id="asistente">
+      <div id="inicio"></div>
       <nav class="stepper" id="stepper"></nav>
       <div class="contexto" id="contexto"></div>
       <div id="vista"><p class="nota" style="padding:30px 0;">Cargando agenda…</p></div>
@@ -243,7 +350,7 @@
         <div class="campo"><label class="lbl" for="iCorreo">Correo</label><input id="iCorreo" type="email" autocomplete="email" autocapitalize="off" placeholder="tu@gmail.com"></div>
         <div class="campo"><label class="lbl" for="iTel">WhatsApp</label>
           <div class="junto"><select id="iCod" onchange="if (this.value !== '+56' && $('iTel').value.trim() === '9') $('iTel').value = ''"></select><input id="iTel" type="tel" inputmode="tel" value="9 " placeholder="9 1234 5678"></div></div>
-        <label class="check"><input type="checkbox" id="iPromos" checked><span>Quiero recibir promociones y descuentos de <span class="nombreNeg">TwoWeb</span></span></label>
+        <label class="check"><input type="checkbox" id="iPromos" checked><span>Quiero recibir promociones y descuentos de <span class="nombreNeg">ClipperLab</span></span></label>
         <button class="boton" id="btnInsc" onclick="inscribirme()">Inscribirme</button>
         <p class="estado" id="estadoInsc"></p>
       </div>
@@ -255,13 +362,24 @@
   <div class="barra" id="barra"><div class="caja"><div class="barra-txt" id="barraTxt"></div><button class="boton" id="barraBtn">Continuar</button></div></div>
 
   <script>
-    const SUPABASE_URL = "https://krckrwuwqsiybsoncjsg.supabase.co";
-    const SUPABASE_KEY = "PEGA_AQUI_LA_LLAVE_PUBLISHABLE_DE_TWOWEB";
-    // ¿De qué barbería es esta agenda?  agenda.html?b=link-del-negocio  (sin link = negocio principal)
+    const CONF = window.TWOWEB || {};
+    const SUPABASE_URL = CONF.SUPABASE_URL, SUPABASE_KEY = CONF.SUPABASE_KEY;   // se configuran en config.js
+    // ¿De qué barbería es esta agenda?  1) su dominio propio (minadeoro.cl/agenda.html)  2) agenda.html?b=link-del-negocio
+    //   (sin nada = negocio principal ClipperLab)
     const QS = new URLSearchParams(location.search);
-    const SLUG = (QS.get('b') || QS.get('negocio') || '').trim().toLowerCase();
-    const PRINCIPAL = 'twoweb';                 // el aviso por Formspree y el link a la página de inicio son solo del principal
-    const K_INSCRITO = 'twoweb-inscrito' + (SLUG && SLUG !== PRINCIPAL ? '-' + SLUG : '');
+    const HOST = location.hostname.toLowerCase().replace(/^www\./, '');
+    const DOMINIO_PROPIO = /\./.test(HOST) && !/^\d+(\.\d+){3}$/.test(HOST) &&
+      !/(^|\.)(clipperlab\.cl|twoweb\.cl|github\.dev|github\.io|pages\.dev|githubpreview\.dev)$/.test(HOST) ? HOST : '';
+    const SLUG = (QS.get('b') || QS.get('negocio') || DOMINIO_PROPIO || '').trim().toLowerCase();
+    const PRINCIPAL = CONF.PRINCIPAL || 'clipperlab';                 // el aviso por Formspree y el link a la página de inicio son solo del principal
+    // Si se llegó por el link corto (clipperlab.cl/minadeoro/reservar) se deja esa dirección bonita en la barra
+    function urlCorta(sufijo){
+      if (!QS.has('_c') || !SLUG || DOMINIO_PROPIO) return undefined;
+      const b = document.createElement('base'); b.href = '/'; document.head.prepend(b);
+      return '/' + SLUG + (sufijo ? '/' + sufijo : '');
+    }
+    const K_TEMA = 'clipperlab-tema-' + (SLUG || PRINCIPAL);
+    const K_INSCRITO = 'clipperlab-inscrito' + (SLUG && SLUG !== PRINCIPAL ? '-' + SLUG : '');
 
     const PASO_MIN = 15;          // las horas se ofrecen cada 15 minutos
     const MAX_PERSONAS = 3;
@@ -312,11 +430,11 @@
 
     // ---------- CARGA ----------
     async function iniciar(){
-      const { data, error } = await db.rpc('agenda_config', { p_negocio: SLUG || null });
+      const { data, error } = await rpcNeg('agenda_config', { p_negocio: SLUG || null });
       if (error){
         $('vista').innerHTML = (error.message || '').includes('NEGOCIO_NO_EXISTE')
           ? '<div class="vacio" style="margin-top:20px;">Esta agenda no existe. Revisa el link que te enviaron.</div>'
-          : `<p class="aviso">No pudimos cargar la agenda: ${esc(error.message)}</p>`;
+          : `<p class="aviso">No pudimos cargar la agenda: ${esc(error.message)}${/schema cache/i.test(error.message || '') ? '<br><br>👉 Falta instalar en Supabase el archivo <b>INSTALAR-FASES-7-a-10</b>.' : ''}</p>`;
         $('stepper').innerHTML = ''; return;
       }
       if (data.suspendido){
@@ -326,39 +444,95 @@
           ${data.negocio?.whatsapp ? `<br><br><a class="boton" style="display:inline-block;width:auto;text-decoration:none;" href="https://wa.me/${esc(data.negocio.whatsapp.replace(/\D/g, ''))}">Escríbenos por WhatsApp</a>` : ''}</div>`;
         return;
       }
+      // Negocio sin agenda online (solo tienda): se avisa y se lleva a su tienda
+      if (data.negocio && data.negocio.mod_agenda === false){
+        pintarMarca(data.negocio); $('stepper').innerHTML = '';
+        const tUrl = QS.has('_c') && SLUG && !DOMINIO_PROPIO ? '/' + SLUG + '/tienda' : 'tienda.html' + (SLUG && !DOMINIO_PROPIO ? '?b=' + encodeURIComponent(SLUG) : '');
+        $('vista').innerHTML = `<div class="vacio" style="margin-top:20px;"><b>${esc(data.negocio.nombre || '')}</b> no tiene agenda online.
+          ${data.negocio.mod_tienda ? `<br><br><a class="boton" style="display:inline-block;width:auto;text-decoration:none;" href="${tUrl}">🛍 Ir a la tienda</a>` : ''}</div>`;
+        return;
+      }
       CFG = data;
       pintarMarca(CFG.negocio || {});
       CFG.locales = CFG.locales || [];
       CFG.trabajadores.forEach(t => t.servicios = t.servicios || []);
-      datosCliente = leerLocal('twoweb-cliente') || {};
+      datosCliente = leerLocal('clipperlab-cliente') || {};
       // ?local=2 (o ?local=providencia) deja la sucursal elegida: sirve para links de Instagram de cada local
-      const q = new URLSearchParams(location.search).get('local');
+      const q = QS.get('local');
       const pre = q && CFG.locales.find(l => String(l.id) === q || l.nombre.toLowerCase() === q.toLowerCase());
       if (pre) { LOCAL = pre.id; paso = 2; }
       else if (CFG.locales.length === 1) { LOCAL = CFG.locales[0].id; paso = 2; }
-      history.replaceState({ paso, i: 0 }, '');
+      history.replaceState({ paso, i: 0 }, '', urlCorta('reservar'));
       dibujar();
-      if (new URLSearchParams(location.search).has('inscribete')) verInscripcion();   // link directo: agenda.html?inscribete
+      if (promoActiva() && QS.has('inscribete')) verInscripcion();   // link directo: agenda.html?inscribete
     }
 
+    // Llamada a la base con respaldo: si la base aún no tiene la Fase 10, se vuelve a intentar sin el negocio
+    async function rpcNeg(nombre, args){
+      let r = await db.rpc(nombre, args);
+      if (r.error && 'p_negocio' in args && (r.error.code === 'PGRST202' || /schema cache/i.test(r.error.message || ''))){
+        const { p_negocio, ...resto } = args;
+        if (!p_negocio) r = await db.rpc(nombre, resto);
+      }
+      return r;
+    }
     // Nombre, logo y color de la barbería dueña de esta agenda
     function pintarMarca(n){
-      const nombre = n.nombre || 'TwoWeb';
+      const nombre = n.nombre || 'ClipperLab';
       document.title = 'Reserva tu hora — ' + nombre;
       const m = $('marca');
-      if (n.logo_url) m.innerHTML = `<img src="${esc(n.logo_url)}" alt="${esc(nombre)}" style="height:34px;vertical-align:middle;">`;
-      else if (nombre === 'TwoWeb') m.innerHTML = 'Clipper<span>Lab</span>';
-      else m.textContent = nombre;
-      if ((n.slug || PRINCIPAL) !== PRINCIPAL){ m.removeAttribute('href'); m.removeAttribute('title'); m.style.cursor = 'default'; }
-      document.querySelectorAll('.nombreNeg').forEach(e => e.textContent = nombre);
-      if (/^#[0-9a-f]{6}$/i.test(n.color || '')){
-        const c = n.color, r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
-        document.documentElement.style.setProperty('--voltaje', c);
-        document.documentElement.style.setProperty('--voltaje-suave', `rgba(${r},${g},${b},0.13)`);
+      if (n.logo_url) {
+        m.innerHTML = `<img src="${esc(n.logo_url)}" alt="" style="height:36px;width:36px;object-fit:contain;border-radius:9px;vertical-align:middle;margin-right:8px;">${esc(nombre)}`;
+        let fav = document.querySelector('link[rel="icon"]');
+        if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); }
+        fav.href = n.logo_url;
       }
-      $('creditos').innerHTML = (n.slug || PRINCIPAL) !== PRINCIPAL ? '· con <a href="index.html" style="color:inherit;">TwoWeb</a>' : '';
+      else if (nombre === 'ClipperLab') m.innerHTML = 'Clipper<span>Lab</span>';
+      else m.textContent = nombre;
+      // el logo lleva a la página web de la barbería (en su dominio: la portada; si no: barberia.html?b=...)
+      if ((n.slug || PRINCIPAL) !== PRINCIPAL){ m.href = DOMINIO_PROPIO ? './' : QS.has('_c') ? '/' + n.slug : 'barberia.html?b=' + encodeURIComponent(n.slug); m.title = 'Ir a la página de ' + nombre; }
+      document.querySelectorAll('.nombreNeg').forEach(e => e.textContent = nombre);
+      // Tema elegido por la barbería (?tema= y ?color= solo para que el admin lo pruebe antes de guardar)
+      const tema = TEMAS.includes(QS.get('tema')) ? QS.get('tema') : n.tema, color = /^#[0-9a-f]{6}$/i.test(QS.get('color') || '') ? QS.get('color') : n.color;
+      aplicarTema(tema, color);
+      if (!QS.get('tema')) try { localStorage.setItem(K_TEMA, JSON.stringify({ tema, color })); } catch(e) {}
+      $('creditos').innerHTML = (n.slug || PRINCIPAL) !== PRINCIPAL ? `· con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener" style="color:inherit;">${esc(CONF.MARCA || 'TwoWeb')}</a>` : '';
     }
-    const nombreNegocio = () => CFG.negocio?.nombre || 'TwoWeb';
+    // ---------- TEMAS: colores, formas y letras de cada barbería ----------
+    const TEMAS = ['clasico', 'burbuja', 'vintage', 'neon', 'minimal', 'organico'];
+    const FUENTES = { burbuja:'Nunito:wght@400;600;700;800', vintage:'Playfair+Display:wght@600;700;800', neon:'Oswald:wght@500;600;700',
+                      minimal:'Inter:wght@400;500;600;700;800', organico:'Fraunces:opsz,wght@9..144,600;9..144,800' };
+    const ACENTO = { clasico:'#ff7a2f', burbuja:'#7c83ff', vintage:'#a4161a', neon:'#00e5ff', minimal:'#111827', organico:'#d9a05b' };
+    function textoSobre(c){
+      const l = i => { const x = parseInt(c.slice(i, i + 2), 16) / 255; return x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4; };
+      const L = .2126 * l(1) + .7152 * l(3) + .0722 * l(5);
+      return (L + .05) / .0556 >= 1.05 / (L + .05) ? '#111' : '#fff';
+    }
+    function aplicarTema(tema, color){
+      const t = TEMAS.includes(tema) ? tema : 'clasico', raiz = document.documentElement;
+      if (t === 'clasico') delete raiz.dataset.tema; else raiz.dataset.tema = t;
+      if (FUENTES[t] && !document.getElementById('fuente-' + t)){
+        const l = document.createElement('link'); l.id = 'fuente-' + t; l.rel = 'stylesheet';
+        l.href = 'https://fonts.googleapis.com/css2?family=' + FUENTES[t] + '&display=swap'; document.head.appendChild(l);
+      }
+      const c = /^#[0-9a-f]{6}$/i.test(color || '') ? color : ACENTO[t];
+      raiz.style.setProperty('--voltaje', c); raiz.style.setProperty('--sobre', textoSobre(c));
+    }
+    try { const g = JSON.parse(localStorage.getItem(K_TEMA) || 'null'); if (g) aplicarTema(g.tema, g.color); } catch(e) {}   // sin parpadeo al cargar
+    const nombreNegocio = () => CFG.negocio?.nombre || 'ClipperLab';
+    // ¿Esta barbería tiene activo el 10% en la primera visita? (lo activa ClipperLab desde el panel)
+    const promoActiva = () => CFG.negocio && 'promo_10' in CFG.negocio ? !!CFG.negocio.promo_10 : (!SLUG || SLUG === PRINCIPAL);
+    const pasoInicial = () => CFG.locales.length === 1 ? 2 : 1;
+    // Portada, frase de bienvenida y banner del 10% (solo en el primer paso)
+    function pintarInicio(){
+      const n = CFG.negocio || {}, el = $('inicio');
+      if (paso !== pasoInicial()) { el.innerHTML = ''; return; }
+      const insta = (n.instagram || '').replace(/^@/, '');
+      const txt = (n.bienvenida || insta) ? `<div class="hero-txt"><h1>${esc(nombreNegocio())}</h1>${n.bienvenida ? `<p>${esc(n.bienvenida)}</p>` : ''}${insta ? `<a href="https://www.instagram.com/${encodeURIComponent(insta)}/" target="_blank" rel="noopener">📷 @${esc(insta)}</a>` : ''}</div>` : '';
+      const hero = n.portada_url ? `<div class="hero"><img src="${esc(n.portada_url)}" alt="${esc(nombreNegocio())}">${txt}</div>`
+                 : txt ? `<div class="hero sin-foto">${txt}</div>` : '';
+      el.innerHTML = hero + bannerPromo();
+    }
 
     // ---------- NAVEGACIÓN ENTRE CAPAS ----------
     // Cada capa queda en el historial: el botón "atrás" del teléfono vuelve una capa (no se sale de la página)
@@ -408,6 +582,7 @@
       if (paso > 3 && draft.eleccion !== null) partes.push(draft.eleccion === AUTO ? 'Cualquiera disponible' : 'con ' + nombreTrab(draft.eleccion));
       if (partes.length) ctx += `<span class="subtitulo">${esc(partes.join(' · '))}</span>`;
       $('contexto').innerHTML = ctx;
+      pintarInicio();
 
       const v = $('vista');
       v.className = 'capa' + (haciaAtras ? ' atras' : '');
@@ -433,6 +608,7 @@
 
     // ---------- INSCRIPCIÓN: 10% en la primera visita ----------
     function bannerPromo(){
+      if (!promoActiva()) return '';
       if (leerLocal(K_INSCRITO)) return `<div class="promo ok"><span class="pct">✓</span><span><b>Estás inscrito</b><span class="s">Tu 10% de primera visita se aplica solo al reservar con tu WhatsApp.</span></span></div>`;
       return `<button class="promo" onclick="verInscripcion()"><span class="pct">10%</span><span><b>¿Primera vez? Inscríbete y obtén 10% en tu primera visita</b><span class="s">Toma 20 segundos · Toca aquí</span></span></button>`;
     }
@@ -456,9 +632,9 @@
       if (error){ est.textContent = error.message; return; }
       guardarLocal(K_INSCRITO, true);
       const [us, dom] = p.correo.split('@');
-      guardarLocal('twoweb-cliente', { ...(leerLocal('twoweb-cliente') || {}), nombre: p.nombre, apellido: p.apellido,
+      guardarLocal('clipperlab-cliente', { ...(leerLocal('clipperlab-cliente') || {}), nombre: p.nombre, apellido: p.apellido,
         email: DOMINIOS.includes('@' + dom) ? us : p.correo, dominio: DOMINIOS.includes('@' + dom) ? '@' + dom : 'otro', cod, tel: $('iTel').value, promos: p.promos });
-      datosCliente = leerLocal('twoweb-cliente') || {};
+      datosCliente = leerLocal('clipperlab-cliente') || {};
       $('vistaInsc').querySelector('.tarjeta').innerHTML = `<div class="listo"><div class="ok">✓</div><h2>${data.beneficio ? '¡Listo! Tienes 10% en tu primera visita' : '¡Datos actualizados!'}</h2>
         <p class="ayuda">${data.beneficio ? 'Se aplica automáticamente cuando reserves con este WhatsApp.' : 'Como ya te has atendido con nosotros, el 10% de primera visita no aplica, pero te llegarán nuestras promociones.'}</p>
         <button class="boton" onclick="volverDeMis()">Reservar ahora</button></div>`;
@@ -466,7 +642,7 @@
 
     // ---------- 1) SUCURSAL ----------
     function capaSucursal(){
-      $('vista').innerHTML = bannerPromo() + `<h2>¿Dónde te quieres atender?</h2><p class="ayuda">Elige la barbería. Cada local tiene su propio equipo y precios.</p>
+      $('vista').innerHTML = `<h2>¿Dónde te quieres atender?</h2><p class="ayuda">Elige la barbería. Cada local tiene su propio equipo y precios.</p>
         <div class="locales">${CFG.locales.map(l => {
           const nb = CFG.trabajadores.filter(t => t.local_id === l.id).length;
           const mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.direccion || l.nombre);
@@ -585,7 +761,7 @@
     async function cargarHoras(){
       alertaHoras('Buscando horas libres…');
       const fecha = draft.fecha;
-      const { data, error } = await db.rpc('ocupacion', { p_fecha: fecha, p_negocio: SLUG || null });
+      const { data, error } = await rpcNeg('ocupacion', { p_fecha: fecha, p_negocio: SLUG || null });
       if (fecha !== draft.fecha || paso !== 4) return;           // cambió de día mientras cargaba
       if (error){ $('horas').innerHTML = `<p class="aviso">Error: ${esc(error.message)}</p>`; return; }
       // Ocupado = reservas y bloqueos + las horas que ya elegiste para las otras personas
@@ -665,7 +841,7 @@
               <input id="fTel" type="tel" inputmode="tel" autocomplete="tel-national" value="${esc(d.tel ?? (cod === '+56' ? '9 ' : ''))}" placeholder="${cod === '+56' ? '9 1234 5678' : 'Número'}" oninput="formatoTel()"></div></div>
           <label class="check"><input type="checkbox" id="fWsp" ${d.wsp === false ? '' : 'checked'}><span>Quiero recibir la confirmación y recordatorios por <b>WhatsApp</b></span></label>
           <label class="check"><input type="checkbox" id="fPromos" ${d.promos ? 'checked' : ''}><span>Quiero recibir promociones y descuentos</span></label>
-          ${leerLocal(K_INSCRITO) ? '<p class="nota" style="margin:-6px 0 12px;">🎁 Si es tu primera visita, tu 10% se aplica al confirmar.</p>' : ''}
+          ${promoActiva() && leerLocal(K_INSCRITO) ? '<p class="nota" style="margin:-6px 0 12px;">🎁 Si es tu primera visita, tu 10% se aplica al confirmar.</p>' : ''}
           <div class="campo"><label class="lbl" for="fObs">Observaciones (opcional)</label><textarea id="fObs" placeholder="Ej: degradado bajo, dejar largo arriba…">${esc(d.obs || '')}</textarea></div>
           <label class="lbl">Foto del corte que quieres (opcional)</label>
           <label class="subir" id="subir">${cajaFoto()}<input type="file" accept="image/*" class="oculto" onchange="cargarFoto(this.files[0])"></label>
@@ -774,11 +950,11 @@
           : "No se pudo reservar: " + error.message;
         return;
       }
-      guardarLocal('twoweb-cliente', { ...d, obs:'', acomp:[] });
+      guardarLocal('clipperlab-cliente', { ...d, obs:'', acomp:[] });
       const l = localSel();
       const detalle = data.map(r => `${r.nombre}: ${r.servicios} con ${r.trabajador} ${r.fecha} ${r.desde}-${r.hasta} (${clp(r.total)})`).join('\n');
       if ((CFG.negocio?.slug || PRINCIPAL) === PRINCIPAL) try {
-        await fetch("https://formspree.io/f/myezvagb", { method:"POST", headers:{ "Content-Type":"application/json", "Accept":"application/json" },
+        await fetch("https://formspree.io/f/xzezawgo", { method:"POST", headers:{ "Content-Type":"application/json", "Accept":"application/json" },
           body: JSON.stringify({ _subject:`Nueva reserva ${l.nombre} (${data.length} persona${data.length>1?'s':''})`, local: l.nombre, reservas: detalle,
             total: clp(data.reduce((a,r)=>a+r.total,0)), nombre, correo, telefono: tel.texto, whatsapp: d.wsp ? 'sí' : 'no', observaciones: d.obs, foto: foto ? 'sí (ver en el panel)' : 'no' }) });
       } catch(e) {}
@@ -802,7 +978,7 @@
         <div class="acciones">
           <a class="boton sec" href="${cal}" target="_blank" rel="noopener">📅 Agregar a mi calendario</a>
           <a class="boton sec" href="${mapa}" target="_blank" rel="noopener">📍 Cómo llegar</a>
-          <button class="boton" onclick="location.href = location.pathname">Hacer otra reserva</button>
+          <button class="boton" onclick="location.reload()">Hacer otra reserva</button>
         </div>
         <p class="nota" style="text-align:center; margin-top:14px;">Puedes revisar tus reservas en "Mis reservas" con tu email y teléfono.</p>`;
       window.scrollTo({ top:0, behavior:'smooth' });
@@ -811,7 +987,7 @@
     // ---------- MIS RESERVAS ----------
     function verMisReservas(){
       $('asistente').classList.add('oculto'); $('vistaListo').classList.add('oculto'); $('vistaInsc').classList.add('oculto'); $('vistaMis').classList.remove('oculto'); barra(null);
-      const d = leerLocal('twoweb-cliente');
+      const d = leerLocal('clipperlab-cliente');
       if (d && !$('misCorreo').value){
         $('misCorreo').value = d.email ? (d.email.includes('@') || d.dominio === 'otro' ? d.email : d.email + d.dominio) : '';
         $('misTelefono').value = d.tel ? `${d.cod} ${d.tel}` : '';
@@ -830,7 +1006,7 @@
       const correo = $('misCorreo').value.trim(), tel = $('misTelefono').value.trim();
       if (!correo || tel.replace(/\D/g,'').length < 8){ cont.innerHTML = '<p class="aviso">Escribe tu correo y teléfono.</p>'; return; }
       cont.innerHTML = '<p class="nota">Buscando…</p>';
-      const { data, error } = await db.rpc('mis_reservas', { p_correo: correo, p_telefono: tel, p_negocio: SLUG || null });
+      const { data, error } = await rpcNeg('mis_reservas', { p_correo: correo, p_telefono: tel, p_negocio: SLUG || null });
       if (error){ cont.innerHTML = `<p class="aviso">Error: ${esc(error.message)}</p>`; return; }
       if (!data.length){ cont.innerHTML = '<div class="vacio">No encontramos reservas próximas con esos datos.</div>'; return; }
       const est = { confirmada:'Confirmada', en_atencion:'En atención', completada:'Atendida', cancelada:'Cancelada', no_asistio:'No asistió' };
