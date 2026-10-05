@@ -445,6 +445,24 @@
     .llegada-top { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:12px; }
     .ag-antes { display:inline-block; font-size:10px; font-weight:700; color:var(--verde); white-space:nowrap; }
     .btn-llegada { padding:7px 14px; font-size:13px; margin-left:auto; }
+    /* Fondo con movimiento */
+    #fondoAnim { position:fixed; inset:0; width:100vw; height:100vh; z-index:0; pointer-events:none; display:none; }
+    html.con-fondo { background:var(--grafito); }
+    html.con-fondo body { background:transparent !important; }
+    html.con-fondo body > .caja { position:relative; z-index:1; }
+    .fondos { display:grid; grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); gap:8px; margin-top:8px; }
+    .fondo-op { background:var(--panel2); border:2px solid transparent; border-radius:var(--r-s); padding:8px; text-align:left; cursor:pointer; color:var(--hueso); font:inherit; }
+    .fondo-op.sel { border-color:var(--voltaje); }
+    .fondo-op b { display:block; font-size:13px; margin-top:6px; } .fondo-op small { color:var(--gris); font-size:11px; }
+    .fondo-mini { display:flex; align-items:center; justify-content:center; height:54px; border-radius:calc(var(--r-s) - 2px); font-size:22px;
+      background:linear-gradient(120deg, var(--c1), var(--c2), var(--c1)); background-size:250% 250%; animation:fondoMini 6s ease-in-out infinite; }
+    .fondo-mini.ninguno { background:var(--grafito); animation:none; }
+    @keyframes fondoMini { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
+    @media (prefers-reduced-motion: reduce){ .fondo-mini { animation:none; } }
+    .fondo-ajustes { display:grid; gap:8px; margin-top:10px; padding:10px 12px; border:1px solid var(--linea); border-radius:var(--r-s); }
+    .fondo-ajustes small { display:inline-block; min-width:70px; color:var(--gris); }
+    .fondo-ajustes .chip { padding:4px 10px; margin:2px 2px 2px 0; }
+    .fondo-ajustes input[type=color] { width:44px; height:28px; padding:2px; margin-left:6px; }
   </style>
 </head>
 <body>
@@ -1002,7 +1020,7 @@
                                        error.message.includes('confirm') ? "Falta confirmar tu correo: revisa tu bandeja de entrada." : "Error: " + error.message, 'error');
     }
     // Cierra la sesión SOLO en este dispositivo/pestaña (no saca a la persona de sus otros equipos)
-    async function salir(){ clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
+    async function salir(){ FondoAnim.poner(null); try { localStorage.removeItem('twoweb-fondo-panel'); } catch(e) {} clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
     function mostrarCodigo(){ $('cajaCodigo').classList.toggle('oculto'); }
     async function enviarCodigo(){
       const email = $('loginCorreo').value.trim().toLowerCase();
@@ -1074,6 +1092,7 @@
       yo = { ...data, correo: session.user.email };
       NEG = data.negocio || {};
       pintarNegocio();
+      aplicarFondoActual();
       $('yoAvatar').textContent = (yo.nombre || '?')[0].toUpperCase();
       $('yoNombre').textContent = yo.nombre || yo.correo;
       $('yoRol').textContent = yo.super ? 'super admin' : yo.rol; $('yoRol').className = 'rol ' + yo.rol;
@@ -1672,7 +1691,7 @@
       if (tr != null && r.origen !== 'llegada'){ const d = tr - rf; txt += d === 0 ? ' · a la hora' : ` · terminó ${Math.abs(d)} min ${d < 0 ? 'antes' : 'después'}`; }
       return `<div class="det-fila"><span>Atención real</span><span>${txt}</span></div>`;
     }
-    function cerrarDetalle(){ $('fondoDetalle').classList.add('oculto'); if (yo) aplicarTemaActual(); }
+    function cerrarDetalle(){ $('fondoDetalle').classList.add('oculto'); if (yo) { aplicarTemaActual(); aplicarFondoActual(); } }
     function refrescarVista(){
       const t = document.querySelector('.tab.sel')?.dataset.tab;
       if (t === 'dia') dibujarDia(); if (t === 'lista') dibujarLista();
@@ -2035,7 +2054,7 @@
 
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
-      imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
+      imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || ''; fondoMio = fondoGuardado() ? { ...fondoGuardado() } : null;
       const permiso = 'Notification' in window ? Notification.permission : 'no';
       $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">Mi cuenta</h3>
         ${msg ? `<p class="ok" style="font-size:14px;margin-bottom:8px;">${esc(msg)}</p>` : ''}
@@ -2056,6 +2075,10 @@
         <label class="check-linea"><input type="checkbox" id="miColorPropio" ${yo.mi_color ? 'checked' : ''} onchange="probarMio()"> Usar mi propio color
           <input type="color" id="miColor" value="${colorOk(yo.mi_color) ? yo.mi_color : (colorOk(NEG.color) ? NEG.color : '#ff7a2f')}" oninput="$('miColorPropio').checked = true; probarMio()" style="width:54px;height:30px;padding:2px;margin-left:6px;"></label>
         <button class="boton-linea" style="margin-top:10px;" onclick="guardarMiTema()">Guardar mi apariencia</button>
+        <h3 style="margin-top:18px;">🌊 Fondo con movimiento</h3>
+        <p class="nota">Un fondo animado solo para <b>tu</b> panel, como el fondo de un chat. Toca uno para probarlo y ajusta sus colores, intensidad y forma.</p>
+        <div id="fondosMios">${selectorFondo()}</div>
+        <button class="boton-linea" style="margin-top:10px;" onclick="guardarMiFondo()">Guardar mi fondo</button>
         ${yo.rol === 'admin' && !yo.super ? `<h3 style="margin-top:18px;">💳 Mi plan</h3><div id="miPlan"><p class="nota">Cargando…</p></div>` : ''}
         ${yo.rol === 'admin' ? `<h3 style="margin-top:18px;">Mi negocio</h3>
           <p class="nota">El nombre, logo, portada, colores y cómo se ve tu agenda ahora están en la pestaña <b>🎨 Mi página</b>.</p>
@@ -2172,6 +2195,179 @@
           <p class="estado" id="estadoMarca"></p>
         </div>`;
     }
+    // ================= FONDO CON MOVIMIENTO (cada persona elige el suyo) =================
+    // Se dibuja en un <canvas> fijo detrás del panel. Pausa cuando la pestaña no se ve,
+    // respeta "reducir movimiento" del teléfono y limita los cuadros por segundo para no gastar batería.
+    const FONDOS = {
+      ninguno:      { n: 'Sin fondo',     ic: '⬛', d: 'Solo el tema' },
+      agua:         { n: 'Agua',          ic: '🌊', d: 'Olas suaves', c: '#22d3ee', c2: '#2563eb' },
+      aire:         { n: 'Aire',          ic: '☁️', d: 'Nubes que flotan', c: '#a78bfa', c2: '#f0abfc' },
+      burbujas:     { n: 'Burbujas',      ic: '🫧', d: 'Suben despacio', c: '#38bdf8', c2: '#a5f3fc', formas: true },
+      aurora:       { n: 'Aurora',        ic: '🌌', d: 'Luces del norte', c: '#34d399', c2: '#8b5cf6' },
+      constelacion: { n: 'Constelación',  ic: '✨', d: 'Estrellas unidas', c: '#fde68a', c2: '#93c5fd', formas: true },
+      gotas:        { n: 'Gotas',         ic: '💧', d: 'Ondas en el agua', c: '#67e8f9', c2: '#818cf8' },
+      formas:       { n: 'Formas',        ic: '🔷', d: 'Figuras flotantes', c: '#f472b6', c2: '#facc15', formas: true }
+    };
+    const FORMAS_FONDO = { circulo: '●', cuadrado: '■', triangulo: '▲', rombo: '◆', estrella: '★', corazon: '♥', mezcla: '✦ Mezcla' };
+    const FondoAnim = (() => {
+      let cv, cx, cfg = null, raf = 0, t0 = 0, ult = 0, W = 0, H = 0, dpr = 1, items = [], ondas = [], proxGota = 0;
+      const quieto = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${Math.max(0, Math.min(1, a))})`; };
+      const R = (a, b) => a + Math.random() * (b - a);
+      const oscuro = () => (getComputedStyle(document.documentElement).getPropertyValue('--esquema') || 'dark').trim() !== 'light';
+      function lienzo(){
+        if (cv) return;
+        cv = document.createElement('canvas'); cv.id = 'fondoAnim'; cv.setAttribute('aria-hidden', 'true');
+        document.body.prepend(cv); cx = cv.getContext('2d');
+        addEventListener('resize', medir);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) cancelAnimationFrame(raf); else if (cfg) bucle(performance.now()); });
+      }
+      function medir(){
+        if (!cv) return;
+        dpr = Math.min(1.5, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+        cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (cfg) sembrar();
+      }
+      function sembrar(){
+        const dens = [0, 0.6, 1, 1.5][cfg.intensidad], area = W * H / 1e5;
+        items = []; ondas = [];
+        const n = { burbujas: 9, constelacion: 7, formas: 4, aire: 0.6 }[cfg.tipo] || 0;
+        const cant = Math.round(Math.min(cfg.tipo === 'constelacion' ? 110 : 70, Math.max(cfg.tipo === 'aire' ? 5 : 8, n * area * dens)));
+        for (let i = 0; i < cant; i++) items.push({ x: R(0, W), y: R(0, H), r: cfg.tipo === 'aire' ? R(.22, .42) * Math.max(W, H) : R(4, cfg.tipo === 'formas' ? 26 : 18),
+          vx: R(-1, 1), vy: R(-1, 1), f: R(0, 6.3), g: R(0.4, 1), rot: R(0, 6.3), vr: R(-.6, .6),
+          forma: cfg.forma === 'mezcla' ? Object.keys(FORMAS_FONDO)[Math.floor(R(0, 6))] : cfg.forma, c2: Math.random() < .4 });
+      }
+      function figura(forma, x, y, r, rot){
+        cx.save(); cx.translate(x, y); cx.rotate(rot); cx.beginPath();
+        if (forma === 'cuadrado') cx.rect(-r * .8, -r * .8, r * 1.6, r * 1.6);
+        else if (forma === 'triangulo'){ cx.moveTo(0, -r); cx.lineTo(r * .9, r * .7); cx.lineTo(-r * .9, r * .7); cx.closePath(); }
+        else if (forma === 'rombo'){ cx.moveTo(0, -r); cx.lineTo(r * .75, 0); cx.lineTo(0, r); cx.lineTo(-r * .75, 0); cx.closePath(); }
+        else if (forma === 'estrella'){ for (let i = 0; i < 10; i++){ const a = i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .45 : r; cx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } cx.closePath(); }
+        else if (forma === 'corazon'){ const s = r / 16; cx.moveTo(0, 5 * s); cx.bezierCurveTo(-16 * s, -6 * s, -6 * s, -16 * s, 0, -7 * s); cx.bezierCurveTo(6 * s, -16 * s, 16 * s, -6 * s, 0, 5 * s); cx.closePath(); cx.scale(1, 1); }
+        else cx.arc(0, 0, r, 0, Math.PI * 2);
+        cx.restore();
+      }
+      function cuadro(t){
+        const k = [0, .55, 1, 1.6][cfg.intensidad] * (oscuro() ? 1 : .75), v = [0, .45, 1, 1.9][cfg.velocidad], s = t / 1000 * v;
+        const C = cfg.color, C2 = cfg.color2, dt = Math.min(.05, (t - ult) / 1000) * v || 0; ult = t;
+        cx.clearRect(0, 0, W, H);
+        if (cfg.tipo === 'agua'){
+          const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, rgba(C2, .0)); g.addColorStop(1, rgba(C2, .16 * k)); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+          for (let c = 0; c < 4; c++){
+            const base = H * (.55 + c * .11), amp = 14 + c * 7, fr = .006 - c * .0009, vel = .6 + c * .25;
+            cx.beginPath(); cx.moveTo(0, H);
+            for (let x = 0; x <= W + 10; x += 10) cx.lineTo(x, base + Math.sin(x * fr + s * vel + c) * amp + Math.sin(x * fr * 2.3 - s * vel * .7) * amp * .35);
+            cx.lineTo(W, H); cx.closePath(); cx.fillStyle = rgba(c % 2 ? C2 : C, (.07 + c * .025) * k); cx.fill();
+          }
+          for (let i = 0; i < 5; i++){       // reflejos de luz
+            const x = (W * (i + .5) / 5 + Math.sin(s * .4 + i) * 60), y = H * .2 + Math.cos(s * .3 + i * 2) * 40, r = 120 + 40 * Math.sin(s + i);
+            const rg = cx.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, rgba(C, .06 * k)); rg.addColorStop(1, rgba(C, 0)); cx.fillStyle = rg; cx.fillRect(x - r, y - r, r * 2, r * 2);
+          }
+        } else if (cfg.tipo === 'aire'){
+          items.forEach((b, i) => {
+            const x = b.x + Math.sin(s * .12 * b.g + b.f) * W * .18, y = b.y + Math.cos(s * .1 * b.g + b.f * 1.3) * H * .12;
+            const rg = cx.createRadialGradient(x, y, 0, x, y, b.r); rg.addColorStop(0, rgba(i % 2 ? C2 : C, .16 * k)); rg.addColorStop(1, rgba(i % 2 ? C2 : C, 0));
+            cx.fillStyle = rg; cx.fillRect(x - b.r, y - b.r, b.r * 2, b.r * 2);
+          });
+        } else if (cfg.tipo === 'aurora'){
+          for (let b = 0; b < 3; b++){
+            const g = cx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, rgba(C, 0)); g.addColorStop(.3, rgba(b % 2 ? C2 : C, .16 * k)); g.addColorStop(.7, rgba(b % 2 ? C : C2, .13 * k)); g.addColorStop(1, rgba(C2, 0));
+            cx.beginPath();
+            const yb = H * (.18 + b * .12), gros = 70 + b * 30;
+            for (let x = 0; x <= W + 12; x += 12) cx.lineTo(x, yb + Math.sin(x * .004 + s * (.35 + b * .12) + b) * 50 + Math.sin(x * .011 - s * .3) * 18);
+            for (let x = W + 12; x >= 0; x -= 12) cx.lineTo(x, yb + gros + Math.sin(x * .005 + s * (.3 + b * .1) + b * 2) * 60);
+            cx.closePath(); cx.fillStyle = g; cx.fill();
+          }
+        } else if (cfg.tipo === 'burbujas'){
+          items.forEach(b => {
+            b.y -= (12 + b.r * 1.6) * dt * b.g; b.f += dt * 1.5;
+            if (b.y < -b.r * 2){ b.y = H + b.r * 2; b.x = R(0, W); }
+            const x = b.x + Math.sin(b.f) * 14;
+            figura(b.forma, x, b.y, b.r, Math.sin(b.f) * .3);
+            cx.strokeStyle = rgba(b.c2 ? C2 : C, .45 * k); cx.lineWidth = 1.4; cx.stroke();
+            cx.fillStyle = rgba(b.c2 ? C2 : C, .08 * k); cx.fill();
+            cx.beginPath(); cx.arc(x - b.r * .35, b.y - b.r * .35, b.r * .18, 0, 7); cx.fillStyle = rgba('#ffffff', .35 * k); cx.fill();
+          });
+        } else if (cfg.tipo === 'constelacion'){
+          const lim = Math.min(160, Math.max(W, H) * .14);
+          items.forEach(p => { p.x += p.vx * 8 * dt; p.y += p.vy * 8 * dt; if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1; });
+          for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++){
+            const a = items[i], b = items[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+            if (d < lim){ cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.strokeStyle = rgba(C2, (1 - d / lim) * .22 * k); cx.lineWidth = 1; cx.stroke(); }
+          }
+          items.forEach(p => { const tw = .55 + .45 * Math.sin(s * 2 + p.f); figura(p.forma, p.x, p.y, 1.6 + p.g * 2.2, p.rot); cx.fillStyle = rgba(C, (.35 + .5 * tw) * k); cx.fill(); });
+        } else if (cfg.tipo === 'gotas'){
+          if (t > proxGota){ ondas.push({ x: R(0, W), y: R(0, H), r: 0, c2: Math.random() < .5 }); proxGota = t + R(220, 650) / v / [0, .6, 1, 1.5][cfg.intensidad]; }
+          ondas = ondas.filter(o => o.r < 220);
+          ondas.forEach(o => {
+            o.r += 45 * dt;
+            for (let a = 0; a < 3; a++){ const rr = o.r - a * 18; if (rr <= 0) continue;
+              cx.beginPath(); cx.ellipse(o.x, o.y, rr, rr * .55, 0, 0, 7); cx.strokeStyle = rgba(o.c2 ? C2 : C, (1 - o.r / 220) * .5 * k); cx.lineWidth = 1.8; cx.stroke(); }
+          });
+        } else if (cfg.tipo === 'formas'){
+          items.forEach(f => {
+            f.x += f.vx * 10 * dt; f.y -= (6 + f.g * 10) * dt; f.rot += f.vr * dt;
+            if (f.y < -40){ f.y = H + 40; f.x = R(0, W); } if (f.x < -40) f.x = W + 40; if (f.x > W + 40) f.x = -40;
+            figura(f.forma, f.x, f.y, f.r, f.rot);
+            cx.fillStyle = rgba(f.c2 ? C2 : C, .10 * k); cx.fill(); cx.strokeStyle = rgba(f.c2 ? C2 : C, .3 * k); cx.lineWidth = 1.5; cx.stroke();
+          });
+        }
+      }
+      let cada = 1000 / 30;
+      function bucle(t){
+        if (!cfg) return;
+        if (t - t0 >= cada){ t0 = t; cuadro(t); }
+        raf = requestAnimationFrame(bucle);
+      }
+      return {
+        poner(c){
+          cancelAnimationFrame(raf);
+          if (!c || !c.tipo || c.tipo === 'ninguno' || !FONDOS[c.tipo]){ cfg = null; if (cv){ cx.clearRect(0, 0, W, H); cv.style.display = 'none'; } document.documentElement.classList.remove('con-fondo'); return; }
+          lienzo(); cv.style.display = 'block'; document.documentElement.classList.add('con-fondo');
+          cfg = { intensidad: 2, velocidad: 2, forma: 'circulo', color: FONDOS[c.tipo].c, color2: FONDOS[c.tipo].c2, ...c };
+          cv.style.filter = cfg.tipo === 'aire' || cfg.tipo === 'aurora' ? 'blur(18px)' : 'none';
+          medir(); ult = performance.now();
+          if (quieto()) { cuadro(ult); return; }   // "reducir movimiento": solo una imagen fija
+          bucle(ult);
+        }
+      };
+    })();
+    const fondoGuardado = () => (yo && yo.mi_fondo) || (() => { try { return JSON.parse(localStorage.getItem('twoweb-fondo-panel') || 'null'); } catch(e) { return null; } })();
+    function aplicarFondoActual(){
+      const f = fondoGuardado(); FondoAnim.poner(f);
+      try { localStorage.setItem('twoweb-fondo-panel', JSON.stringify(f || null)); } catch(e) {}
+    }
+    try { const f = JSON.parse(localStorage.getItem('twoweb-fondo-panel') || 'null'); if (f) FondoAnim.poner(f); } catch(e) {}
+
+    // ----- Selector del fondo en "Mi cuenta" -----
+    let fondoMio = null;
+    function selectorFondo(){
+      const f = fondoMio || { tipo: 'ninguno' }, def = FONDOS[f.tipo] || {};
+      const chip = (k, v, t) => `<button class="chip ${String(f[k]) === String(v) ? 'sel' : ''}" onclick="cambiarFondo('${k}', ${typeof v === 'number' ? v : `'${v}'`})">${t}</button>`;
+      return `<div class="fondos">${Object.entries(FONDOS).map(([k, x]) => `<button class="fondo-op ${f.tipo === k ? 'sel' : ''}" onclick="cambiarFondo('tipo', '${k}')">
+            <span class="fondo-mini ${k}" style="--c1:${x.c || '#555'};--c2:${x.c2 || '#333'}">${x.ic}</span><b>${x.n}</b><small>${x.d}</small></button>`).join('')}</div>
+        ${f.tipo !== 'ninguno' ? `<div class="fondo-ajustes">
+          <label class="check-linea" style="margin:0;">Color 1 <input type="color" value="${f.color || def.c}" oninput="cambiarFondo('color', this.value, true)"></label>
+          <label class="check-linea" style="margin:0;">Color 2 <input type="color" value="${f.color2 || def.c2}" oninput="cambiarFondo('color2', this.value, true)"></label>
+          <div><small>Intensidad</small> ${chip('intensidad', 1, 'Suave')}${chip('intensidad', 2, 'Media')}${chip('intensidad', 3, 'Fuerte')}</div>
+          <div><small>Velocidad</small> ${chip('velocidad', 1, 'Lenta')}${chip('velocidad', 2, 'Normal')}${chip('velocidad', 3, 'Rápida')}</div>
+          ${def.formas ? `<div><small>Forma</small> ${Object.entries(FORMAS_FONDO).map(([k, t]) => chip('forma', k, t)).join('')}</div>` : ''}
+        </div>` : ''}`;
+    }
+    function cambiarFondo(k, v, sinRedibujar){
+      const base = fondoMio || { tipo: 'ninguno' };
+      if (k === 'tipo'){ const d = FONDOS[v]; fondoMio = v === 'ninguno' ? null : { ...base, tipo: v, color: d.c, color2: d.c2, intensidad: base.intensidad || 2, velocidad: base.velocidad || 2, forma: base.forma || 'circulo' }; }
+      else fondoMio = { ...base, [k]: v };
+      FondoAnim.poner(fondoMio);
+      if (!sinRedibujar) $('fondosMios').innerHTML = selectorFondo();
+    }
+    async function guardarMiFondo(){
+      const { error } = await db.rpc('guardar_mi_fondo', { p: fondoMio || { tipo: 'ninguno' } });
+      if (error && !/guardar_mi_fondo/.test(error.message || '')) return estado('estadoCuenta', 'Error: ' + error.message, 'error');
+      yo.mi_fondo = fondoMio; aplicarFondoActual();
+      estado('estadoCuenta', error ? '✓ Fondo guardado en este dispositivo (instala la Fase 20 para que se vea en todos).' : '✓ Listo, tu fondo quedó guardado (en todos tus dispositivos).', 'ok');
+    }
+
     // ----- Temas en Mi cuenta -----
     let temaMio = '', temaNegNuevo = '';
     function selectorMio(){
