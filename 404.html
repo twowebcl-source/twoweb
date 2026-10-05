@@ -9,6 +9,7 @@
     //   twoweb.cl/minadeoro            → su página web
     //   twoweb.cl/minadeoro/reservar   → su agenda
     //   twoweb.cl/minadeoro/tienda     → su tienda online
+    //   twoweb.cl/minadeoro/pedro      → agenda directa con ese profesional
     (function(){
       var partes = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
       var slug = decodeURIComponent(partes[0] || '').toLowerCase();
@@ -16,9 +17,10 @@
       var q = location.search.replace(/^\?/, '');
       var reservados = ['agenda', 'panel', 'barberia', 'index', 'imagenes', 'supabase', 'tienda', 'reservar', 'config'];
       if (/^[a-z0-9]([a-z0-9-]{1,38})[a-z0-9]$/.test(slug) && reservados.indexOf(slug) < 0 && partes.length <= 2) {
-        var destino = (resto === 'reservar' || resto === 'agenda' || resto === 'inscribete') ? '/agenda.html'
+        var conocido = ['', 'reservar', 'agenda', 'inscribete', 'tienda', 'productos'].indexOf(resto) >= 0;
+        var destino = (resto === 'reservar' || resto === 'agenda' || resto === 'inscribete' || !conocido) ? '/agenda.html'
                     : (resto === 'tienda' || resto === 'productos') ? '/tienda.html' : '/barberia.html';
-        var extra = resto === 'inscribete' ? '&inscribete' : '';
+        var extra = resto === 'inscribete' ? '&inscribete' : !conocido ? '&con=' + encodeURIComponent(resto) : '';
         location.replace(destino + '?b=' + slug + '&_c=1' + extra + (q ? '&' + q : '') + location.hash);
         return;
       }

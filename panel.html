@@ -419,6 +419,8 @@
       .prod-fila .mini { width:48px; height:48px; }
       .prod-fila .stock, .prod-fila .acc-prod { grid-column:2 / -1; }
     }
+    .link-pro { margin:10px 0; padding:10px 12px; border:1px dashed var(--linea); border-radius:12px; }
+    .link-pro label { margin-top:0; }
   </style>
 </head>
 <body>
@@ -491,7 +493,7 @@
               <div class="negocio-actual" id="negocioActual"></div></div>
           </div>
         </div>
-        <div style="display:flex; gap:8px; align-items:flex-start; position:relative;">
+        <div style="display:flex; gap:8px; align-items:flex-start; position:relative; flex-wrap:wrap;">
           <span class="en-vivo" id="enVivo" title="Verde = notificaciones en tiempo real conectadas" style="align-self:center;"><i></i>en vivo</span>
           <button class="campana" id="btnCampana" onclick="toggleNotif()" aria-label="Notificaciones">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
@@ -529,6 +531,7 @@
       <div id="tab-midia" class="oculto">
         <h2 id="saludo" style="margin-top:18px;font-size:22px;"></h2>
         <p class="sub" id="saludoSub" style="text-transform:capitalize;margin-bottom:12px;"></p>
+        <div id="miLinkPro" class="link-pro oculto"></div>
         <div class="kpis" id="kpisTrab"></div>
         <div class="acciones-dia">
           <button class="boton" onclick="abrirAccion({ modo:'llegada', fecha: hoyTxt(), tid: yo.trabajador_id })">+ Nuevo en la agenda</button>
@@ -842,6 +845,14 @@
     const esPrincipal = n => n.slug === (CONF.PRINCIPAL || 'twoweb');
     const linkAgenda = (n = NEG) => esPrincipal(n) || !n.slug ? new URL('agenda.html', location.href).href
       : LINKS_CORTOS ? location.origin + '/' + n.slug + '/reservar' : new URL('agenda.html?b=' + n.slug, location.href).href;
+    // Link personal de agenda de cada profesional (para su Instagram): twoweb.cl/negocio/pedro
+    const slugTxt = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    function slugTrab(t){ const b = slugTxt(t.nombre); return trabajadores.filter(x => slugTxt(x.nombre) === b).length > 1 ? b + '-' + t.id : b; }
+    function linkPro(t){
+      if (!t || !NEG.slug) return '';
+      if (LINKS_CORTOS && !NEG.dominio && !esPrincipal(NEG)) return location.origin + '/' + NEG.slug + '/' + slugTrab(t);
+      const base = linkAgenda(); return base + (base.includes('?') ? '&' : '?') + 'con=' + slugTrab(t);
+    }
     const linkWeb = (n = NEG) => n.mod_agenda === false && n.mod_tienda ? linkTienda(n) : n.dominio ? 'https://' + n.dominio + '/' : esPrincipal(n) ? new URL('index.html', location.href).href
       : LINKS_CORTOS ? location.origin + '/' + n.slug : new URL('barberia.html?b=' + n.slug, location.href).href;
     // Tienda online del negocio (Fase 14)
@@ -1250,6 +1261,11 @@
       const hora = ahora.getHours();
       $('saludo').textContent = `${hora < 12 ? 'Buenos días' : hora < 20 ? 'Buenas tardes' : 'Buenas noches'}, ${yo.nombre}`;
       $('saludoSub').textContent = ahora.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long' });
+      const yoT = trabajadores.find(t => t.id === yo.trabajador_id), mi = yoT && linkPro(yoT);
+      if (mi){ $('miLinkPro').innerHTML = `<label>🔗 Tu link personal de agenda · ponlo en tu Instagram</label>
+          <div style="display:flex;gap:6px;"><input id="miLinkProTxt" readonly value="${esc(mi)}"><button class="boton-linea" onclick="copiarTexto('miLinkProTxt', 'miLinkEstado')">Copiar</button></div>
+          <p class="estado" id="miLinkEstado"></p>`; $('miLinkPro').classList.remove('oculto');
+        $('linkAgenda').href = mi; $('linkAgenda').textContent = 'Ver mi agenda'; }
       $('kpisTrab').innerHTML =
         `<div class="kpi"><b>${deHoy.filter(activa).length}</b><span>clientes hoy</span></div>` +
         `<div class="kpi"><b>${clp(gananciaHecha(deHoy))}</b><span>tu ganancia hoy</span></div>` +
@@ -2160,8 +2176,15 @@
           </div>
           <div class="trab-extra">
             <div><label>Local donde atiende</label><select data-campo="local_id">${locales.map(l => `<option value="${l.id}" ${l.id === t.local_id ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('')}</select></div>
-            <div><label>Foto (link de una imagen, opcional — se ve en la agenda pública)</label><input data-campo="foto_url" value="${esc(t.foto_url || '')}" placeholder="https://…/foto.jpg"></div>
+            <div><label>Foto (se ve en la agenda pública)</label>
+              <input type="file" accept="image/*" onchange="subirFotoTrab(${t.id}, this)">
+              <input type="hidden" data-campo="foto_url" value="${esc(t.foto_url || '')}">
+              <span class="nota" id="fotoNota-${t.id}">${t.foto_url ? '✓ Tiene foto · <button class="link" style="margin:0;" onclick="quitarFotoTrab(' + t.id + ')">Quitar</button>' : 'Sin foto: se muestra su inicial.'}</span></div>
           </div>
+          ${conAgenda() && t.activo ? `<div class="link-pro"><label>🔗 Link personal de agenda (para su Instagram o WhatsApp)</label>
+            <div style="display:flex;gap:6px;"><input id="linkPro-${t.id}" readonly value="${esc(linkPro(t))}"><button class="boton-linea" onclick="copiarTexto('linkPro-${t.id}', 'estado-trab-${t.id}')">Copiar</button>
+            <a class="boton-linea" href="${esc(linkPro(t))}" target="_blank" rel="noopener">Abrir</a></div>
+            <p class="nota" style="margin-top:4px;">Quien entre por aquí agenda directo con ${esc(t.nombre)}. Si cambias su nombre, cambia el link.</p></div>` : ''}
           <div class="acceso">${a.es_admin ? '<span class="nota">Cuenta de administrador · </span>' : ''}${accesoHtml}</div>
           <details class="detalle-horario" ${mios.length ? '' : 'open'}>
             <summary>Servicios que realiza (${mios.filter(id => servLocal.some(s => s.id === id)).length} de ${servLocal.length})</summary>
@@ -2236,6 +2259,24 @@
       await cargarBase();
       estado(id, '✓ Horario guardado. La agenda pública ya usa este horario.', 'ok');
     }
+    async function subirFotoTrab(tid, input){
+      const id = 'estado-trab-' + tid;
+      try {
+        estado(id, 'Preparando foto…');
+        const d = await comprimirImagen(input.files[0], 320, 45000);
+        $('trab-' + tid).querySelector('[data-campo=foto_url]').value = d;
+        $('fotoNota-' + tid).innerHTML = `<img src="${d}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;vertical-align:middle;"> falta Guardar`;
+        estado(id, 'Listo. Presiona "Guardar" en esta persona.', 'ok');
+      } catch (e) { estado(id, e.message, 'error'); input.value = ''; }
+    }
+    function quitarFotoTrab(tid){
+      $('trab-' + tid).querySelector('[data-campo=foto_url]').value = '';
+      $('fotoNota-' + tid).textContent = 'Se quitará al guardar.';
+    }
+    async function copiarTexto(inputId, estadoId){
+      try { await navigator.clipboard.writeText($(inputId).value); estado(estadoId, '✓ Link copiado', 'ok'); }
+      catch (e) { $(inputId).select(); estado(estadoId, 'Selecciona y copia el link', ''); }
+    }
     async function guardarTrabajador(tid){
       const c = document.querySelector(`#trab-${tid} .trab-cab`), id = 'estado-trab-' + tid;
       const nombre = c.querySelector('[data-campo=nombre]').value.trim();
@@ -2246,7 +2287,7 @@
       const foto_url = (caja.querySelector('[data-campo=foto_url]')?.value || '').trim() || null;
       if (!nombre) return estado(id, 'El nombre no puede quedar vacío.', 'error');
       if (isNaN(comision) || comision < 0 || comision > 100) return estado(id, 'La comisión debe estar entre 0 y 100 %.', 'error');
-      if (foto_url && !/^https:\/\//.test(foto_url)) return estado(id, 'La foto debe ser un link que empiece con https://', 'error');
+      if (foto_url && !/^(https:\/\/|data:image\/)/.test(foto_url)) return estado(id, 'La foto no es válida. Súbela de nuevo.', 'error');
       const antes = trabDe(tid);
       if (antes && local_id && antes.local_id !== local_id &&
           !confirm(`¿Mover a ${nombre} a ${nombreLocal(local_id)}? Sus servicios pasan a ser los de ese local (todos marcados; luego ajustas).`)) return;
