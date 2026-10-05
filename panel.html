@@ -426,6 +426,23 @@
     .venta-local > div:first-child { border-top:none; }
     .venta-local .cant { display:flex; align-items:center; gap:6px; }
     .venta-local .cant button { width:28px; height:28px; border-radius:8px; border:1px solid var(--linea); background:transparent; color:var(--hueso); cursor:pointer; }
+    /* Vista panel / lista */
+    .vista-ctrl { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:4px 0 10px; }
+    .segmentado { display:inline-flex; border:1px solid var(--linea); border-radius:var(--r-pill); overflow:hidden; background:var(--panel2); }
+    .segmentado .seg { background:transparent; border:none; color:var(--gris); padding:7px 14px; font:inherit; font-size:13px; cursor:pointer; }
+    .segmentado .seg.sel { background:var(--voltaje); color:var(--sobre); font-weight:700; }
+    .sel-vista { width:auto; min-width:180px; padding:7px 10px; border-radius:var(--r-pill); }
+    .ag-hora.min { font-size:10px; opacity:.75; }
+    .lista-dia .cita { margin-bottom:8px; }
+    .r-pro { font-size:12px; color:var(--gris); margin-top:2px; }
+    .hueco { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; padding:10px 16px; margin-bottom:8px; border:1px dashed var(--linea); border-radius:var(--r); color:var(--gris); font-size:13px; }
+    .hueco .h-hora { font-weight:700; min-width:96px; color:var(--hueso); }
+    .hueco button { margin-left:auto; padding:6px 12px; font-size:13px; }
+    .hueco.ahora { border-color:var(--verde); background:color-mix(in srgb, var(--verde) 8%, transparent); }
+    .hueco.ocupado { border-style:solid; opacity:.7; }
+    .linea-ahora { position:relative; text-align:center; margin:6px 0 12px; border-top:2px solid var(--verde); }
+    .linea-ahora span { position:relative; top:-11px; background:var(--grafito); color:var(--verde); font-size:12px; font-weight:700; padding:0 10px; }
+    .llegada-top { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:12px; }
   </style>
 </head>
 <body>
@@ -543,16 +560,18 @@
           <span class="nota" style="align-self:center;">Orden de llegada, agendar un cliente o bloquear. También puedes tocar un espacio de la agenda.</span>
         </div>
         <div id="proxima"></div>
+        <div class="vista-ctrl" id="ctrlMiDia"></div>
         <div class="grid-midia">
           <div>
-            <h3>Agenda de hoy</h3>
-            <div class="agenda-scroll"><div class="agenda" id="agendaMiDia"></div></div>
+            <h3 id="tituloMiAgenda">Agenda de hoy</h3>
+            <div class="agenda-scroll" id="agendaMiDiaCaja"><div class="agenda" id="agendaMiDia"></div></div>
+            <div id="listaMiDia" class="lista-dia oculto"></div>
           </div>
           <div>
             <h3>Resumen del día</h3>
             <div id="resumenDia"></div>
-            <h3 style="margin-top:16px;">Clientes de hoy</h3>
-            <div id="citasHoy"></div>
+            <div id="cajaCitasHoy"><h3 style="margin-top:16px;">Clientes de hoy</h3>
+            <div id="citasHoy"></div></div>
           </div>
         </div>
       </div>
@@ -582,9 +601,11 @@
           <span class="barra-der"><button class="boton" onclick="abrirAccion({ modo: diaVista === hoyTxt() ? 'llegada' : 'agendar', fecha: diaVista })">+ Nuevo en la agenda</button></span>
         </div>
         <div class="kpis" id="kpis"></div>
-        <p class="nota" style="margin-bottom:8px;">Toca un espacio libre para agendar un cliente o bloquear ese horario.</p>
-        <div class="agenda-scroll"><div class="agenda" id="agendaDia"></div></div>
-        <p class="nota" style="margin-top:8px;">Toca una reserva para ver el detalle, escribir por WhatsApp o cambiar su estado.</p>
+        <div class="vista-ctrl" id="ctrlDia"></div>
+        <p class="nota" style="margin-bottom:8px;" id="notaDia">Toca un espacio libre para agendar un cliente o bloquear ese horario.</p>
+        <div id="agendaDiaCaja"><div class="agenda-scroll"><div class="agenda" id="agendaDia"></div></div>
+        <p class="nota" style="margin-top:8px;">Toca una reserva para ver el detalle, escribir por WhatsApp o cambiar su estado.</p></div>
+        <div id="listaDia" class="lista-dia oculto"></div>
       </div>
 
       <!-- Lista -->
@@ -827,7 +848,12 @@
     const ESTADOS = { confirmada:"Confirmada", en_atencion:"En atención", completada:"Completada", no_asistio:"No asistió", cancelada:"Cancelada" };
     const DIAS = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
     const ORDEN_DIAS = [1,2,3,4,5,6,0];     // la semana parte en lunes
-    const PX_MIN = 1.5;                     // alto de 1 minuto en la agenda del día
+    // Vista de la agenda (se recuerda en este navegador): panel o lista · escala 15 / 30 / 60 min · profesional (admin)
+    const ESCALAS = { 15: { px: 3.2, linea: 15, etq: 15 }, 30: { px: 1.6, linea: 30, etq: 30 }, 60: { px: 1.0, linea: 60, etq: 60 } };
+    let VISTA = { modo: 'panel', escala: 30, trab: 0 };
+    try { VISTA = { ...VISTA, ...JSON.parse(localStorage.getItem('twoweb-vista-agenda') || '{}') }; } catch(e) {}
+    if (!ESCALAS[VISTA.escala]) VISTA.escala = 30;
+    let PX_MIN = ESCALAS[VISTA.escala].px;    // alto de 1 minuto en la agenda (cambia con la escala)
 
     const $ = id => document.getElementById(id);
     const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1128,8 +1154,9 @@
       const alto = (hasta - desde) * PX_MIN, y = m => (m - desde) * PX_MIN;
 
       let marcas = '', lineas = '';
-      for (let m = desde; m <= hasta; m += 30){
-        if (m % 60 === 0) marcas += `<div class="ag-hora" style="top:${y(m)}px">${aHora(m)}</div>`;
+      const E = ESCALAS[VISTA.escala];
+      for (let m = desde; m <= hasta; m += E.linea){
+        if (m % E.etq === 0) marcas += `<div class="ag-hora ${m % 60 ? 'min' : ''}" style="top:${y(m)}px">${aHora(m)}</div>`;
         lineas += `<div class="ag-linea" style="top:${y(m)}px; ${m % 60 ? 'border-top-style:dashed;' : ''}"></div>`;
       }
       const ahora = new Date(), ahoraMin = ahora.getHours()*60 + ahora.getMinutes();
@@ -1195,6 +1222,59 @@
     const sumaTotal = lista => lista.filter(activa).reduce((a,r) => a + (r.total||0), 0);
     const porHora = (a, b) => rangoDe(a)[0] - rangoDe(b)[0];
 
+    // ================= VISTA: PANEL O LISTA =================
+    function guardarVista(){ try { localStorage.setItem('twoweb-vista-agenda', JSON.stringify(VISTA)); } catch(e) {} }
+    function cambiarVista(k, v){ VISTA[k] = v; if (k === 'escala') PX_MIN = ESCALAS[v].px; guardarVista(); refrescarVista(); }
+    function controlesVista(conTrab){
+      const seg = (k, v, t) => `<button class="seg ${VISTA[k] == v ? 'sel' : ''}" onclick="cambiarVista('${k}', ${typeof v === 'number' ? v : `'${v}'`})">${t}</button>`;
+      const pros = trabsFiltro().filter(t => t.activo);
+      if (VISTA.trab && !pros.some(t => t.id === VISTA.trab)) VISTA.trab = 0;
+      return `<div class="segmentado" role="group" aria-label="Tipo de vista">${seg('modo', 'panel', '📅 Panel')}${seg('modo', 'lista', '📋 Lista')}</div>
+        ${VISTA.modo === 'panel' ? `<div class="segmentado" role="group" aria-label="Escala">${seg('escala', 15, '15 min')}${seg('escala', 30, '30 min')}${seg('escala', 60, '1 hora')}</div>` : ''}
+        ${conTrab && pros.length > 1 ? `<select class="sel-vista" onchange="cambiarVista('trab', Number(this.value))" aria-label="Profesional">
+            <option value="0">👥 Todos${!LOCAL_PANEL && locales.length > 1 ? ' (todos los locales)' : ''}</option>
+            ${pros.map(t => `<option value="${t.id}" ${VISTA.trab === t.id ? 'selected' : ''}>${esc(t.nombre)}${!LOCAL_PANEL && locales.length > 1 ? ' · ' + esc(nombreLocal(t.local_id)) : ''}</option>`).join('')}</select>` : ''}`;
+    }
+    // Lista del día en orden de hora. Con un solo profesional muestra también los espacios libres
+    // (y el botón de orden de llegada en el espacio de "ahora").
+    function listaDelDia(el, o){
+      const hoy = o.fecha === hoyTxt(), ah = new Date(), ahoraMin = ah.getHours() * 60 + ah.getMinutes();
+      const filas = o.reservas.map(r => ({ t: rangoDe(r)[0], html: tarjetaCita(r, o.conTrab) }));
+      if (o.tid){
+        const h = horarios.find(x => x.trabajador_id === o.tid && x.dia === deTexto(o.fecha).getDay());
+        if (h){
+          // una atención ya terminada ocupa solo hasta su término real (si terminó antes, ese tiempo queda libre)
+          const finReal = r => { const [a, b] = rangoDe(r); return r.estado === 'completada' && r.termino_real && r.termino_real.slice(0, 10) === o.fecha ? [a, Math.max(a, Math.min(b, aMin(r.termino_real.slice(11, 16))))] : [a, b]; };
+          const ocup = o.reservas.filter(activa).map(finReal)
+            .concat(bloqueosDe(o.tid, o.fecha).map(b => [b.desde, b.hasta, '🔒 ' + (b.motivo || 'Bloqueado')]));
+          if (h.almuerzo_inicio) ocup.push([aMin(h.almuerzo_inicio), aMin(h.almuerzo_fin), '🍽 Colación']);
+          ocup.sort((a, b) => a[0] - b[0]);
+          let cur = aMin(h.inicio); const fin = aMin(h.fin);
+          const hueco = (a, b) => {
+            if (hoy && b <= ahoraMin) return;                       // ya pasó
+            const ini = hoy ? Math.max(a, ahoraMin - (ahoraMin % 5)) : a, ahoraAqui = hoy && a <= ahoraMin && b > ahoraMin;
+            if (b - ini < 15) return;
+            filas.push({ t: ini, html: `<div class="hueco ${ahoraAqui ? 'ahora' : ''}"><span class="h-hora">${aHora(ini)}–${aHora(b)}</span>
+              <span>Libre · ${b - ini} min</span>
+              ${ahoraAqui ? `<button class="boton llegada" onclick="ordenLlegada(${o.tid})">⚡ Llegó alguien: atender ahora</button>`
+                          : `<button class="boton-linea" onclick="abrirAccion({ modo:'agendar', tid:${o.tid}, fecha:'${o.fecha}', t:${ini} })">+ Agendar aquí</button>`}</div>` });
+          };
+          ocup.forEach(([a, b, txt]) => {
+            if (a > cur) hueco(cur, Math.min(a, fin));
+            if (txt && b > cur && (!hoy || b > ahoraMin)) filas.push({ t: a, html: `<div class="hueco ocupado"><span class="h-hora">${aHora(a)}–${aHora(b)}</span><span>${esc(txt)}</span></div>` });
+            cur = Math.max(cur, b);
+          });
+          if (cur < fin) hueco(cur, fin);
+        } else filas.push({ t: -1, html: `<div class="hueco ocupado"><span>No trabaja este día</span></div>` });
+      }
+      if (hoy) filas.push({ t: ahoraMin + 0.5, html: `<div class="linea-ahora"><span>Ahora ${aHora(ahoraMin)}</span></div>` });
+      filas.sort((a, b) => a.t - b.t);
+      const hayCitas = o.reservas.length;
+      el.innerHTML = (hoy ? `<div class="llegada-top"><button class="boton llegada" onclick="ordenLlegada(${o.tid || 0})">⚡ Orden de llegada</button>
+          <span class="nota">Si llega alguien sin hora, regístralo aquí y queda en atención desde ahora.</span></div>` : '') +
+        (hayCitas || o.tid ? filas.map(f => f.html).join('') : '<p class="vacio">No hay clientes este día.</p>');
+    }
+
     // ================= AGENDA DEL DÍA (admin: una columna por profesional) =================
     function moverDia(n){ const f = deTexto(diaVista); f.setDate(f.getDate() + n); diaVista = fechaTexto(f); dibujarDia(); }
     function irHoy(){ diaVista = hoyTxt(); dibujarDia(); }
@@ -1210,8 +1290,17 @@
         `<div class="kpi"><b>${vivas.length}</b><span>reservas</span></div>` +
         `<div class="kpi"><b>${clp(sumaTotal(delDia))}</b><span>total del día</span></div>` +
         `<div class="kpi"><b>${delDia.filter(r => r.estado === 'completada').length}</b><span>completadas</span></div>`;
-      const cols = trabsFiltro().filter(t => t.activo || delDia.some(r => r.trabajador_id === t.id));
-      if (!cols.length){ $('agendaDia').innerHTML = '<p class="vacio">No hay profesionales.</p>'; return; }
+      $('ctrlDia').innerHTML = controlesVista(true);
+      const cols = trabsFiltro().filter(t => (t.activo || delDia.some(r => r.trabajador_id === t.id)) && (!VISTA.trab || t.id === VISTA.trab));
+      const lista = VISTA.modo === 'lista';
+      $('agendaDiaCaja').classList.toggle('oculto', lista); $('listaDia').classList.toggle('oculto', !lista);
+      $('notaDia').textContent = lista ? 'En orden de hora. Toca los botones de cada cliente para comenzar, terminar o marcar que no vino.' : 'Toca un espacio libre para agendar un cliente o bloquear ese horario.';
+      if (!cols.length){ $('agendaDia').innerHTML = $('listaDia').innerHTML = '<p class="vacio">No hay profesionales.</p>'; return; }
+      if (lista){
+        const ids = cols.map(t => t.id);
+        listaDelDia($('listaDia'), { fecha: diaVista, reservas: delDia.filter(r => ids.includes(r.trabajador_id)).sort(porHora), tid: cols.length === 1 ? cols[0].id : 0, conTrab: cols.length > 1 });
+        return;
+      }
       grillaAgenda($('agendaDia'), cols.map(t => {
         const h = horarios.find(x => x.trabajador_id === t.id && x.dia === dow);
         const res = delDia.filter(r => r.trabajador_id === t.id);
@@ -1301,7 +1390,12 @@
           <div class="r-sub">${esc(proxima.servicios || '')}</div></div>`;
       } else $('proxima').innerHTML = deHoy.length ? '<div class="proxima libre">No te quedan clientes agendados hoy 👌 Si llega alguien, usa "Orden de llegada".</div>' : '';
 
-      // Agenda del día (siempre visible)
+      // Agenda del día: panel (grilla por hora) o lista en orden de llegada
+      $('ctrlMiDia').innerHTML = controlesVista(false);
+      const enLista = VISTA.modo === 'lista';
+      $('agendaMiDiaCaja').classList.toggle('oculto', enLista); $('listaMiDia').classList.toggle('oculto', !enLista);
+      $('cajaCitasHoy').classList.toggle('oculto', enLista); $('tituloMiAgenda').textContent = enLista ? 'Tu día en orden' : 'Agenda de hoy';
+      if (enLista) listaDelDia($('listaMiDia'), { fecha: hoy, reservas: deHoy, tid: yo.trabajador_id });
       grillaAgenda($('agendaMiDia'), [{ titulo: 'Hoy', avatar: (yo.nombre || '?')[0], tid: yo.trabajador_id, fecha: hoy, esHoy: true,
         horario: horarios.find(h => h.trabajador_id === yo.trabajador_id && h.dia === ahora.getDay()), reservas: deHoy,
         bloqueos: bloqueosDe(yo.trabajador_id, hoy), sub: `${deHoy.filter(activa).length} cliente${deHoy.filter(activa).length === 1 ? '' : 's'}` }]);
@@ -1321,7 +1415,7 @@
       $('citasHoy').innerHTML = deHoy.map(tarjetaCita).join('');
     }
 
-    function tarjetaCita(r){
+    function tarjetaCita(r, conTrab){
       const [ri, rf] = rangoDe(r), est = r.estado || 'confirmada';
       const llegada = r.origen === 'llegada';
       return `<div class="cita ${est}">
@@ -1329,6 +1423,7 @@
         <div>
           <div class="r-top"><div class="r-nombre">${esc(r.nombre)}${llegada ? ' <span class="badge grupo">Llegada</span>' : ''}</div>
             <span class="badge ${est}">${est === 'en_atencion' ? '<i class="pulso"></i> ' : ''}${ESTADOS[est] || est}${r.metodo_pago ? ' · ' + PAGOS[r.metodo_pago] : ''}</span></div>
+          ${conTrab ? `<div class="r-pro">👤 ${esc(trabDe(r.trabajador_id)?.nombre || r.trabajador || "")}</div>` : ''}
           <div class="r-sub">${esc(r.servicios || (llegada ? 'Servicio por definir' : ''))}${est === 'completada' && plata(r) ? ` · ${yo.rol === 'admin' ? '' : 'tu parte '}${clp(plata(r))}` : ''}${est === 'completada' && r.propina ? ` <span class="badge grupo">propina ${clp(r.propina)}</span>` : ''}</div>
           ${r.descripcion ? `<div class="r-msg">“${esc(r.descripcion)}”</div>` : ''}
           <div class="acciones-rapidas">
