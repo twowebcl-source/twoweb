@@ -2736,15 +2736,15 @@
           <div class="ped-items">${p.items.map(i => `<div><span>${i.cantidad}× ${esc(i.nombre)}</span><span>${clp(i.subtotal)}</span></div>`).join('')}
             <div class="tot"><span>Total</span><span>${clp(p.total)}</span></div></div>
           <div class="ped-datos">
-            <span>${p.entrega === 'despacho' ? '🚚 Despacho a <b>' + esc(p.direccion || '') + '</b>' : '🏪 Retiro en el local'}</span>
-            <span>📱 ${esc(p.telefono)}${p.correo ? ' · ' + esc(p.correo) : ''}</span>
+            <span>${p.entrega === 'despacho' ? '🚚 Despacho' + (adm ? ' a <b>' + esc(p.direccion || '') + '</b>' : '') : '🏪 Retiro en el local'}</span>
+            ${adm ? `<span>📱 ${esc(p.telefono)}${p.correo ? ' · ' + esc(p.correo) : ''}</span>` : '<span class="nota">🔒 El contacto con el cliente lo maneja el administrador.</span>'}
             ${p.nota ? `<span>📝 ${esc(p.nota)}</span>` : ''}</div>
           <div class="ped-acc">
             ${p.estado === 'nuevo' ? `<button class="boton" onclick="marcarPedido(${p.id}, 'confirmado')">✓ Confirmar</button>` : ''}
             ${p.estado === 'confirmado' ? `<button class="boton" onclick="marcarPedido(${p.id}, 'entregado')">📦 Entregado</button>` : ''}
             ${['nuevo', 'confirmado'].includes(p.estado) || (adm && p.estado === 'entregado') ? `<button class="boton-linea rojo" onclick="marcarPedido(${p.id}, 'cancelado')">✕ ${p.estado === 'entregado' ? 'Anular' : 'Cancelar'}</button>` : ''}
             ${adm && p.estado === 'cancelado' ? `<button class="boton-linea" onclick="marcarPedido(${p.id}, 'nuevo')">↺ Reabrir</button>` : ''}
-            ${tel ? `<a class="boton-linea verde" href="https://wa.me/${tel}?text=${msg}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
+            ${adm && tel ? `<a class="boton-linea verde" href="https://wa.me/${tel}?text=${msg}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
           </div></div>`;
       }).join('');
     }
