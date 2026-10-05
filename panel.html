@@ -797,6 +797,10 @@
     const CONF = window.TWOWEB || {};
     const MARCA = CONF.MARCA || 'TwoWeb';
     const SUPABASE_URL = CONF.SUPABASE_URL, SUPABASE_KEY = CONF.SUPABASE_KEY;   // se configuran en config.js
+    if (!SUPABASE_KEY || /PEGA_AQUI/.test(SUPABASE_KEY)) document.addEventListener('DOMContentLoaded', () => {
+      const e = document.getElementById('estadoLogin');
+      if (e) { e.textContent = '⚠️ Falta pegar la llave de Supabase en config.js (SUPABASE_KEY). Sin ella nadie puede entrar.'; e.className = 'estado error'; }
+    });
     // Sesión normal = compartida por las pestañas de este navegador (recordada).
     // Sesión "solo esta pestaña" = independiente: permite tener admin y profesional abiertos a la vez.
     if (new URLSearchParams(location.search).get('pestana') === '1') sessionStorage.setItem('twoweb-pestana', '1');
@@ -932,7 +936,9 @@
       if (!email || !password){ estado('estadoLogin', "Escribe tu correo y contraseña.", 'error'); return; }
       estado('estadoLogin', "Entrando...");
       const { error } = await db.auth.signInWithPassword({ email, password });
-      if (error) estado('estadoLogin', error.message.includes('Invalid') ? "Correo o contraseña incorrectos." :
+      if (error) estado('estadoLogin', /api key|apikey|no api key/i.test(error.message) ? "⚠️ La llave de Supabase en config.js no es válida (SUPABASE_KEY). No es tu contraseña." :
+                                       /failed to fetch|network/i.test(error.message) ? "⚠️ No hay conexión con Supabase. Revisa tu internet o SUPABASE_URL en config.js." :
+                                       error.message.includes('Invalid') ? "Correo o contraseña incorrectos." :
                                        error.message.includes('confirm') ? "Falta confirmar tu correo: revisa tu bandeja de entrada." : "Error: " + error.message, 'error');
     }
     // Cierra la sesión SOLO en este dispositivo/pestaña (no saca a la persona de sus otros equipos)
