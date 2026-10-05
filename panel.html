@@ -367,6 +367,23 @@
     .tema-op .mini i { display:block; height:12px; }
     .tema-op b { display:block; font-size:12.5px; margin-top:6px; }
     .tema-op small { display:block; font-size:11px; color:var(--gris); line-height:1.3; }
+    /* ===== Fase 15: planes y cobros ===== */
+    .plan-card { display:grid; grid-template-columns:2fr 3fr repeat(5, 1fr) auto; gap:8px; align-items:end; background:var(--panel2); border:1px solid var(--linea); border-radius:var(--r-s); padding:10px 12px; margin-bottom:8px; }
+    .plan-card label { margin:0 0 3px; font-size:11px; }
+    .plan-card input { padding:7px 9px; font-size:13px; }
+    .plan-card .checks { grid-column:1 / -2; display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; }
+    .plan-card .checks label { display:flex; align-items:center; gap:6px; margin:0; color:var(--hueso); font-size:12.5px; }
+    .plan-card .acc { display:flex; gap:6px; align-items:center; grid-row:1 / span 2; grid-column:-2; }
+    .rubros { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:8px; }
+    .rubro { display:flex; gap:8px; align-items:center; background:var(--panel2); border:1px solid var(--linea); border-radius:var(--r-s); padding:8px 10px; font-size:13px; }
+    .rubro.off { opacity:.5; }
+    .rubro input.ico { width:42px; text-align:center; padding:5px; }
+    .rubro input.nom { flex:1; padding:5px 8px; font-size:13px; }
+    .rubro label { display:flex; align-items:center; gap:3px; margin:0; font-size:12px; color:var(--hueso); }
+    .est-cob { font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:var(--r-pill); white-space:nowrap; }
+    .est-cob.ok { background:rgba(74,222,128,0.15); color:var(--verde); } .est-cob.pronto { background:color-mix(in srgb, var(--voltaje) 18%, transparent); color:var(--voltaje); }
+    .est-cob.atrasado { background:rgba(248,113,113,0.18); color:var(--rojo); } .est-cob.prueba { background:rgba(96,165,250,0.16); color:var(--azul); } .est-cob.suspendido { background:var(--panel2); color:var(--gris); }
+    @media (max-width:900px){ .plan-card { grid-template-columns:1fr 1fr; } .plan-card .acc, .plan-card .checks { grid-column:1 / -1; grid-row:auto; } }
     /* ===== Fase 14: tienda (productos y pedidos) ===== */
     .contador-tab { display:inline-block; background:var(--voltaje); color:var(--sobre); border-radius:var(--r-pill); font-size:11px; font-weight:700; min-width:18px; padding:1px 6px; margin-left:4px; }
     .prod-lista { display:flex; flex-direction:column; gap:8px; }
@@ -502,6 +519,7 @@
         <button class="tab solo-admin mod-agenda" data-tab="servicios" onclick="verTab('servicios')">Servicios</button>
         <button class="tab solo-admin mod-agenda" data-tab="clientes" onclick="verTab('clientes')">Clientes</button>
         <button class="tab solo-super oculto" data-tab="negocios" onclick="verTab('negocios')">🏢 Negocios</button>
+        <button class="tab solo-super oculto" data-tab="cobros" onclick="verTab('cobros')">💳 Planes y cobros</button>
         <button class="tab solo-trab mod-agenda" data-tab="mihorario" onclick="verTab('mihorario')">Mi horario</button>
         <select id="filtroLocal" class="solo-admin selector-local" onchange="cambiarLocalPanel(this.value)" title="Ver solo un local"></select>
       </div>
@@ -659,7 +677,9 @@
           <div class="grid-2">
             <div><label for="nnNombre">Nombre del negocio</label><input id="nnNombre" placeholder="Ej: Barbería Norte" oninput="sugerirSlug()"></div>
             <div><label for="nnSlug">Nombre del link (cómo aparece: twoweb.cl/NOMBRE)</label><input id="nnSlug" placeholder="barberia-norte"><p class="nota" id="nnLink"></p></div>
-            <div><label for="nnPlan">Plan</label><select id="nnPlan"><option value="solo">Solo (1 persona, home studio o emprendedor)</option><option value="barberia" selected>Local (1 local, hasta 8 personas)</option><option value="multi">Multi (varios locales)</option></select></div>
+            <div><label for="nnRubro">Categoría del negocio</label><select id="nnRubro" onchange="sugerirModulos()"></select></div>
+            <div><label for="nnPlan">Plan</label><select id="nnPlan" onchange="pintarPrecioNuevo()"></select><p class="nota" id="nnPrecio"></p></div>
+            <div><label for="nnEspecial">Precio especial mensual (opcional)</label><input id="nnEspecial" type="number" min="0" step="10" placeholder="Vacío = precio del plan" oninput="pintarPrecioNuevo()"></div>
             <div><label for="nnEstado">Estado</label><select id="nnEstado"><option value="prueba">Prueba gratis</option><option value="activo">Activo (pagando)</option></select></div>
             <div><label for="nnAdmin">Nombre del administrador</label><input id="nnAdmin" placeholder="Ej: Nicolás"></div>
             <div><label for="nnCorreo">Correo del administrador (con este entra)</label><input id="nnCorreo" type="email" placeholder="dueño@gmail.com"></div>
@@ -669,8 +689,8 @@
             <div><label for="nnDir">Dirección</label><input id="nnDir" placeholder="Ej: Av. Siempre Viva 123, Maipú"></div>
             <div><label for="nnVence">Próximo pago</label><input id="nnVence" type="date"></div>
             <div><label>Módulos que contrata</label>
-              <label class="check-linea" style="margin:0 0 6px;"><input type="checkbox" id="nnAgenda" checked onchange="if(!this.checked&&!$('nnTienda').checked)$('nnTienda').checked=true"> 📅 Agenda (reservas de horas)</label>
-              <label class="check-linea" style="margin:0;"><input type="checkbox" id="nnTienda" onchange="if(!this.checked&&!$('nnAgenda').checked)$('nnAgenda').checked=true"> 🛍 Tienda (productos, stock y pedidos)</label></div>
+              <label class="check-linea" style="margin:0 0 6px;"><input type="checkbox" id="nnAgenda" checked onchange="if(!this.checked&&!$('nnTienda').checked)$('nnTienda').checked=true; pintarPrecioNuevo()"> 📅 Agenda (reservas de horas)</label>
+              <label class="check-linea" style="margin:0;"><input type="checkbox" id="nnTienda" onchange="if(!this.checked&&!$('nnAgenda').checked)$('nnAgenda').checked=true; pintarPrecioNuevo()"> 🛍 Tienda (productos, stock y pedidos)</label></div>
             <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:6px;">
               <label class="check-linea" style="margin:0;"><input type="checkbox" id="nnProf" checked> El administrador también atiende / vende</label>
               <label class="check-linea" style="margin:0;"><input type="checkbox" id="nnServ" checked> Crear servicios de ejemplo</label>
@@ -725,6 +745,38 @@
         </div>
         <div class="prod-lista" id="listaProd"></div>
         <p class="nota" style="margin-top:10px;" id="notaProd"></p>
+      </div>
+
+      <!-- Planes y cobros (solo el dueño de la plataforma) — Fase 15 -->
+      <div id="tab-cobros" class="oculto">
+        <div class="kpis" id="kpisCob"></div>
+        <div class="tarjeta" style="margin-top:0;">
+          <div class="barra" style="margin:0 0 6px;"><h3 style="margin:0;">Mensualidades</h3>
+            <span class="barra-der" style="display:flex;gap:8px;margin-left:auto;align-items:center;">
+              <label class="mini-lbl" style="margin:0;">Suspender atrasados hace más de</label>
+              <input type="number" id="diasGracia" value="5" min="0" style="width:64px;padding:5px 8px;"> <span class="nota">días</span>
+              <button class="boton-linea rojo" onclick="suspenderAtrasados()">Suspender</button></span></div>
+          <div class="filtros" style="margin:6px 0 10px;" id="filtrosCob">
+            <button class="chip sel" data-fc2="todos" onclick="filtroCob('todos')">Todos</button>
+            <button class="chip" data-fc2="atrasado" onclick="filtroCob('atrasado')">Atrasados</button>
+            <button class="chip" data-fc2="pronto" onclick="filtroCob('pronto')">Vencen en 7 días</button>
+            <button class="chip" data-fc2="prueba" onclick="filtroCob('prueba')">En prueba</button>
+            <button class="chip" data-fc2="suspendido" onclick="filtroCob('suspendido')">Suspendidos</button>
+          </div>
+          <div style="overflow-x:auto;" id="tablaCob"></div>
+        </div>
+        <div class="tarjeta">
+          <div class="barra" style="margin:0 0 6px;"><h3 style="margin:0;">Planes</h3><button class="boton" style="margin-left:auto;" onclick="nuevoPlan()">+ Nuevo plan</button></div>
+          <p class="nota" style="margin-bottom:10px;">Mensualidad = precio del plan + recargo si el negocio usa Agenda y Tienda juntos (o el precio especial que le pongas en Negocios).
+            Los límites vacíos = sin límite, y se aplican solos: un negocio no puede pasarse de lo que permite su plan. "Público" = se muestra en twoweb.cl.</p>
+          <div id="listaPlanes"></div>
+        </div>
+        <div class="tarjeta">
+          <div class="barra" style="margin:0 0 6px;"><h3 style="margin:0;">Categorías de negocio</h3><button class="boton-linea" style="margin-left:auto;" onclick="nuevoRubro()">+ Nueva categoría</button></div>
+          <p class="nota" style="margin-bottom:10px;">Al crear un negocio eliges su categoría y se marcan solos los módulos sugeridos.</p>
+          <div id="listaRubros" class="rubros"></div>
+        </div>
+        <div class="tarjeta"><h3>Últimos pagos</h3><div style="overflow-x:auto;" id="tablaPagos"></div></div>
       </div>
 
       <!-- Mi horario (trabajador) -->
@@ -800,10 +852,10 @@
       aplicarTemaActual();
       $('linkAgenda').href = conAgenda() ? linkAgenda() : linkTienda();
       $('linkAgenda').textContent = conAgenda() ? 'Ver agenda pública' : 'Ver mi tienda';
-      const plan = { solo:'Solo', barberia:'Local', multi:'Multi' }[NEG.plan] || '';
+      const plan = NEG.plan_nombre || NEG.plan || '';
       $('negocioActual').innerHTML = yo.super
         ? `🏢 Viendo: <b>${esc(NEG.nombre || '')}</b> <span class="badge-plan ${esc(NEG.estado)}">${esc(NEG.estado || '')}</span> <button class="link" style="margin:0;" onclick="verTab('negocios')">cambiar</button>`
-        : (yo.rol === 'admin' && plan ? `<span class="badge-plan">Plan ${plan}</span>${NEG.estado === 'prueba' ? ' <span class="badge-plan prueba">prueba</span>' : ''}` : '');
+        : (yo.rol === 'admin' && plan ? `<span class="badge-plan">${esc(plan)}</span>${NEG.estado === 'prueba' ? ' <span class="badge-plan prueba">prueba</span>' : ''}` : '');
     }
 
     // ================= TEMAS (apariencia) =================
@@ -1005,7 +1057,8 @@
     }
     function verTab(t){
       document.querySelectorAll('.tab').forEach(b => b.classList.toggle('sel', b.dataset.tab === t));
-      ['midia','dia','semana','lista','caja','equipo','servicios','clientes','negocios','mihorario','pedidos','productos'].forEach(x => $('tab-'+x).classList.toggle('oculto', x !== t));
+      ['midia','dia','semana','lista','caja','equipo','servicios','clientes','negocios','mihorario','pedidos','productos','cobros'].forEach(x => $('tab-'+x).classList.toggle('oculto', x !== t));
+      if (t === 'cobros') cargarCobros();
       if (t === 'pedidos') cargarPedidos();
       if (t === 'productos') cargarProductos();
       if (t === 'caja') dibujarCaja();
@@ -1780,6 +1833,7 @@
         <label class="check-linea"><input type="checkbox" id="miColorPropio" ${yo.mi_color ? 'checked' : ''} onchange="probarMio()"> Usar mi propio color
           <input type="color" id="miColor" value="${colorOk(yo.mi_color) ? yo.mi_color : (colorOk(NEG.color) ? NEG.color : '#ff7a2f')}" oninput="$('miColorPropio').checked = true; probarMio()" style="width:54px;height:30px;padding:2px;margin-left:6px;"></label>
         <button class="boton-linea" style="margin-top:10px;" onclick="guardarMiTema()">Guardar mi apariencia</button>
+        ${yo.rol === 'admin' && !yo.super ? `<h3 style="margin-top:18px;">💳 Mi plan</h3><div id="miPlan"><p class="nota">Cargando…</p></div>` : ''}
         ${yo.rol === 'admin' ? `<h3 style="margin-top:18px;">Mi negocio</h3>
           <label>🌐 Tu página web (portada, servicios, equipo, ubicación y botón de reservar)</label>
           <div style="display:flex;gap:6px;"><input id="fLinkWeb" readonly value="${esc(linkWeb())}"><button class="boton-linea" onclick="copiarLink('fLinkWeb')">Copiar</button><a class="boton-linea" href="${esc(linkWeb())}" target="_blank" rel="noopener">Abrir</a></div>
@@ -1810,6 +1864,21 @@
         <div class="det-acciones"><button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
         <p class="estado" id="estadoCuenta"></p>`;
       $('fondoDetalle').classList.remove('oculto');
+      if ($('miPlan')) pintarMiPlan();
+    }
+    async function pintarMiPlan(){
+      const { data, error } = await db.rpc('mi_plan');
+      if (error || !data) { $('miPlan').innerHTML = '<p class="nota">No disponible.</p>'; return; }
+      const lim = (usa, max) => max == null ? `${usa} (sin límite)` : `${usa} de ${max}`;
+      const atr = data.vence && data.vence < hoyTxt();
+      $('miPlan').innerHTML = `<div class="det-fila"><span>Plan</span><span><b>${esc(data.plan || '')}</b></span></div>
+        <div class="det-fila"><span>Mensualidad</span><span>${clp(data.mensualidad)}</span></div>
+        <div class="det-fila"><span>Próximo pago</span><span style="${atr ? 'color:var(--rojo);font-weight:700;' : ''}">${data.vence ? deTexto(data.vence).toLocaleDateString('es-CL', { day:'numeric', month:'long', year:'numeric' }) + (atr ? ' · atrasado' : '') : '—'}</span></div>
+        <div class="det-fila"><span>Equipo activo</span><span>${lim(data.usa.profesionales, data.max_profesionales)}</span></div>
+        <div class="det-fila"><span>Locales</span><span>${lim(data.usa.locales, data.max_locales)}</span></div>
+        <div class="det-fila"><span>Productos</span><span>${lim(data.usa.productos, data.max_productos)}</span></div>
+        ${data.pagos.length ? `<p class="nota" style="margin-top:8px;">Pagos: ${data.pagos.slice(0, 6).map(x => `${x.fecha} · ${clp(x.monto)}${x.meses > 1 ? ` (${x.meses} meses)` : ''}`).join(' · ')}</p>` : ''}
+        <p class="nota" style="margin-top:6px;">Para cambiar de plan o pagar tu mensualidad: <a class="link" style="margin:0;" target="_blank" rel="noopener" href="https://wa.me/${esc(CONF.WHATSAPP || '')}?text=${encodeURIComponent('Hola TwoWeb, quiero consultar por mi plan de ' + (NEG.nombre || ''))}">escríbele a ${esc(MARCA)}</a>.</p>`;
     }
     async function copiarLink(id){
       try { await navigator.clipboard.writeText($(id).value); estado('estadoCuenta', '✓ Link copiado', 'ok'); }
@@ -2386,9 +2455,36 @@
 
     // ================= NEGOCIOS (solo el dueño de la plataforma) =================
     let negocios = [];
-    const PLANES = { solo:'Solo', barberia:'Local', multi:'Multi' };
+    let PLANES_L = [], RUBROS_L = [];      // planes y categorías (Fase 15)
+    async function cargarPlanesRubros(){
+      const { data, error } = await db.rpc('planes_lista');
+      if (error) return false;
+      PLANES_L = data.planes || []; RUBROS_L = data.rubros || [];
+      const actPlan = $('nnPlan').value, actRub = $('nnRubro').value;
+      $('nnPlan').innerHTML = PLANES_L.filter(p => p.activo).map(p => `<option value="${esc(p.codigo)}">${esc(p.nombre)} — ${clp(p.precio)}</option>`).join('');
+      if (actPlan) $('nnPlan').value = actPlan; else if (PLANES_L.some(p => p.destacado)) $('nnPlan').value = PLANES_L.find(p => p.destacado).codigo;
+      $('nnRubro').innerHTML = '<option value="">— Elige la categoría —</option>' + RUBROS_L.filter(r => r.activo).map(r => `<option value="${r.id}">${esc(r.icono)} ${esc(r.nombre)}</option>`).join('');
+      if (actRub) $('nnRubro').value = actRub;
+      pintarPrecioNuevo();
+      return true;
+    }
+    function sugerirModulos(){
+      const r = RUBROS_L.find(x => String(x.id) === $('nnRubro').value); if (!r) return;
+      $('nnAgenda').checked = r.mod_agenda; $('nnTienda').checked = r.mod_tienda;
+      if (!r.mod_agenda && !r.mod_tienda) $('nnAgenda').checked = true;
+      $('nnServ').checked = r.mod_agenda;
+      pintarPrecioNuevo();
+    }
+    const mensualidadDe = (pl, agenda, tienda, especial) => especial !== '' && especial != null ? Number(especial) : (pl ? pl.precio + (agenda && tienda ? pl.precio_extra : 0) : 0);
+    function pintarPrecioNuevo(){
+      const pl = PLANES_L.find(p => p.codigo === $('nnPlan').value); if (!pl) { $('nnPrecio').textContent = ''; return; }
+      const lim = [pl.max_profesionales ? `${pl.max_profesionales} persona(s)` : 'equipo sin límite', pl.max_locales ? `${pl.max_locales} local(es)` : 'locales sin límite',
+                   pl.max_productos != null ? `${pl.max_productos} productos` : 'productos sin límite'].join(' · ');
+      $('nnPrecio').innerHTML = `Mensualidad: <b>${clp(mensualidadDe(pl, $('nnAgenda').checked, $('nnTienda').checked, $('nnEspecial').value))}</b> · ${lim}`;
+    }
     async function cargarNegocios(){
       $('tablaNeg').innerHTML = '<p class="nota">Cargando…</p>';
+      await cargarPlanesRubros();
       if (!$('nnVence').value){ const d = new Date(); d.setDate(d.getDate() + 30); $('nnVence').value = fechaTexto(d); }
       const { data, error } = await db.rpc('super_negocios');
       if (error){ $('tablaNeg').innerHTML = `<p class="error">Error: ${esc(error.message)}${/super_negocios/.test(error.message || '') ? ' — falta instalar la Fase 10.' : ''}</p>`; return; }
@@ -2405,7 +2501,7 @@
         `<div class="kpi"><b>${negocios.reduce((a, n) => a + (n.pedidos_30d || 0), 0)}</b><span>pedidos en 30 días</span></div>` +
         `<div class="kpi"><b>${negocios.reduce((a, n) => a + n.reservas_30d, 0)}</b><span>reservas en 30 días</span></div>`;
       $('tablaNeg').innerHTML = `<table class="tabla-caja tabla-neg">
-        <tr><th>Negocio</th><th>Página y dominio</th><th>Plan</th><th>Módulos</th><th>Estado</th><th title="Banner 'Inscríbete y obtén 10% en tu primera visita' en su agenda">🎁 10% nuevos</th><th>Próximo pago</th><th class="num">Equipo</th><th class="num">Reservas 30 d</th><th class="num">Pedidos 30 d</th><th class="num">Clientes</th><th>Admin</th></tr>
+        <tr><th>Negocio</th><th>Página y dominio</th><th>Plan y categoría</th><th>Módulos</th><th>Estado</th><th title="Banner 'Inscríbete y obtén 10% en tu primera visita' en su agenda">🎁 10% nuevos</th><th>Próximo pago</th><th class="num">Equipo</th><th class="num">Reservas 30 d</th><th class="num">Pedidos 30 d</th><th class="num">Clientes</th><th>Admin</th></tr>
         ${negocios.map(n => `<tr class="${n.id === NEG.id ? 'actual' : ''}">
           <td><b>${esc(n.nombre)}</b>${n.id === NEG.id ? ' <span class="nota">(viendo)</span>' : ''}<div class="acciones-neg" style="margin-top:6px;">
             ${n.id === NEG.id ? '' : `<button class="boton" onclick="entrarNegocio(${n.id})">Entrar</button>`}
@@ -2419,7 +2515,9 @@
             <label class="mini-lbl">Dominio propio</label>`}
             <input class="dominio-neg ${esPrincipal(n) ? 'oculto' : ''}" placeholder="dominio.cl (opcional)" value="${esc(n.dominio || '')}" title="Dominio propio de la barbería. Déjalo vacío si no tiene."
               onchange="cambiarDominio(${n.id}, this)"></td>
-          <td><select onchange="actualizarNegocio(${n.id}, { plan: this.value })">${Object.entries(PLANES).map(([k, v]) => `<option value="${k}" ${k === n.plan ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
+          <td style="min-width:170px;"><select onchange="actualizarNegocio(${n.id}, { plan: this.value })">${(PLANES_L.length ? PLANES_L : [{ codigo: n.plan, nombre: n.plan_nombre || n.plan }]).map(p => `<option value="${esc(p.codigo)}" ${p.codigo === n.plan ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('')}</select>
+            <select style="margin-top:6px;" onchange="actualizarNegocio(${n.id}, { rubro_id: this.value })"><option value="">Sin categoría</option>${RUBROS_L.map(r => `<option value="${r.id}" ${r.id === n.rubro_id ? 'selected' : ''}>${esc(r.icono)} ${esc(r.nombre)}</option>`).join('')}</select>
+            ${n.mensualidad != null ? `<div class="nota" style="margin-top:4px;">Mensualidad: <b>${clp(n.mensualidad)}</b>${n.precio_especial != null ? ' (especial)' : ''}</div>` : ''}</td>
           <td><div class="chk-mod">
             <label><input type="checkbox" ${n.mod_agenda !== false ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_agenda', this)"> 📅 Agenda</label>
             <label><input type="checkbox" ${n.mod_tienda ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_tienda', this)"> 🛍 Tienda${n.mod_tienda ? ` <span class="nota">(${n.productos || 0} prod.)</span>` : ''}</label></div></td>
@@ -2440,17 +2538,17 @@
                   admin_nombre: $('nnAdmin').value.trim(), admin_correo: $('nnCorreo').value.trim().toLowerCase(), admin_clave: $('nnClave').value,
                   whatsapp: $('nnWsp').value.trim(), local_nombre: $('nnLocal').value.trim(), direccion: $('nnDir').value.trim(),
                   vence: $('nnVence').value || null, admin_es_profesional: $('nnProf').checked, servicios_ejemplo: $('nnServ').checked && $('nnAgenda').checked };
-      const modulos = { mod_agenda: $('nnAgenda').checked, mod_tienda: $('nnTienda').checked };
+      const modulos = { mod_agenda: $('nnAgenda').checked, mod_tienda: $('nnTienda').checked, rubro_id: $('nnRubro').value || '', precio_especial: $('nnEspecial').value || '' };
       if (!p.nombre || !p.slug || !p.admin_correo) return estado('estadoNeg', 'Completa nombre, link y correo del administrador.', 'error');
       if ((p.admin_clave || '').length < 6) return estado('estadoNeg', 'La contraseña debe tener al menos 6 caracteres.', 'error');
       estado('estadoNeg', 'Creando…');
       const { data, error } = await db.rpc('super_crear_negocio', { p });
       if (error) return estado('estadoNeg', error.message, 'error');
-      if (!modulos.mod_agenda || modulos.mod_tienda){
+      {
         const m = await db.rpc('super_actualizar_negocio', { p_id: data.id, p: modulos });
         if (m.error) estado('estadoNeg', 'Negocio creado, pero no se pudieron guardar los módulos: ' + m.error.message + ' (¿instalaste la Fase 14?)', 'error');
       }
-      ['nnNombre','nnSlug','nnAdmin','nnCorreo','nnClave','nnWsp','nnLocal','nnDir'].forEach(id => $(id).value = ''); $('nnLink').textContent = '';
+      ['nnNombre','nnSlug','nnAdmin','nnCorreo','nnClave','nnWsp','nnLocal','nnDir','nnEspecial'].forEach(id => $(id).value = ''); $('nnLink').textContent = '';
       estado('estadoNeg', `✓ "${p.nombre}" creado. El admin entra con ${p.admin_correo} y la contraseña que pusiste. Su página: ${linkWeb({ slug: data.slug, ...modulos })}`, 'ok');
       cargarNegocios();
     }
@@ -2691,6 +2789,161 @@
     }
     async function copiarTexto(t){
       try { await navigator.clipboard.writeText(t); alert('✓ Link copiado:\n' + t); } catch(e) { prompt('Copia el link:', t); }
+    }
+
+    // ================= PLANES Y COBROS (solo el dueño de la plataforma) — Fase 15 =================
+    let filtroCb = 'todos';
+    const diasEntre = (a, b) => Math.round((deTexto(b) - deTexto(a)) / 864e5);
+    function estadoCobro(n){
+      if (n.estado === 'suspendido') return { k: 'suspendido', t: 'Suspendido' };
+      if (n.estado === 'prueba') return { k: 'prueba', t: n.vence ? `Prueba · hasta ${n.vence}` : 'Prueba' };
+      if (!n.vence) return { k: 'ok', t: 'Sin fecha' };
+      const d = diasEntre(hoyTxt(), n.vence);
+      if (d < 0) return { k: 'atrasado', t: `Atrasado ${-d} día${d === -1 ? '' : 's'}` };
+      if (d <= 7) return { k: 'pronto', t: d === 0 ? 'Vence hoy' : `Vence en ${d} día${d === 1 ? '' : 's'}` };
+      return { k: 'ok', t: 'Al día' };
+    }
+    async function cargarCobros(){
+      $('tablaCob').innerHTML = '<p class="nota">Cargando…</p>';
+      const ok = await cargarPlanesRubros();
+      if (!ok) { $('tablaCob').innerHTML = '<p class="error">Falta instalar la Fase 15 (fase15-planes-cobros) en Supabase.</p>'; return; }
+      const [neg, res, pag] = await Promise.all([db.rpc('super_negocios'), db.rpc('super_resumen_cobros'), db.rpc('super_pagos', { p_negocio: null })]);
+      if (neg.error) { $('tablaCob').innerHTML = `<p class="error">${esc(neg.error.message)}</p>`; return; }
+      negocios = neg.data || [];
+      const r = res.data || {};
+      $('kpisCob').innerHTML =
+        `<div class="kpi destacado"><b>${clp(r.ingreso_mensual)}</b><span>ingreso mensual (negocios activos)</span></div>` +
+        `<div class="kpi"><b>${clp(r.cobrado_mes)}</b><span>cobrado este mes</span></div>` +
+        `<div class="kpi"><b>${r.activos || 0}</b><span>pagando</span></div>` +
+        `<div class="kpi"><b>${r.prueba || 0}</b><span>en prueba (${clp(r.potencial_prueba)} potencial)</span></div>` +
+        `<div class="kpi"><b style="${r.atrasados ? 'color:var(--rojo);' : ''}">${r.atrasados || 0}</b><span>atrasados</span></div>` +
+        `<div class="kpi"><b>${r.vencen_7d || 0}</b><span>vencen en 7 días</span></div>` +
+        `<div class="kpi"><b>${clp(r.cobrado_total)}</b><span>cobrado en total</span></div>`;
+      dibujarCobros(); dibujarPlanes(); dibujarRubros();
+      const pagos = pag.data || [];
+      $('tablaPagos').innerHTML = pagos.length ? `<table class="tabla-caja"><tr><th>Fecha</th><th>Negocio</th><th class="num">Monto</th><th>Meses</th><th>Medio</th><th>Cubre hasta</th><th>Nota</th><th></th></tr>
+        ${pagos.slice(0, 40).map(x => `<tr><td>${x.fecha}</td><td>${esc(x.negocio)}</td><td class="num">${clp(x.monto)}</td><td>${x.meses}</td><td>${esc(x.medio)}</td><td>${x.periodo_hasta || ''}</td>
+          <td style="white-space:normal;">${esc(x.nota || '')}</td><td><button class="link" style="margin:0;color:var(--rojo);" onclick="anularPago(${x.id})">Anular</button></td></tr>`).join('')}</table>`
+        : '<p class="nota">Aún no registras pagos. Usa "💵 Registrar pago" en la tabla de arriba.</p>';
+    }
+    function filtroCob(f){ filtroCb = f; document.querySelectorAll('[data-fc2]').forEach(c => c.classList.toggle('sel', c.dataset.fc2 === f)); dibujarCobros(); }
+    function dibujarCobros(){
+      const lista = negocios.filter(n => !esPrincipal(n)).map(n => ({ ...n, ec: estadoCobro(n) }))
+        .filter(n => filtroCb === 'todos' || n.ec.k === filtroCb || (filtroCb === 'prueba' && n.estado === 'prueba'))
+        .sort((a, b) => (a.vence || '9999') < (b.vence || '9999') ? -1 : 1);
+      $('tablaCob').innerHTML = lista.length ? `<table class="tabla-caja"><tr><th>Negocio</th><th>Plan</th><th class="num">Mensualidad</th><th>Próximo pago</th><th>Estado</th><th>Último pago</th><th class="num">Pagado total</th><th></th></tr>
+        ${lista.map(n => `<tr><td><b>${esc(n.nombre)}</b>${n.rubro ? `<div class="nota">${esc(n.rubro)}</div>` : ''}</td><td>${esc(n.plan_nombre || n.plan)}</td>
+          <td class="num">${clp(n.mensualidad)}${n.precio_especial != null ? '<div class="nota">especial</div>' : ''}</td><td>${n.vence || '—'}</td>
+          <td><span class="est-cob ${n.ec.k}">${n.ec.t}</span></td><td>${n.ultimo_pago || '—'}</td><td class="num">${clp(n.pagado_total)}</td>
+          <td style="white-space:nowrap;"><button class="boton" onclick="registrarPago(${n.id})">💵 Registrar pago</button>
+            ${n.whatsapp ? `<a class="boton-linea verde" target="_blank" rel="noopener" href="https://wa.me/${esc(n.whatsapp.replace(/\D/g, ''))}?text=${encodeURIComponent(`Hola ${n.nombre}, te escribimos de ${MARCA}: tu mensualidad de ${clp(n.mensualidad)} ${n.ec.k === 'atrasado' ? 'está atrasada' : 'vence el ' + (n.vence || '')}. ¡Gracias!`)}">💬</a>` : ''}</td></tr>`).join('')}</table>`
+        : '<p class="nota">No hay negocios en este filtro.</p>';
+    }
+    function registrarPago(id){
+      const n = negocios.find(x => x.id === id);
+      $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">💵 Registrar pago · ${esc(n.nombre)}</h3>
+        <p class="nota">${esc(n.plan_nombre || '')} · mensualidad ${clp(n.mensualidad)} · próximo pago actual: ${n.vence || '—'}</p>
+        <div class="form-grid" style="margin-top:8px;">
+          <div><label for="pgMeses">Meses que paga</label><select id="pgMeses" onchange="$('pgMonto').value = ${n.mensualidad || 0} * this.value; vistaPago(${id})">${[1, 2, 3, 6, 12].map(m => `<option value="${m}">${m} ${m === 1 ? 'mes' : 'meses'}</option>`).join('')}</select></div>
+          <div><label for="pgMonto">Monto recibido ($)</label><input id="pgMonto" type="number" min="0" step="10" value="${n.mensualidad || 0}"></div>
+          <div><label for="pgMedio">Medio</label><select id="pgMedio"><option value="transferencia">Transferencia</option><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="otro">Otro</option></select></div>
+          <div><label for="pgFecha">Fecha del pago</label><input id="pgFecha" type="date" value="${hoyTxt()}"></div>
+          <div class="full"><label for="pgNota">Nota (opcional: N° de transferencia, descuento…)</label><input id="pgNota" maxlength="200"></div>
+        </div>
+        <p class="nota" id="pgVista" style="margin-top:8px;"></p>
+        <div class="det-acciones"><button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cancelar</button><button class="boton" id="btnPago" onclick="guardarPago(${id})">Guardar pago</button></div>
+        <p class="estado" id="estadoPago"></p>`;
+      $('fondoDetalle').classList.remove('oculto'); vistaPago(id);
+    }
+    function vistaPago(id){
+      const n = negocios.find(x => x.id === id), base = n.vence && n.vence > hoyTxt() ? n.vence : hoyTxt();
+      const d = deTexto(base); d.setMonth(d.getMonth() + Number($('pgMeses').value));
+      $('pgVista').innerHTML = `El próximo pago quedará para el <b>${fechaTexto(d)}</b> y el negocio queda <b>activo</b>.`;
+    }
+    async function guardarPago(id){
+      $('btnPago').disabled = true;
+      const { error } = await db.rpc('super_registrar_pago', { p: { negocio_id: id, monto: Number($('pgMonto').value || 0), meses: Number($('pgMeses').value),
+        medio: $('pgMedio').value, fecha: $('pgFecha').value, nota: $('pgNota').value.trim() } });
+      if (error) { $('btnPago').disabled = false; return estado('estadoPago', error.message, 'error'); }
+      cerrarDetalle(); cargarCobros();
+    }
+    async function anularPago(id){
+      if (!confirm('¿Anular este pago? La fecha de próximo pago del negocio retrocede los meses que cubría.')) return;
+      const { error } = await db.rpc('super_anular_pago', { p_id: id });
+      if (error) return alert(error.message);
+      cargarCobros();
+    }
+    async function suspenderAtrasados(){
+      const d = Number($('diasGracia').value || 0);
+      const cuales = negocios.filter(n => !esPrincipal(n) && n.estado === 'activo' && n.vence && diasEntre(n.vence, hoyTxt()) > d);
+      if (!cuales.length) return alert(`No hay negocios activos atrasados hace más de ${d} días.`);
+      if (!confirm(`Se suspenderán ${cuales.length} negocio(s):\n\n${cuales.map(n => '• ' + n.nombre + ' (venció ' + n.vence + ')').join('\n')}\n\nSus datos se conservan y se reactivan solos al registrar su pago.`)) return;
+      const { data, error } = await db.rpc('super_suspender_atrasados', { p_dias: d });
+      if (error) return alert(error.message);
+      alert(`✓ ${data} negocio(s) suspendido(s).`); cargarCobros();
+    }
+    // ----- Planes -----
+    const vNum = v => v === null || v === undefined ? '' : v;
+    function dibujarPlanes(){
+      $('listaPlanes').innerHTML = PLANES_L.map((p, i) => `<div class="plan-card" data-cod="${esc(p.codigo)}">
+          <div><label>Nombre</label><input data-k="nombre" value="${esc(p.nombre)}" maxlength="60"></div>
+          <div><label>Descripción (se ve en twoweb.cl)</label><input data-k="descripcion" value="${esc(p.descripcion || '')}" maxlength="300"></div>
+          <div><label>Precio mensual $</label><input data-k="precio" type="number" min="0" step="10" value="${p.precio}"></div>
+          <div><label>+ Agenda y Tienda $</label><input data-k="precio_extra" type="number" min="0" step="10" value="${p.precio_extra}"></div>
+          <div><label>Máx. equipo</label><input data-k="max_profesionales" type="number" min="1" placeholder="sin límite" value="${vNum(p.max_profesionales)}"></div>
+          <div><label>Máx. locales</label><input data-k="max_locales" type="number" min="1" placeholder="sin límite" value="${vNum(p.max_locales)}"></div>
+          <div><label>Máx. productos</label><input data-k="max_productos" type="number" min="0" placeholder="sin límite" value="${vNum(p.max_productos)}"></div>
+          <div class="acc"><button class="boton" onclick="guardarPlan(this)">Guardar</button>${p.negocios ? '' : `<button class="boton-linea rojo" onclick="eliminarPlan('${esc(p.codigo)}')">✕</button>`}</div>
+          <div class="checks"><label><input type="checkbox" data-k="dominio_incluido" ${p.dominio_incluido ? 'checked' : ''}> Dominio propio incluido</label>
+            <label><input type="checkbox" data-k="publico" ${p.publico ? 'checked' : ''}> Público (twoweb.cl)</label>
+            <label><input type="checkbox" data-k="activo" ${p.activo ? 'checked' : ''}> Disponible para negocios nuevos</label>
+            <label><input type="checkbox" data-k="destacado" ${p.destacado ? 'checked' : ''}> ⭐ Recomendado</label>
+            <label>Orden <input data-k="orden" type="number" value="${p.orden}" style="width:58px;padding:4px 6px;"></label>
+            <span class="nota">${p.negocios} negocio(s) en este plan</span></div></div>`).join('') || '<p class="nota">No hay planes.</p>';
+    }
+    async function guardarPlan(btn){
+      const card = btn.closest('.plan-card'), p = { codigo: card.dataset.cod };
+      card.querySelectorAll('[data-k]').forEach(e => { p[e.dataset.k] = e.type === 'checkbox' ? e.checked : e.value.trim(); });
+      if (!p.nombre) return alert('Escribe el nombre del plan.');
+      btn.disabled = true;
+      const { error } = await db.rpc('super_guardar_plan', { p });
+      btn.disabled = false;
+      if (error) return alert(error.message);
+      btn.textContent = '✓ Guardado'; setTimeout(() => cargarCobros(), 700);
+    }
+    async function nuevoPlan(){
+      const nombre = prompt('Nombre del nuevo plan (ej: Plan 4 · Cadena):'); if (!nombre) return;
+      const { error } = await db.rpc('super_guardar_plan', { p: { nombre: nombre.trim(), precio: 0, precio_extra: 0, publico: false } });
+      if (error) return alert(error.message);
+      cargarCobros();
+    }
+    async function eliminarPlan(cod){
+      if (!confirm('¿Eliminar este plan? (No tiene negocios.)')) return;
+      const { error } = await db.rpc('super_eliminar_plan', { p_codigo: cod });
+      if (error) return alert(error.message);
+      cargarCobros();
+    }
+    // ----- Categorías -----
+    function dibujarRubros(){
+      $('listaRubros').innerHTML = RUBROS_L.map(r => `<div class="rubro ${r.activo ? '' : 'off'}" data-id="${r.id}">
+          <input class="ico" data-k="icono" value="${esc(r.icono)}" maxlength="4"><input class="nom" data-k="nombre" value="${esc(r.nombre)}" maxlength="60">
+          <label title="Sugiere Agenda"><input type="checkbox" data-k="mod_agenda" ${r.mod_agenda ? 'checked' : ''}>📅</label>
+          <label title="Sugiere Tienda"><input type="checkbox" data-k="mod_tienda" ${r.mod_tienda ? 'checked' : ''}>🛍</label>
+          <label title="Activa"><input type="checkbox" data-k="activo" ${r.activo ? 'checked' : ''}>✓</label>
+          <button class="boton-linea" style="padding:4px 8px;" onclick="guardarRubro(this)" title="${r.negocios} negocio(s)">Guardar</button></div>`).join('');
+    }
+    async function guardarRubro(btn){
+      const el = btn.closest('.rubro'), p = { id: el.dataset.id || '' };
+      el.querySelectorAll('[data-k]').forEach(e => { p[e.dataset.k] = e.type === 'checkbox' ? e.checked : e.value.trim(); });
+      const { error } = await db.rpc('super_guardar_rubro', { p });
+      if (error) return alert(error.message);
+      btn.textContent = '✓'; setTimeout(() => cargarCobros(), 600);
+    }
+    async function nuevoRubro(){
+      const nombre = prompt('Nombre de la categoría (ej: Lavado de autos):'); if (!nombre) return;
+      const { error } = await db.rpc('super_guardar_rubro', { p: { nombre: nombre.trim(), icono: '🏪', mod_agenda: true, mod_tienda: false } });
+      if (error) return alert(error.message);
+      cargarCobros();
     }
 
     // ================= MI HORARIO (trabajador) =================
