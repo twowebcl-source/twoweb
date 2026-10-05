@@ -446,7 +446,8 @@
       <h1 class="marca-neg"><img class="logo-neg oculto" alt=""><span id="suspNombre">TwoWeb</span></h1>
       <div class="tarjeta">
         <p><b>⏸ Esta cuenta está suspendida.</b></p>
-        <p class="sub" style="margin-top:6px;">La agenda y el panel están pausados, pero <b>todos tus datos están guardados</b>. Para reactivarla, contacta a TwoWeb.</p>
+        <p class="sub" style="margin-top:6px;">Tu página pública y el panel están pausados, pero <b>todos tus datos están guardados</b>. Para reactivarla, contacta a TwoWeb.</p>
+        <p style="margin-top:10px;"><a class="boton" id="wspSoporte" target="_blank" rel="noopener" href="#" style="text-decoration:none;display:inline-block;">💬 Escribir a TwoWeb por WhatsApp</a></p>
         <button class="boton-linea" style="margin-top:14px;" onclick="salir()">Cerrar sesión</button>
       </div>
     </section>
@@ -679,7 +680,7 @@
           <p class="estado" id="estadoNeg"></p>
         </div>
         <div class="tarjeta"><h3>Negocios en la plataforma</h3><div style="overflow-x:auto;" id="tablaNeg"></div>
-          <p class="nota" style="margin-top:8px;">"Entrar" te deja ver y administrar ese negocio como su admin (para ayudarlo o configurarlo). "Suspender" corta su agenda y su panel, pero conserva todos sus datos.</p></div>
+          <p class="nota" style="margin-top:8px;">"Entrar" te deja ver y administrar ese negocio como su admin (para ayudarlo o configurarlo). "Suspender" corta su página pública (agenda o tienda) y su panel, pero conserva todos sus datos.</p></div>
       </div>
 
       <!-- Pedidos de la tienda (admin y equipo) — Fase 14 -->
@@ -935,7 +936,9 @@
           : '⚠️ Error al revisar tu acceso: ' + esc(error.message || JSON.stringify(error)));
         mostrar('vistaPendiente'); return;
       }
-      if (data.rol === 'suspendido'){ $('suspNombre').textContent = data.negocio?.nombre || MARCA; mostrar('vistaSuspendido'); return; }
+      if (data.rol === 'suspendido'){ $('suspNombre').textContent = data.negocio?.nombre || MARCA;
+        $('wspSoporte').href = 'https://wa.me/' + (CONF.WHATSAPP || '') + '?text=' + encodeURIComponent('Hola TwoWeb, quiero reactivar mi cuenta de ' + (data.negocio?.nombre || ''));
+        mostrar('vistaSuspendido'); return; }
       yo = { ...data, correo: session.user.email };
       NEG = data.negocio || {};
       pintarNegocio();
@@ -2448,7 +2451,7 @@
         if (m.error) estado('estadoNeg', 'Negocio creado, pero no se pudieron guardar los módulos: ' + m.error.message + ' (¿instalaste la Fase 14?)', 'error');
       }
       ['nnNombre','nnSlug','nnAdmin','nnCorreo','nnClave','nnWsp','nnLocal','nnDir'].forEach(id => $(id).value = ''); $('nnLink').textContent = '';
-      estado('estadoNeg', `✓ "${p.nombre}" creado. El admin entra con ${p.admin_correo} y la contraseña que pusiste. Su página: ${linkWeb({ slug: data.slug })}`, 'ok');
+      estado('estadoNeg', `✓ "${p.nombre}" creado. El admin entra con ${p.admin_correo} y la contraseña que pusiste. Su página: ${linkWeb({ slug: data.slug, ...modulos })}`, 'ok');
       cargarNegocios();
     }
     async function actualizarNegocio(id, cambios){
@@ -2490,7 +2493,7 @@
     }
     function suspenderNegocio(id){
       const n = negocios.find(x => x.id === id);
-      if (!confirm(`¿Suspender "${n?.nombre}"? Su agenda y su panel quedan pausados (sus datos se conservan). Lo puedes reactivar cuando pague.`)) return;
+      if (!confirm(`¿Suspender "${n?.nombre}"? Su página pública (agenda y/o tienda) y su panel quedan pausados (sus datos se conservan). Lo puedes reactivar cuando pague.`)) return;
       actualizarNegocio(id, { estado: 'suspendido' });
     }
     async function entrarNegocio(id){
