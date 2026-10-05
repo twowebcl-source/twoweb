@@ -230,7 +230,7 @@
       const c = /^#[0-9a-f]{6}$/i.test(color || '') ? color : ACENTO[t];
       raiz.style.setProperty('--voltaje', c); raiz.style.setProperty('--sobre', textoSobre(c));
     }
-    const K_TEMA = 'clipperlab-tema-' + (SLUG || CONF.PRINCIPAL || 'clipperlab');     // misma clave que la agenda: no parpadea al pasar de una a otra
+    const K_TEMA = 'twoweb-tema-' + (SLUG || CONF.PRINCIPAL || 'twoweb');     // misma clave que la agenda: no parpadea al pasar de una a otra
     const K_CARRO = 'twoweb-carrito-' + (SLUG || 'principal');
     const K_CLIENTE = 'twoweb-cliente';
     { const g = leer(K_TEMA); if (g) aplicarTema(g.tema, g.color); }

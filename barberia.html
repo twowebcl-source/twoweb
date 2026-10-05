@@ -201,7 +201,7 @@
       const c = /^#[0-9a-f]{6}$/i.test(color || '') ? color : ACENTO[t];
       raiz.style.setProperty('--voltaje', c); raiz.style.setProperty('--sobre', textoSobre(c));
     }
-    const K_TEMA = 'clipperlab-tema-' + (SLUG || CONF.PRINCIPAL || 'clipperlab');
+    const K_TEMA = 'twoweb-tema-' + (SLUG || CONF.PRINCIPAL || 'twoweb');
     try { const g = JSON.parse(localStorage.getItem(K_TEMA) || 'null'); if (g) aplicarTema(g.tema, g.color); } catch(e) {}
 
     const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -224,7 +224,7 @@
       if (n.mod_agenda === false) { if (n.mod_tienda) { location.replace(tiendaUrl()); return; } return aviso(esc(n.nombre || ''), 'Este negocio no tiene página activa.'); }
       try { localStorage.setItem(K_TEMA, JSON.stringify({ tema: n.tema, color: n.color })); } catch(e) {}
       CFG = data; CFG.locales = CFG.locales || []; LOCAL_SERV = CFG.locales[0]?.id ?? null;
-      // llegó por el link corto (clipperlab.cl/minadeoro): se deja esa dirección bonita en la barra
+      // llegó por el link corto (twoweb.cl/minadeoro): se deja esa dirección bonita en la barra
       if (QS.has('_c') && SLUG && !DOMINIO_PROPIO){ const b = document.createElement('base'); b.href = '/'; document.head.prepend(b); history.replaceState(null, '', '/' + SLUG + location.hash); }
       dibujar();
     }

@@ -598,7 +598,7 @@
           <div id="listaServ"></div>
           <button class="boton-linea" style="margin-top:12px;" onclick="nuevoServicio()">+ Nuevo servicio</button>
           <p class="estado" id="estadoServ"></p>
-          <p class="nota">Cada servicio es de un local (así el mismo "Corte" puede costar distinto en Lampa y Providencia). Al crear uno, lo hacen todos los barberos de ese local; en "Equipo y horarios" eliges quién hace qué.
+          <p class="nota">Cada servicio es de un local (así el mismo "Corte" puede costar distinto en cada sucursal). Al crear uno, lo hacen todos los barberos de ese local; en "Equipo y horarios" eliges quién hace qué.
             La categoría agrupa las tarjetas en la agenda (ej: "Promociones" aparece primero). Los inactivos no aparecen en la agenda pública, pero se conservan en reservas antiguas.</p>
         </div>
       </div>
@@ -746,12 +746,12 @@
     const SUPABASE_URL = CONF.SUPABASE_URL, SUPABASE_KEY = CONF.SUPABASE_KEY;   // se configuran en config.js
     // Sesión normal = compartida por las pestañas de este navegador (recordada).
     // Sesión "solo esta pestaña" = independiente: permite tener admin y profesional abiertos a la vez.
-    if (new URLSearchParams(location.search).get('pestana') === '1') sessionStorage.setItem('clipperlab-pestana', '1');
-    const MODO_PESTANA = sessionStorage.getItem('clipperlab-pestana') === '1';
+    if (new URLSearchParams(location.search).get('pestana') === '1') sessionStorage.setItem('twoweb-pestana', '1');
+    const MODO_PESTANA = sessionStorage.getItem('twoweb-pestana') === '1';
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, MODO_PESTANA
-      ? { auth: { storage: window.sessionStorage, storageKey: 'clipperlab-sesion-pestana' } } : {});
+      ? { auth: { storage: window.sessionStorage, storageKey: 'twoweb-sesion-pestana' } } : {});
     function usarPestanaIndependiente(activar){
-      if (activar) sessionStorage.setItem('clipperlab-pestana', '1'); else sessionStorage.removeItem('clipperlab-pestana');
+      if (activar) sessionStorage.setItem('twoweb-pestana', '1'); else sessionStorage.removeItem('twoweb-pestana');
       location.href = location.pathname;
     }
     function abrirOtraCuenta(){ window.open(location.pathname + '?pestana=1', '_blank', 'noopener'); }
@@ -773,10 +773,10 @@
 
     let yo = null;               // { rol, nombre, trabajador_id, correo, super, negocio }
     let NEG = {};                // negocio con el que se está trabajando { id, nombre, slug, plan, estado, color }
-    // Links públicos de la barbería: con dominio propio → https://sudominio.cl ; si no → clipperlab.cl/...?b=link
-    // En clipperlab.cl hay links cortos: clipperlab.cl/minadeoro (página) y clipperlab.cl/minadeoro/reservar (agenda)
-    const LINKS_CORTOS = /(^|\.)(clipperlab|twoweb)\.cl$/.test(location.hostname);
-    const esPrincipal = n => n.slug === (CONF.PRINCIPAL || 'clipperlab');
+    // Links públicos de la barbería: con dominio propio → https://sudominio.cl ; si no → twoweb.cl/...?b=link
+    // En twoweb.cl hay links cortos: twoweb.cl/minadeoro (página) y twoweb.cl/minadeoro/reservar (agenda)
+    const LINKS_CORTOS = /(^|\.)twoweb\.cl$/.test(location.hostname);
+    const esPrincipal = n => n.slug === (CONF.PRINCIPAL || 'twoweb');
     const linkAgenda = (n = NEG) => esPrincipal(n) || !n.slug ? new URL('agenda.html', location.href).href
       : LINKS_CORTOS ? location.origin + '/' + n.slug + '/reservar' : new URL('agenda.html?b=' + n.slug, location.href).href;
     const linkWeb = (n = NEG) => n.mod_agenda === false && n.mod_tienda ? linkTienda(n) : n.dominio ? 'https://' + n.dominio + '/' : esPrincipal(n) ? new URL('index.html', location.href).href
@@ -837,9 +837,9 @@
     const temaPanel = () => ({ tema: yo?.mi_tema || NEG.tema || 'clasico', color: yo?.mi_color || NEG.color });
     function aplicarTemaActual(){
       const { tema, color } = temaPanel(); aplicarTema(tema, color);
-      try { localStorage.setItem('clipperlab-tema-panel', JSON.stringify({ tema, color })); } catch(e) {}
+      try { localStorage.setItem('twoweb-tema-panel', JSON.stringify({ tema, color })); } catch(e) {}
     }
-    try { const g = JSON.parse(localStorage.getItem('clipperlab-tema-panel') || 'null'); if (g) aplicarTema(g.tema, g.color); } catch(e) {}
+    try { const g = JSON.parse(localStorage.getItem('twoweb-tema-panel') || 'null'); if (g) aplicarTema(g.tema, g.color); } catch(e) {}
     function tarjetaTema(k, sel, accion, color){
       const t = TEMAS[k], c = colorOk(color) ? color : t.acento;
       const franja = k === 'vintage' ? '<i style="height:4px;background:repeating-linear-gradient(-45deg,#b3261e 0 4px,#fff 4px 8px,#1d4e89 8px 12px,#fff 12px 16px);"></i>' : '';
@@ -855,7 +855,7 @@
     let trabajadores = [], horarios = [], servicios = [], reservasTodas = [];
     let locales = [], asignados = {};        // asignados[tid] = [ids de servicios que hace]
     let LOCAL_PANEL = 0;                     // 0 = todos los locales (solo admin)
-    try { LOCAL_PANEL = Number(localStorage.getItem('clipperlab-local-panel')) || 0; } catch(e) {}
+    try { LOCAL_PANEL = Number(localStorage.getItem('twoweb-local-panel')) || 0; } catch(e) {}
     const trabDe   = tid => trabajadores.find(t => t.id === tid);
     const localDe  = tid => trabDe(tid)?.local_id ?? null;
     const nombreLocal = id => locales.find(l => l.id === id)?.nombre || '';
@@ -981,7 +981,7 @@
     // El admin elige un local: agenda, semana, historial, caja, equipo y servicios muestran solo ese local
     function cambiarLocalPanel(v){
       LOCAL_PANEL = Number(v) || 0;
-      try { localStorage.setItem('clipperlab-local-panel', String(LOCAL_PANEL)); } catch(e) {}
+      try { localStorage.setItem('twoweb-local-panel', String(LOCAL_PANEL)); } catch(e) {}
       $('semanaTrab').innerHTML = ''; $('cajaTrab').innerHTML = '';
       const f = $('filtroTrab'); f.innerHTML = '<option value="">Todo el equipo</option>' + trabsFiltro().map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
       const t = document.querySelector('.tab.sel')?.dataset.tab;
@@ -1923,7 +1923,7 @@
     }
     function avisoNavegador(n){
       try { if ('Notification' in window && Notification.permission === 'granted' && document.hidden)
-        new Notification((NEG.nombre || MARCA) + ' · ' + n.titulo, { body: n.detalle || '', tag: 'clipperlab-' + n.id }); } catch (e) {}
+        new Notification((NEG.nombre || MARCA) + ' · ' + n.titulo, { body: n.detalle || '', tag: 'twoweb-' + n.id }); } catch (e) {}
     }
     function conectarTiempoReal(){
       if (canal){ db.removeChannel(canal); canal = null; }
@@ -2302,7 +2302,7 @@
       const csv = '\ufeff' + cols.map(c => c[0]).join(';') + '\n' + l.map(c => cols.map(([_, k]) => celda(typeof k === 'function' ? k(c) : c[k])).join(';')).join('\n');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-      a.download = `clientes-${NEG.slug || 'clipperlab'}-${hoyTxt()}.csv`; a.click();
+      a.download = `clientes-${NEG.slug || 'twoweb'}-${hoyTxt()}.csv`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     }
 
@@ -2412,7 +2412,7 @@
           </div></td>
           <td style="white-space:normal;min-width:190px;">
             <a class="link" style="margin:0;" href="${esc(linkWeb(n))}" target="_blank" rel="noopener">🌐 ${esc(n.dominio || linkWeb(n).replace(/^https?:\/\//, ''))}</a>
-            ${esPrincipal(n) ? '' : `<label class="mini-lbl">Nombre del link</label><input class="dominio-neg" value="${esc(n.slug)}" title="Cómo aparece en clipperlab.cl/NOMBRE (solo letras, números y guiones)" onchange="cambiarSlug(${n.id}, this)">
+            ${esPrincipal(n) ? '' : `<label class="mini-lbl">Nombre del link</label><input class="dominio-neg" value="${esc(n.slug)}" title="Cómo aparece en twoweb.cl/NOMBRE (solo letras, números y guiones)" onchange="cambiarSlug(${n.id}, this)">
             <label class="mini-lbl">Dominio propio</label>`}
             <input class="dominio-neg ${esPrincipal(n) ? 'oculto' : ''}" placeholder="dominio.cl (opcional)" value="${esc(n.dominio || '')}" title="Dominio propio de la barbería. Déjalo vacío si no tiene."
               onchange="cambiarDominio(${n.id}, this)"></td>
@@ -2496,7 +2496,7 @@
     async function entrarNegocio(id){
       const { error } = await db.rpc('super_entrar', { p_id: id });
       if (error) { alert(error.message); return; }
-      LOCAL_PANEL = 0; try { localStorage.removeItem('clipperlab-local-panel'); } catch(e) {}
+      LOCAL_PANEL = 0; try { localStorage.removeItem('twoweb-local-panel'); } catch(e) {}
       $('semanaTrab').innerHTML = ''; $('cajaTrab').innerHTML = '';
       const { data: { session } } = await db.auth.getSession();
       await cargarSesion(session);
