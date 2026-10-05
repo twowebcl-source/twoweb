@@ -421,6 +421,11 @@
     }
     .link-pro { margin:10px 0; padding:10px 12px; border:1px dashed var(--linea); border-radius:12px; }
     .link-pro label { margin-top:0; }
+    .venta-local { margin-top:8px; border:1px solid var(--linea); border-radius:12px; overflow:hidden; }
+    .venta-local > div { display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; padding:8px 10px; border-top:1px solid var(--linea); }
+    .venta-local > div:first-child { border-top:none; }
+    .venta-local .cant { display:flex; align-items:center; gap:6px; }
+    .venta-local .cant button { width:28px; height:28px; border-radius:8px; border:1px solid var(--linea); background:transparent; color:var(--hueso); cursor:pointer; }
   </style>
 </head>
 <body>
@@ -1327,7 +1332,7 @@
           <div class="r-sub">${esc(r.servicios || (llegada ? 'Servicio por definir' : ''))}${est === 'completada' && plata(r) ? ` · ${yo.rol === 'admin' ? '' : 'tu parte '}${clp(plata(r))}` : ''}${est === 'completada' && r.propina ? ` <span class="badge grupo">propina ${clp(r.propina)}</span>` : ''}</div>
           ${r.descripcion ? `<div class="r-msg">“${esc(r.descripcion)}”</div>` : ''}
           <div class="acciones-rapidas">
-            ${est === 'confirmada' ? `<button class="boton-linea" onclick="iniciarAtencion(${r.id})">▶ Iniciar</button>` : ''}
+            ${est === 'confirmada' ? `<button class="boton-linea" onclick="iniciarAtencion(${r.id})">${esFutura(r) ? '▶ Comenzar ahora' : '▶ Iniciar'}</button>` : ''}
             ${est === 'confirmada' || est === 'en_atencion' ? `<button class="boton-linea verde" onclick="abrirTerminar(${r.id})">✓ Terminó</button>` : ''}
             ${est === 'confirmada' ? `<button class="boton-linea rojo" onclick="estadoRapido(${r.id}, 'no_asistio')">No vino</button>` : ''}
             ${est === 'completada' || est === 'no_asistio' ? `<button class="boton-linea" onclick="estadoRapido(${r.id}, 'confirmada')">Deshacer</button>` : ''}
@@ -1339,7 +1344,21 @@
       if (err){ alert(err); return; }
       refrescarVista();
     }
-    async function iniciarAtencion(id){ await estadoRapido(id, 'en_atencion'); }
+    // Comenzar la atención: si el cliente llegó antes, su hora se mueve a ahora y el espacio original queda libre
+    const esFutura = r => r.fecha === hoyTxt() && rangoDe(r)[0] > (new Date().getHours() * 60 + new Date().getMinutes());
+    async function iniciarAtencion(id){
+      const r = reservasTodas.find(x => x.id === id); if (!r) return;
+      const ahora = new Date(), hhmm = aHora(ahora.getHours() * 60 + ahora.getMinutes());
+      if (esFutura(r) && !confirm(`¿Comenzar ahora la atención de ${r.nombre}?\n\nEstaba agendado a las ${aHora(rangoDe(r)[0])}. Su hora pasa a las ${hhmm} y el espacio de las ${aHora(rangoDe(r)[0])} queda libre para otro cliente.`)) return;
+      const { data, error } = await db.rpc('comenzar_atencion', { p_id: id });
+      if (error){
+        if (/comenzar_atencion/.test(error.message || '')) return estadoRapido(id, 'en_atencion');   // base sin la Fase 19
+        alert(mensajeError(error)); return;
+      }
+      await recargarTodo();
+      mostrarToast({ id: 0, tipo: 'llegada', titulo: data.adelantada ? 'Atención adelantada' : 'Atención iniciada',
+        detalle: data.adelantada ? `${r.nombre}: de las ${data.antes} pasó a las ${data.desde} (hasta ${data.hasta}). Al terminar, toca "✓ Terminó · cobrar".` : `${r.nombre} · en atención. Al terminar, toca "✓ Terminó · cobrar".` });
+    }
 
     // ----- Orden de llegada: se registra en el momento, sin formulario -----
     async function ordenLlegada(tid){
@@ -1359,7 +1378,45 @@
 
     // ----- Terminar atención: servicios realizados + cómo pagó -----
     let pagoElegido = null, cobroDesc = 0;
+    let PRODS_COBRO = [], APARTADOS = [], ventaLocal = {}, entregarIds = new Set();
+    async function cargarProductosCobro(r){
+      if (!conTienda() || !$('cobroProds')) return;
+      const [pr, pe] = await Promise.all([
+        db.from('productos').select('id,nombre,precio,precio_oferta,stock,activo').eq('activo', true).order('nombre'),
+        db.rpc('pedidos_panel', { p_dias: 3 })]);
+      PRODS_COBRO = (pr.data || []).filter(p => p.stock === null || p.stock > 0);
+      APARTADOS = (pe.data || []).filter(p => p.reserva_id === r.id && ['nuevo', 'confirmado'].includes(p.estado));
+      entregarIds = new Set(APARTADOS.map(p => p.id));
+      dibujarProductosCobro();
+    }
+    const precioProd = p => p.precio_oferta ?? p.precio;
+    function dibujarProductosCobro(){
+      const el = $('cobroProds'); if (!el) return;
+      el.innerHTML = `${APARTADOS.length ? `<div class="info-llegada">🛍 <b>Apartó productos al reservar.</b> Márcalos si se los entregas ahora:</div>
+          ${APARTADOS.map(p => `<label class="check-linea"><input type="checkbox" ${entregarIds.has(p.id) ? 'checked' : ''} onchange="this.checked ? entregarIds.add(${p.id}) : entregarIds.delete(${p.id}); totalACobrar()">
+            Pedido #${p.numero}: ${p.items.map(i => i.cantidad + '× ' + esc(i.nombre)).join(', ')} · <b>${clp(p.total)}</b></label>`).join('')}` : ''}
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <select id="selProdCobro"><option value="">+ ¿Compró algo en el local? Elige un producto…</option>
+            ${PRODS_COBRO.map(p => `<option value="${p.id}">${esc(p.nombre)} · ${clp(precioProd(p))}${p.stock !== null ? ' · quedan ' + p.stock : ''}</option>`).join('')}</select>
+          <button class="boton-linea" onclick="agregarVentaLocal()">Agregar</button></div>
+        ${Object.keys(ventaLocal).length ? `<div class="venta-local">${Object.entries(ventaLocal).map(([id, c]) => { const p = PRODS_COBRO.find(x => x.id == id); return p ? `<div>
+            <span>${esc(p.nombre)}</span>
+            <span class="cant"><button onclick="cambiarVentaLocal(${id},-1)">−</button><b>${c}</b><button onclick="cambiarVentaLocal(${id},1)">+</button></span>
+            <b>${clp(precioProd(p) * c)}</b></div>` : ''; }).join('')}</div>` : ''}`;
+      totalACobrar();
+    }
+    function agregarVentaLocal(){ const id = Number($('selProdCobro').value); if (!id) return; cambiarVentaLocal(id, 1); }
+    function cambiarVentaLocal(id, d){
+      const p = PRODS_COBRO.find(x => x.id == id); if (!p) return;
+      const max = p.stock === null ? 99 : p.stock, n = Math.max(0, Math.min(max, (ventaLocal[id] || 0) + d));
+      if (n) ventaLocal[id] = n; else delete ventaLocal[id];
+      if (d > 0 && n === (ventaLocal[id] || 0) && n === max && p.stock !== null) estado('estadoAccion', `De "${p.nombre}" quedan ${p.stock}.`, '');
+      dibujarProductosCobro();
+    }
+    const totalProductosCobro = () => APARTADOS.filter(p => entregarIds.has(p.id)).reduce((a, p) => a + p.total, 0)
+      + Object.entries(ventaLocal).reduce((a, [id, c]) => { const p = PRODS_COBRO.find(x => x.id == id); return a + (p ? precioProd(p) * c : 0); }, 0);
     function abrirTerminar(id){
+      PRODS_COBRO = []; APARTADOS = []; ventaLocal = {}; entregarIds = new Set();
       const r = reservasTodas.find(x => x.id === id); if (!r) return;
       pagoElegido = r.metodo_pago || null; cobroDesc = r.descuento_pct || 0;
       const marcados = marcadosPorNombre(r.servicios, r.trabajador_id);
@@ -1374,7 +1431,8 @@
           ${[0, 1000, 2000, 3000, 5000].map(v => `<button class="chip ${v === (r.propina || 0) ? 'sel' : ''}" onclick="elegirPropina(${v}, this)">${v ? clp(v) : 'Sin propina'}</button>`).join('')}
           <input id="fPropina" type="number" min="0" step="500" value="${r.propina || 0}" oninput="totalACobrar(); document.querySelectorAll('.propinas .chip').forEach(c => c.classList.remove('sel'))" style="width:120px;">
         </div>
-        <div class="cobrar"><span>Servicios <b id="totalServicios" style="font-size:15px;color:var(--hueso);">$0</b> + propina <b id="totalPropina" style="font-size:15px;color:var(--hueso);">$0</b></span>
+        ${conTienda() ? `<label>Productos</label><div id="cobroProds"><p class="nota">Cargando productos…</p></div>` : ''}
+        <div class="cobrar"><span>Servicios <b id="totalServicios" style="font-size:15px;color:var(--hueso);">$0</b> + propina <b id="totalPropina" style="font-size:15px;color:var(--hueso);">$0</b><span id="lineaProds"></span></span>
           <span style="text-align:right;">Total recibido<br><b id="totalCobrar">$0</b></span></div>
         <label>¿Cómo pagó?</label>
         <div class="pagos" style="margin-top:0;">${Object.entries(PAGOS).map(([k, v]) => `<button class="chip ${pagoElegido === k ? 'sel' : ''}" data-pago="${k}" onclick="pagoElegido='${k}'; this.parentNode.querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c === this))">${v}</button>`).join('')}</div>
@@ -1383,12 +1441,15 @@
         <p class="estado" id="estadoAccion"></p>`;
       totalACobrar();
       $('fondoDetalle').classList.remove('oculto');
+      cargarProductosCobro(r);
     }
     function totalACobrar(){
       const ids = servSeleccionados(), bruto = serviciosActivos.filter(s => ids.includes(s.id)).reduce((a, s) => a + s.precio, 0);
       const serv = Math.round(bruto * (100 - (cobroDesc || 0)) / 100);
       const prop = Math.max(0, parseInt($('fPropina').value) || 0);
-      $('totalServicios').textContent = clp(serv); $('totalPropina').textContent = clp(prop); $('totalCobrar').textContent = clp(serv + prop);
+      const prods = totalProductosCobro();
+      $('totalServicios').textContent = clp(serv); $('totalPropina').textContent = clp(prop); $('totalCobrar').textContent = clp(serv + prop + prods);
+      if ($('lineaProds')) $('lineaProds').innerHTML = prods ? ` + productos <b style="font-size:15px;color:var(--hueso);">${clp(prods)}</b>` : '';
     }
     function elegirPropina(v, btn){
       $('fPropina').value = v;
@@ -1401,11 +1462,16 @@
       if (!pagoElegido) return estado('estadoAccion', 'Elige cómo pagó el cliente.', 'error');
       estado('estadoAccion', 'Guardando…');
       const propina = Math.max(0, parseInt($('fPropina').value) || 0);
-      const { error } = await db.rpc('terminar_atencion', { p_id: id, p_servicios: ids.length ? ids : null, p_pago: pagoElegido,
-                                                            p_nombre: $('fNombreLlegada') ? $('fNombreLlegada').value.trim() : null, p_propina: propina });
-      if (error) return estado('estadoAccion', mensajeError(error), 'error');
+      const productos = Object.entries(ventaLocal).map(([pid, c]) => ({ id: Number(pid), cantidad: c })), entregar = [...entregarIds];
+      const args = { p_id: id, p_servicios: ids.length ? ids : null, p_pago: pagoElegido, p_nombre: $('fNombreLlegada') ? $('fNombreLlegada').value.trim() : null, p_propina: propina };
+      const conProd = productos.length || entregar.length;
+      const { data, error } = conProd ? await db.rpc('cerrar_atencion', { ...args, p_productos: productos, p_entregar: entregar })
+                                      : await db.rpc('terminar_atencion', args);
+      if (error) return estado('estadoAccion', /cerrar_atencion/.test(error.message || '') ? 'Falta instalar la Fase 19 en la base de datos.' : mensajeError(error), 'error');
+      const prods = totalProductosCobro();
       await recargarTodo(); cerrarDetalle();
-      mostrarToast({ id: 0, tipo: 'completada', titulo: 'Atención terminada', detalle: `${r.nombre} · pagó con ${PAGOS[pagoElegido]}${propina ? ' · propina ' + clp(propina) : ''}` });
+      if (typeof cargarPedidos === 'function' && conProd) cargarPedidos().catch(() => {});
+      mostrarToast({ id: 0, tipo: 'completada', titulo: 'Atención terminada', detalle: `${r.nombre} · pagó con ${PAGOS[pagoElegido]}${propina ? ' · propina ' + clp(propina) : ''}${prods ? ' · productos ' + clp(prods) + ' (stock descontado)' : ''}` });
     }
 
     // ================= LISTA =================
@@ -1470,7 +1536,7 @@
         ${est === 'completada' ? `<div class="pagos"><span class="nota">Método de pago:</span>
           ${Object.entries(PAGOS).map(([k, v]) => `<button class="chip ${r.metodo_pago === k ? 'sel' : ''}" onclick="cambiarPago(${r.id}, '${k}')">${v}</button>`).join('')}</div>` : ''}
         ${est === 'confirmada' || est === 'en_atencion' ? `<div class="det-acciones">
-          ${est === 'confirmada' ? `<button class="boton-linea" onclick="cerrarDetalle(); iniciarAtencion(${r.id})">▶ Iniciar atención</button>` : ''}
+          ${est === 'confirmada' ? `<button class="boton-linea" onclick="cerrarDetalle(); iniciarAtencion(${r.id})">${esFutura(r) ? '▶ Comenzar ahora (llegó antes)' : '▶ Iniciar atención'}</button>` : ''}
           <button class="boton" onclick="abrirTerminar(${r.id})">✓ Terminó · cobrar</button></div>` : ''}
         <div class="det-acciones">
           ${admin && tel ? `<a class="boton-linea" href="https://wa.me/${tel}?text=${msgWa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
@@ -1557,7 +1623,16 @@
       return orden.map(s => `<label><input type="checkbox" class="f-serv" value="${s.id}" ${marcados.includes(s.id) ? 'checked' : ''} onchange="resumenForm(); if ($('totalCobrar')) totalACobrar()"> ${esc(s.nombre)}${mios.includes(s.id) ? '' : ' <small class="nota">(no asignado)</small>'} <span>${s.duracion} min · ${clp(s.precio)}</span></label>`).join('');
     }
     // Servicios que ya estaban marcados (por nombre) dentro del local de ese profesional
-    const marcadosPorNombre = (texto, tid) => { const n = (texto || '').split(' + '); return servDelLocal(tid).filter(s => n.includes(s.nombre)).map(s => s.id); };
+    // "Corte + Barba" puede ser UN servicio (promo) o dos servicios: se busca primero el nombre más largo que calce
+    const marcadosPorNombre = (texto, tid) => {
+      const lista = servDelLocal(tid), t = (texto || '').split(' + '), ids = [];
+      for (let i = 0; i < t.length;){
+        let j = t.length;
+        for (; j > i; j--){ const s = lista.find(x => x.nombre === t.slice(i, j).join(' + ') && !ids.includes(x.id)); if (s){ ids.push(s.id); break; } }
+        i = j > i ? j : i + 1;
+      }
+      return ids;
+    };
     // Al cambiar de profesional en el formulario, los servicios cambian a los de su local
     function cambiarProfForm(){
       const tid = Number($('fTid').value), c = $('servChecks'); if (!c) return;
