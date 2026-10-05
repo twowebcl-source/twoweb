@@ -443,6 +443,8 @@
     .linea-ahora { position:relative; text-align:center; margin:6px 0 12px; border-top:2px solid var(--verde); }
     .linea-ahora span { position:relative; top:-11px; background:var(--grafito); color:var(--verde); font-size:12px; font-weight:700; padding:0 10px; }
     .llegada-top { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:12px; }
+    .ag-antes { display:inline-block; font-size:10px; font-weight:700; color:var(--verde); white-space:nowrap; }
+    .btn-llegada { padding:7px 14px; font-size:13px; margin-left:auto; }
   </style>
 </head>
 <body>
@@ -975,6 +977,16 @@
       const fin = r.fin ? aMin(r.fin.slice(11,16)) : ini + 60;
       return [ini, fin];
     }
+    // Lo que se ve en la agenda: una atención terminada ANTES de su hora ocupa solo hasta su término real
+    // (el resto queda libre para otro cliente, igual que en la base de datos)
+    function rangoVisible(r){
+      const [ri, rf] = rangoDe(r);
+      if (r.origen !== 'llegada' && r.estado === 'completada' && r.termino_real && r.termino_real.slice(0, 10) === r.fecha){
+        const tr = aMin(r.termino_real.slice(11, 16));
+        if (tr < rf) return [ri, Math.max(ri + 5, tr), rf - Math.max(ri, tr)];      // [inicio, término real, minutos antes]
+      }
+      return [ri, rf, 0];
+    }
 
     function mostrar(vista){ ['vistaLogin','vistaNuevaClave','vistaPendiente','vistaSuspendido','vistaPanel'].forEach(v => $(v).classList.toggle('oculto', v !== vista)); }
 
@@ -1181,18 +1193,17 @@
           x += `<div class="ag-bloq" style="top:${y(bi)}px;height:${(bf-bi)*PX_MIN}px" onclick="event.stopPropagation(); abrirBloqueo(${b.id})">🔒 ${esc(b.motivo || 'Bloqueado')}</div>`;
         });
         c.reservas.forEach(r => {
-          const [ri, rf] = rangoDe(r), est = r.estado || 'confirmada';
+          const [ri, rf, antes] = rangoVisible(r), est = r.estado || 'confirmada';
           const enHora = est === 'confirmada' && c.esHoy && ri <= ahoraMin && rf > ahoraMin;
-          x += `<div class="ag-res ${est} ${enHora ? 'ahora' : ''}" style="top:${y(ri)+1}px;height:${Math.max((rf-ri)*PX_MIN-2, 18)}px" onclick="event.stopPropagation(); abrirDetalle(${r.id})" title="${esc(r.nombre)}">
-            <b>${aHora(ri)} ${esc(r.nombre)}</b>${(rf-ri) >= 30 ? `<br>${esc(r.servicios || r.descripcion || '')}` : ''}</div>`;
+          x += `<div class="ag-res ${est} ${enHora ? 'ahora' : ''}" style="top:${y(ri)+1}px;height:${Math.max((rf-ri)*PX_MIN-2, 18)}px" onclick="event.stopPropagation(); abrirDetalle(${r.id})" title="${esc(r.nombre)}${antes ? ' · terminó ' + antes + ' min antes' : ''}">
+            <b>${aHora(ri)}–${aHora(rf)} ${esc(r.nombre)}</b>${antes ? ` <span class="ag-antes">✓ ${antes} min antes</span>` : ''}${(rf-ri) * PX_MIN >= 34 ? `<br>${esc(r.servicios || r.descripcion || '')}` : ''}</div>`;
         });
         // Agendados terminados: se marca la hora real de término (antes = franja verde libre; después = franja amarilla)
         c.reservas.forEach(r => {
           if (r.origen === 'llegada' || r.estado !== 'completada' || !r.termino_real || r.termino_real.slice(0, 10) !== r.fecha) return;
           const [ri, rf] = rangoDe(r), tr = Math.max(ri, aMin(r.termino_real.slice(11, 16))), dif = tr - rf;
-          if (Math.abs(dif) < 1) return;
-          if (dif < 0) x += `<div class="ag-sobra" style="top:${y(tr)}px;height:${(rf - tr) * PX_MIN}px"></div>`;
-          else x += `<div class="ag-extra" style="top:${y(rf)}px;height:${dif * PX_MIN}px"></div>`;
+          if (dif < 1) return;                                // terminó antes o a la hora: ya se ve en la tarjeta
+          x += `<div class="ag-extra" style="top:${y(rf)}px;height:${dif * PX_MIN}px"></div>`;
           x += `<div class="ag-real ${dif > 0 ? 'ag-extra real' : ''}" style="top:${y(tr)}px;${dif > 0 ? 'border:none;border-top:2px dashed #fbbf24;background:none;height:0;' : ''}"><span>✓ ${aHora(tr)} · ${Math.abs(dif)} min ${dif < 0 ? 'antes' : 'después'}</span></div>`;
         });
         if (c.esHoy && ahoraMin > desde && ahoraMin < hasta) x += `<div class="ag-ahora" style="top:${y(ahoraMin)}px"></div>`;
@@ -1225,7 +1236,7 @@
     // ================= VISTA: PANEL O LISTA =================
     function guardarVista(){ try { localStorage.setItem('twoweb-vista-agenda', JSON.stringify(VISTA)); } catch(e) {} }
     function cambiarVista(k, v){ VISTA[k] = v; if (k === 'escala') PX_MIN = ESCALAS[v].px; guardarVista(); refrescarVista(); }
-    function controlesVista(conTrab){
+    function controlesVista(conTrab, llegada){
       const seg = (k, v, t) => `<button class="seg ${VISTA[k] == v ? 'sel' : ''}" onclick="cambiarVista('${k}', ${typeof v === 'number' ? v : `'${v}'`})">${t}</button>`;
       const pros = trabsFiltro().filter(t => t.activo);
       if (VISTA.trab && !pros.some(t => t.id === VISTA.trab)) VISTA.trab = 0;
@@ -1233,7 +1244,8 @@
         ${VISTA.modo === 'panel' ? `<div class="segmentado" role="group" aria-label="Escala">${seg('escala', 15, '15 min')}${seg('escala', 30, '30 min')}${seg('escala', 60, '1 hora')}</div>` : ''}
         ${conTrab && pros.length > 1 ? `<select class="sel-vista" onchange="cambiarVista('trab', Number(this.value))" aria-label="Profesional">
             <option value="0">👥 Todos${!LOCAL_PANEL && locales.length > 1 ? ' (todos los locales)' : ''}</option>
-            ${pros.map(t => `<option value="${t.id}" ${VISTA.trab === t.id ? 'selected' : ''}>${esc(t.nombre)}${!LOCAL_PANEL && locales.length > 1 ? ' · ' + esc(nombreLocal(t.local_id)) : ''}</option>`).join('')}</select>` : ''}`;
+            ${pros.map(t => `<option value="${t.id}" ${VISTA.trab === t.id ? 'selected' : ''}>${esc(t.nombre)}${!LOCAL_PANEL && locales.length > 1 ? ' · ' + esc(nombreLocal(t.local_id)) : ''}</option>`).join('')}</select>` : ''}
+        ${llegada !== undefined ? `<button class="boton llegada btn-llegada" onclick="ordenLlegada(${llegada})" title="Llegó alguien sin hora: queda en atención desde ahora">⚡ Orden de llegada</button>` : ''}`;
     }
     // Lista del día en orden de hora. Con un solo profesional muestra también los espacios libres
     // (y el botón de orden de llegada en el espacio de "ahora").
@@ -1270,9 +1282,7 @@
       if (hoy) filas.push({ t: ahoraMin + 0.5, html: `<div class="linea-ahora"><span>Ahora ${aHora(ahoraMin)}</span></div>` });
       filas.sort((a, b) => a.t - b.t);
       const hayCitas = o.reservas.length;
-      el.innerHTML = (hoy ? `<div class="llegada-top"><button class="boton llegada" onclick="ordenLlegada(${o.tid || 0})">⚡ Orden de llegada</button>
-          <span class="nota">Si llega alguien sin hora, regístralo aquí y queda en atención desde ahora.</span></div>` : '') +
-        (hayCitas || o.tid ? filas.map(f => f.html).join('') : '<p class="vacio">No hay clientes este día.</p>');
+      el.innerHTML = (hayCitas || o.tid ? filas.map(f => f.html).join('') : '<p class="vacio">No hay clientes este día.</p>');
     }
 
     // ================= AGENDA DEL DÍA (admin: una columna por profesional) =================
@@ -1290,7 +1300,7 @@
         `<div class="kpi"><b>${vivas.length}</b><span>reservas</span></div>` +
         `<div class="kpi"><b>${clp(sumaTotal(delDia))}</b><span>total del día</span></div>` +
         `<div class="kpi"><b>${delDia.filter(r => r.estado === 'completada').length}</b><span>completadas</span></div>`;
-      $('ctrlDia').innerHTML = controlesVista(true);
+      $('ctrlDia').innerHTML = controlesVista(true, diaVista === hoyTxt() ? (VISTA.trab || 0) : undefined);
       const cols = trabsFiltro().filter(t => (t.activo || delDia.some(r => r.trabajador_id === t.id)) && (!VISTA.trab || t.id === VISTA.trab));
       const lista = VISTA.modo === 'lista';
       $('agendaDiaCaja').classList.toggle('oculto', lista); $('listaDia').classList.toggle('oculto', !lista);
@@ -1391,7 +1401,7 @@
       } else $('proxima').innerHTML = deHoy.length ? '<div class="proxima libre">No te quedan clientes agendados hoy 👌 Si llega alguien, usa "Orden de llegada".</div>' : '';
 
       // Agenda del día: panel (grilla por hora) o lista en orden de llegada
-      $('ctrlMiDia').innerHTML = controlesVista(false);
+      $('ctrlMiDia').innerHTML = controlesVista(false, yo.trabajador_id);
       const enLista = VISTA.modo === 'lista';
       $('agendaMiDiaCaja').classList.toggle('oculto', enLista); $('listaMiDia').classList.toggle('oculto', !enLista);
       $('cajaCitasHoy').classList.toggle('oculto', enLista); $('tituloMiAgenda').textContent = enLista ? 'Tu día en orden' : 'Agenda de hoy';
@@ -1419,7 +1429,7 @@
       const [ri, rf] = rangoDe(r), est = r.estado || 'confirmada';
       const llegada = r.origen === 'llegada';
       return `<div class="cita ${est}">
-        <div class="r-hora">${aHora(ri)}<small>${est === 'en_atencion' ? 'en curso' : 'hasta ' + aHora(rf)}</small></div>
+        <div class="r-hora">${aHora(ri)}<small>${est === 'en_atencion' ? 'en curso' : 'hasta ' + aHora(rangoVisible(r)[1])}${rangoVisible(r)[2] ? `<br><span class="ag-antes">✓ ${rangoVisible(r)[2]} min antes</span>` : ''}</small></div>
         <div>
           <div class="r-top"><div class="r-nombre">${esc(r.nombre)}${llegada ? ' <span class="badge grupo">Llegada</span>' : ''}</div>
             <span class="badge ${est}">${est === 'en_atencion' ? '<i class="pulso"></i> ' : ''}${ESTADOS[est] || est}${r.metodo_pago ? ' · ' + PAGOS[r.metodo_pago] : ''}</span></div>
