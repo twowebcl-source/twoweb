@@ -7,6 +7,7 @@
   <title>Reserva tu hora</title>
   <script src="config.js"></script>
   <script src="fondos.js"></script>
+  <script src="fidelidad.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root { --voltaje:#ff7a2f; }
@@ -214,7 +215,7 @@
     .fid-sello { aspect-ratio:1; border-radius:50%; border:2px dashed color-mix(in srgb, var(--hueso) 30%, transparent); display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--gris); }
     .fid-sello.on { border:2px solid var(--voltaje); background:var(--voltaje); color:var(--sobre); }
     .fid-sello.premio { border-style:solid; border-color:var(--voltaje); font-size:22px; }
-    .fid-msg { font-size:13.5px; }
+    .fid-msg { font-size:13.5px; margin-top:10px; }
     .fid-msg.listo { color:var(--verde); font-weight:700; }
     .acciones { display:grid; gap:10px; margin-top:16px; }
     .acciones a { text-decoration:none; text-align:center; display:block; }
@@ -1169,17 +1170,13 @@
     }
     // Tarjeta de fidelidad (Fase 25): sellos por atención terminada; el premio se aplica solo al reservar
     function tarjetaFidelidad(t){
-      if (!t || !t.activa) return '';
-      const meta = t.meta || 10, n = Math.min(t.sellos || 0, meta), icono = esBarberia() ? '✂️' : '★';
-      const premio = t.texto || (t.pct >= 100 ? 'Tu próxima atención gratis' : `${t.pct}% de descuento en tu próxima atención`);
-      const faltan = meta - n;
+      if (!t || !t.activa || typeof tarjetaFidelidadHTML !== 'function') return '';
+      const meta = t.meta || 10, n = Math.min(t.sellos || 0, meta), faltan = meta - n;
       const msg = t.pendiente ? `<p class="fid-msg listo">🎁 Tu premio ya está aplicado en tu próxima hora.</p>`
                 : t.listo ? `<p class="fid-msg listo">🎉 ¡Completaste tu tarjeta! El premio se aplica solo en tu próxima reserva.</p>`
                 : `<p class="fid-msg">Te ${faltan === 1 ? 'falta <b>1 atención</b>' : `faltan <b>${faltan} atenciones</b>`} para tu premio.</p>`;
-      return `<div class="fid"><div class="fid-cab"><b>🎟 Tu tarjeta de fidelidad</b><span>${n} de ${meta}</span></div>
-        <div class="fid-sellos">${Array.from({ length: meta }, (_, i) => `<div class="fid-sello ${i < n || t.pendiente || t.listo ? 'on' : ''}">${i < n || t.pendiente || t.listo ? '✓' : icono}</div>`).join('')}<div class="fid-sello premio">🎁</div></div>
-        <p class="fid-msg"><b>Premio:</b> ${esc(premio)}</p>${msg}
-        <p class="nota" style="margin-top:6px;">Cada atención terminada con este teléfono suma un sello.</p></div>`;
+      return `<div style="margin-top:16px;">${tarjetaFidelidadHTML({ ...t, icono: esBarberia() ? '✂️' : '★' })}</div>${msg}
+        <p class="nota" style="margin-top:4px;">Cada atención terminada con este teléfono suma un sello.</p>`;
     }
 
     // Si algo falla, se muestra en pantalla en vez de quedar en blanco

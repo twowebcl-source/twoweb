@@ -17,6 +17,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/imagenes/favicon-32.png">
   <script src="config.js"></script>
   <script src="fondos.js"></script>
+  <script src="fidelidad.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root { --voltaje:#ff7a2f; }
@@ -306,7 +307,10 @@
     .fid-adm { margin-top:16px; padding:14px; border:1px solid var(--voltaje); border-radius:14px; background:color-mix(in srgb, var(--voltaje) 7%, var(--panel2)); }
     .fid-adm.bloqueada { border-style:dashed; border-color:var(--linea); background:var(--panel2); }
     .fid-adm .check-linea input { width:auto; }
-    .fid-campos { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0; }
+    .fid-grid { display:grid; grid-template-columns:minmax(260px, 340px) 1fr; gap:18px; align-items:start; margin-top:8px; }
+    @media (max-width:760px){ .fid-grid { grid-template-columns:1fr; } }
+    .fid-campos { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .fid-campos label { display:block; font-size:12px; color:var(--gris); margin-bottom:3px; }
     .fid-campos .full { grid-column:1 / -1; }
     @media (max-width:640px){ .fid-campos { grid-template-columns:1fr; } }
     .serv-top { display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center; margin-bottom:10px; }
@@ -2285,7 +2289,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F25 · 05-10';
+    const VERSION_PANEL = 'F26 · 05-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3063,36 +3067,59 @@
     }
 
     // ================= TARJETA DE FIDELIDAD (admin, Fase 25) =================
+    let FID = null, fidImg;          // fidImg: undefined = sin cambio, '' = quitar, data:... = nueva
     async function cargarFidelidadAdmin(){
       const el = $('fidAdmin'); if (!el) return;
       const { data: f, error } = await db.rpc('mi_fidelidad');
-      if (error){ el.innerHTML = (error.message || '').includes('mi_fidelidad') ? '<p class="nota" style="margin-top:14px;">🎟 Tarjeta de fidelidad: falta instalar la Fase 25.</p>' : ''; return; }
+      if (error){ el.innerHTML = (error.message || '').includes('mi_fidelidad') ? '<p class="nota" style="margin-top:14px;">🎟 Tarjeta de fidelidad: falta instalar las Fases 25 y 26.</p>' : ''; return; }
       if (!f) return;
-      if (!f.permitido){ el.innerHTML = `<div class="fid-adm bloqueada"><b>🎟 Tarjeta de fidelidad</b><p class="nota">Tu plan (${esc(f.plan || '')}) no la incluye. Premia a tus clientes frecuentes con sellos y un descuento automático: pídela a ${esc(MARCA)} para subir de plan.</p></div>`; return; }
+      FID = f; fidImg = undefined;
+      if (!f.permitido){ el.innerHTML = `<div class="fid-adm bloqueada"><h3 style="margin:0 0 4px;">🎟 Tarjeta de fidelidad</h3><p class="nota">Premia a tus clientes frecuentes: cada atención suma un sello y al completar la tarjeta su siguiente reserva trae el descuento solo. <b>Tu plan (${esc(f.plan || '')}) no la incluye</b>: pídela a ${esc(MARCA)} para activarla.</p></div>`; return; }
       el.innerHTML = `<div class="fid-adm">
-          <label class="check-linea" style="margin:0;"><input type="checkbox" id="fidActiva" ${f.activa ? 'checked' : ''} onchange="vistaFid()"> <span><b>🎟 Tarjeta de fidelidad</b> activa en mi agenda</span></label>
-          <p class="nota">Cada atención terminada suma un sello al cliente (por su teléfono). Al completar la tarjeta, su siguiente reserva online trae el premio aplicado solo. El cliente la ve en "Mis reservas".</p>
-          <div class="fid-campos">
-            <div><label>Atenciones para el premio</label><select id="fidMeta" onchange="vistaFid()">${Array.from({ length: 10 }, (_, i) => i + 1).map(k => `<option value="${k}" ${k === f.meta ? 'selected' : ''}>${k} ${k === 1 ? 'atención' : 'atenciones'}</option>`).join('')}</select></div>
-            <div><label>Premio (descuento)</label><select id="fidPct" onchange="vistaFid()">${[10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100].map(k => `<option value="${k}" ${k === f.pct ? 'selected' : ''}>${k === 100 ? '100% · gratis' : k + '% de descuento'}</option>`).join('')}</select></div>
-            <div class="full"><label>Texto del premio (opcional)</label><input id="fidTexto" maxlength="80" value="${esc(f.texto || '')}" placeholder="Ej: Tu corte n° 11 gratis" oninput="vistaFid()"></div>
+          <h3 style="margin:0 0 4px;">🎟 Tarjeta de fidelidad</h3>
+          <label class="check-linea" style="margin:4px 0 8px;"><input type="checkbox" id="fidActiva" ${f.activa ? 'checked' : ''} onchange="vistaFid()"> <span>Activa en mi agenda (mis clientes la ven en "Mis reservas")</span></label>
+          <div class="fid-grid">
+            <div class="fid-prev"><div id="fidVistaTarjeta"></div><p class="nota" id="fidVista" style="margin-top:8px;"></p></div>
+            <div class="fid-campos">
+              <div class="full"><label>Título de la tarjeta</label><input id="fidTitulo" maxlength="40" value="${esc(f.titulo || '')}" placeholder="Ej: Club de clientes" oninput="vistaFid()"></div>
+              <div><label>Atenciones para el premio</label><select id="fidMeta" onchange="vistaFid()">${Array.from({ length: 10 }, (_, i) => i + 1).map(k => `<option value="${k}" ${k === f.meta ? 'selected' : ''}>${k} ${k === 1 ? 'atención' : 'atenciones'}</option>`).join('')}</select></div>
+              <div><label>Premio (descuento)</label><select id="fidPct" onchange="vistaFid()">${[10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100].map(k => `<option value="${k}" ${k === f.pct ? 'selected' : ''}>${k === 100 ? '100% · gratis' : k + '% de descuento'}</option>`).join('')}</select></div>
+              <div class="full"><label>Texto del premio</label><input id="fidTexto" maxlength="80" value="${esc(f.texto || '')}" placeholder="Ej: Tu corte n° 11 gratis" oninput="vistaFid()"></div>
+              <div class="full"><label>Imagen de fondo (opcional)</label><input type="file" accept="image/*" onchange="subirFondoFid(this)">
+                <div style="display:flex;gap:10px;align-items:center;margin-top:4px;"><span class="nota" id="fidImgTxt">${f.imagen ? 'Con imagen' : 'Sin imagen: usa el color'}</span>${f.imagen ? '<button class="link" style="margin:0;" onclick="quitarFondoFid()">Quitar imagen</button>' : ''}</div></div>
+              <div><label>Color</label><input type="color" id="fidColor" value="${esc(f.color || (/^#[0-9a-f]{6}$/i.test(NEG.color || '') ? NEG.color : '#7c5cff'))}" oninput="vistaFid()" style="height:40px;padding:2px;"></div>
+              <div><label>Letra</label><div class="segmentado"><button class="seg ${f.tono !== 'oscuro' ? 'sel' : ''}" data-t="claro" onclick="tonoFid(this)">Blanca</button><button class="seg ${f.tono === 'oscuro' ? 'sel' : ''}" data-t="oscuro" onclick="tonoFid(this)">Negra</button></div></div>
+            </div>
           </div>
-          <p class="nota" id="fidVista"></p>
-          <button class="boton" onclick="guardarFidelidad()">Guardar tarjeta</button> <span class="estado" id="estadoFid"></span>
+          <button class="boton" style="margin-top:10px;" onclick="guardarFidelidad()">Guardar tarjeta</button> <span class="estado" id="estadoFid"></span>
         </div>`;
       vistaFid();
     }
-    function vistaFid(){
-      const m = Number($('fidMeta').value), p = Number($('fidPct').value), t = $('fidTexto').value.trim();
-      $('fidVista').innerHTML = $('fidActiva').checked
-        ? `Así queda: después de <b>${m} ${m === 1 ? 'atención' : 'atenciones'}</b>, la siguiente reserva lleva <b>${p >= 100 ? 'el servicio gratis' : p + '% de descuento'}</b>${t ? ` («${esc(t)}»)` : ''}.`
-        : 'Apagada: tus clientes no ven la tarjeta.';
+    function tonoFid(b){ b.parentNode.querySelectorAll('.seg').forEach(x => x.classList.toggle('sel', x === b)); vistaFid(); }
+    function datosFid(){
+      return { activa: $('fidActiva').checked, meta: Number($('fidMeta').value), pct: Number($('fidPct').value), texto: $('fidTexto').value.trim(),
+               titulo: $('fidTitulo').value.trim(), color: $('fidColor').value, tono: document.querySelector('#fidAdmin .seg.sel')?.dataset.t || 'claro' };
     }
+    function vistaFid(){
+      const d = datosFid(), img = fidImg === undefined ? FID.imagen : fidImg;
+      if (typeof tarjetaFidelidadHTML === 'function')
+        $('fidVistaTarjeta').innerHTML = tarjetaFidelidadHTML({ ...d, imagen: img, sellos: Math.max(1, Math.floor(d.meta * 0.6)), negocio: NEG.nombre, logo: NEG.logo_url, icono: esBarberiaPanel() ? '✂️' : '★' });
+      $('fidVista').innerHTML = (d.activa ? '' : '<b>Apagada</b>: tus clientes no la ven. ') +
+        `Después de <b>${d.meta} ${d.meta === 1 ? 'atención' : 'atenciones'}</b>, la siguiente reserva online lleva <b>${d.pct >= 100 ? 'el servicio gratis' : d.pct + '% de descuento'}</b>. Vista de ejemplo con algunos sellos.`;
+    }
+    const esBarberiaPanel = () => /barber/i.test((NEG.rubro || '') + ' ' + (NEG.nombre || ''));
+    async function subirFondoFid(input){
+      try { fidImg = await comprimirImagen(input.files[0], 1000, 330000); $('fidImgTxt').textContent = `Imagen nueva (${Math.round(fidImg.length / 1024)} KB) · falta Guardar`; vistaFid(); }
+      catch (e) { estado('estadoFid', e.message, 'error'); input.value = ''; }
+    }
+    function quitarFondoFid(){ fidImg = ''; $('fidImgTxt').textContent = 'Se quitará al guardar'; vistaFid(); }
     async function guardarFidelidad(){
-      const p = { activa: $('fidActiva').checked, meta: Number($('fidMeta').value), pct: Number($('fidPct').value), texto: $('fidTexto').value.trim() };
-      const { error } = await db.rpc('guardar_fidelidad', { p });
+      const p = datosFid(); if (fidImg !== undefined) p.imagen = fidImg;
+      const { data, error } = await db.rpc('guardar_fidelidad', { p });
       if (error) return estado('estadoFid', 'Error: ' + error.message, 'error');
-      estado('estadoFid', p.activa ? '✓ Guardada. Ya se ve en "Mis reservas" de tu agenda.' : '✓ Guardada (apagada).', 'ok');
+      FID = data; fidImg = undefined;
+      $('fidImgTxt').textContent = FID.imagen ? '✓ Con imagen' : 'Sin imagen: usa el color';
+      estado('estadoFid', p.activa ? '✓ Guardada. Tus clientes ya la ven en "Mis reservas".' : '✓ Guardada (apagada).', 'ok');
     }
 
     // ================= SERVICIOS Y PROMOCIONES (admin) =================
@@ -3449,6 +3476,7 @@
         `<div class="kpi"><b>${vencidos.length}</b><span>con pago vencido</span></div>` +
         `<div class="kpi"><b>${negocios.filter(n => n.promo_10).length}</b><span>con 10% activo</span></div>` +
         `<div class="kpi"><b>${negocios.filter(n => n.mod_tienda).length}</b><span>con tienda</span></div>` +
+        `<div class="kpi"><b>${negocios.filter(n => n.fid_otorgada ?? n.fid_plan).length}</b><span>con tarjeta de fidelidad</span></div>` +
         `<div class="kpi"><b>${negocios.reduce((a, n) => a + (n.pedidos_30d || 0), 0)}</b><span>pedidos en 30 días</span></div>` +
         `<div class="kpi"><b>${negocios.reduce((a, n) => a + n.reservas_30d, 0)}</b><span>reservas en 30 días</span></div>`;
       $('tablaNeg').innerHTML = `<table class="tabla-caja tabla-neg">
@@ -3471,7 +3499,9 @@
             ${n.mensualidad != null ? `<div class="nota" style="margin-top:4px;">Mensualidad: <b>${clp(n.mensualidad)}</b>${n.precio_especial != null ? ' (especial)' : ''}</div>` : ''}</td>
           <td><div class="chk-mod">
             <label><input type="checkbox" ${n.mod_agenda !== false ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_agenda', this)"> 📅 Agenda</label>
-            <label><input type="checkbox" ${n.mod_tienda ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_tienda', this)"> 🛍 Tienda${n.mod_tienda ? ` <span class="nota">(${n.productos || 0} prod.)</span>` : ''}</label></div></td>
+            <label><input type="checkbox" ${n.mod_tienda ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_tienda', this)"> 🛍 Tienda${n.mod_tienda ? ` <span class="nota">(${n.productos || 0} prod.)</span>` : ''}</label>
+            ${'fid_plan' in n ? `<label title="Tarjeta de fidelidad para los clientes de este negocio"><input type="checkbox" ${(n.fid_otorgada ?? n.fid_plan) ? 'checked' : ''} onchange="cambiarFidelidad(${n.id}, this)"> 🎟 Fidelidad</label>
+            <span class="nota" style="display:block;font-size:11px;">${n.fid_otorgada === null || n.fid_otorgada === undefined ? (n.fid_plan ? 'incluida en su plan' : 'su plan no la trae') : n.fid_otorgada ? (n.fid_plan ? 'otorgada' : '⭐ otorgada por ti') : '✕ quitada por ti'}${(n.fid_otorgada ?? n.fid_plan) ? (n.fid_activa ? ` · activa (${n.fid_meta} at.)` : ' · el admin aún no la activa') : ''}</span>` : ''}</div></td>
           <td><span class="badge-plan ${esc(n.estado)}">${esc(n.estado)}</span></td>
           <td><label class="switch-promo"><input type="checkbox" ${n.promo_10 ? 'checked' : ''} onchange="cambiarPromo(${n.id}, this)"> ${n.promo_10 ? 'Activo' : 'Apagado'}</label></td>
           <td><input type="date" value="${n.vence || ''}" style="width:auto;padding:5px 8px;font-size:12.5px;${n.vence && n.vence < hoy && n.estado !== 'suspendido' ? 'border-color:var(--rojo);' : ''}" onchange="actualizarNegocio(${n.id}, { vence: this.value })"></td>
@@ -3532,6 +3562,14 @@
                      : `¿Apagar el 10% para "${n?.nombre}"?\n\nSe deja de mostrar en su agenda y las nuevas reservas ya no tendrán descuento (las horas ya reservadas con 10% lo mantienen).`;
       if (!confirm(msg)) { input.checked = !on; return; }
       actualizarNegocio(id, { promo_10: on });
+    }
+    function cambiarFidelidad(id, input){
+      const n = negocios.find(x => x.id === id), on = input.checked;
+      const msg = on ? `¿Otorgar la TARJETA DE FIDELIDAD a "${n?.nombre}"?\n\nSu admin podrá diseñarla (título, imagen, color), elegir de 1 a 10 atenciones y el premio, y activarla en Mi página.`
+                     : `¿Quitar la tarjeta de fidelidad a "${n?.nombre}"?\n\nSus clientes dejan de verla y no se aplican más premios. Los sellos se conservan por si se la vuelves a dar.`;
+      if (!confirm(msg)) { input.checked = !on; return; }
+      // si coincide con lo que trae su plan, vuelve a "según plan"
+      actualizarNegocio(id, { fid_otorgada: on === !!n.fid_plan ? null : on });
     }
     function cambiarModulo(id, campo, input){
       const n = negocios.find(x => x.id === id), on = input.checked, nombre = campo === 'mod_agenda' ? 'la AGENDA' : 'la TIENDA';
