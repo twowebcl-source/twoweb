@@ -304,6 +304,37 @@
     .tabla-horario tr.no-trabaja input[type=time] { opacity:.3; }
     .detalle-horario { margin-top:10px; }
     .detalle-horario summary { cursor:pointer; color:var(--voltaje); font-size:13px; font-weight:600; }
+    .msj-grid { display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px; align-items:start; }
+    @media (max-width:860px){ .msj-grid { grid-template-columns:1fr; } }
+    .msj-fila { margin-top:12px; }
+    .msj-fila > label { display:block; font-size:12.5px; color:var(--gris); margin-bottom:5px; }
+    .msj-fila textarea { min-height:130px; }
+    .ideas { display:flex; flex-wrap:wrap; gap:6px; }
+    .ideas .chip { padding:5px 11px; font-size:12.5px; }
+    .prev-correo { background:#f2f4f7; border-radius:14px; padding:14px; color:#1f2430; font-family:Arial, sans-serif; }
+    .prev-correo .pc-card { background:#fff; border-radius:12px; overflow:hidden; }
+    .prev-correo .pc-cab { padding:14px 16px; color:#fff; font-weight:800; font-size:16px; }
+    .prev-correo .pc-asunto { font-size:12px; color:#6b7280; margin-bottom:8px; }
+    .prev-correo .pc-cuerpo { padding:16px; font-size:14px; line-height:1.5; white-space:pre-line; }
+    .prev-correo .pc-oferta { margin:12px 0; border:2px dashed; border-radius:12px; padding:12px; text-align:center; white-space:normal; }
+    .prev-correo .pc-oferta b { display:block; font-size:20px; }
+    .prev-correo .pc-btn { display:inline-block; margin-top:10px; color:#fff; padding:10px 18px; border-radius:9px; font-weight:700; }
+    .prev-correo .pc-pie { padding:10px 16px; font-size:11px; color:#6b7280; border-top:1px solid #eef0f3; }
+    .prev-wsp { background:#0b141a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='20' cy='20' r='1' fill='%23ffffff10'/%3E%3C/svg%3E"); border-radius:14px; padding:16px; }
+    .prev-wsp .burbuja { background:#005c4b; color:#e9edef; border-radius:10px 0 10px 10px; padding:9px 11px; margin-left:auto; max-width:92%; font-size:14px; line-height:1.45; white-space:pre-line; font-family:Arial, sans-serif; word-break:break-word; }
+    .prev-wsp .hora { text-align:right; font-size:10.5px; opacity:.7; margin-top:4px; }
+    .wsp-lista { max-height:420px; overflow:auto; border:1px solid var(--linea); border-radius:12px; }
+    .wsp-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--linea); }
+    .wsp-item:last-child { border-bottom:none; }
+    .wsp-item .q { flex:1; min-width:0; }
+    .wsp-item.ok { opacity:.55; }
+    .wsp-item .boton { background:#25d366; border-color:#25d366; color:#06240f; padding:7px 14px; }
+    .barra-prog { height:8px; border-radius:99px; background:var(--panel2); overflow:hidden; margin:8px 0 12px; }
+    .barra-prog > div { height:100%; background:#25d366; transition:width .3s; }
+    .aviso-tw { border:1px solid #3b82f6; background:color-mix(in srgb, #3b82f6 12%, var(--panel)); border-radius:14px; padding:14px 16px; margin:0 0 12px; }
+    .aviso-tw .t { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#60a5fa; font-weight:800; }
+    .aviso-tw h3 { margin:4px 0 6px; }
+    .aviso-tw p { white-space:pre-line; margin:0 0 10px; }
     .fid-adm { margin-top:16px; padding:14px; border:1px solid var(--voltaje); border-radius:14px; background:color-mix(in srgb, var(--voltaje) 7%, var(--panel2)); }
     .fid-adm.bloqueada { border-style:dashed; border-color:var(--linea); background:var(--panel2); }
     .fid-adm .check-linea input { width:auto; }
@@ -663,6 +694,7 @@
         </div>
       </div>
 
+      <div id="avisosTW"></div>
       <div class="tabs">
         <button class="tab solo-trab mod-agenda" data-tab="midia" onclick="verTab('midia')">Mi día</button>
         <button class="tab solo-admin mod-agenda" data-tab="dia" onclick="verTab('dia')">Agenda del día</button>
@@ -675,9 +707,11 @@
         <button class="tab solo-admin mod-agenda" data-tab="servicios" onclick="verTab('servicios')">Servicios</button>
         <button class="tab solo-admin mod-agenda" data-tab="clientes" onclick="verTab('clientes')">Clientes</button>
         <button class="tab solo-admin" data-tab="marca" onclick="verTab('marca')">🎨 Mi página</button>
+        <button class="tab solo-admin" data-tab="mensajes" onclick="verTab('mensajes')">📣 Mensajes</button>
         <button class="tab solo-super oculto" data-tab="negocios" onclick="verTab('negocios')">🏢 Negocios</button>
         <button class="tab solo-super oculto" data-tab="cobros" onclick="verTab('cobros')">💳 Planes y cobros</button>
         <button class="tab solo-super oculto" data-tab="fondos" onclick="verTab('fondos')">🌊 Estilos</button>
+        <button class="tab solo-super oculto" data-tab="comunicados" onclick="verTab('comunicados')">📣 Comunicados</button>
         <button class="tab solo-trab mod-agenda" data-tab="mihorario" onclick="verTab('mihorario')">Mi horario</button>
         <select id="filtroLocal" class="solo-admin selector-local" onchange="cambiarLocalPanel(this.value)" title="Ver solo un local"></select>
       </div>
@@ -853,9 +887,9 @@
             <div><label for="nnNombre">Nombre del negocio</label><input id="nnNombre" placeholder="Ej: Estética Luna" oninput="sugerirSlug()"></div>
             <div><label for="nnSlug">Nombre del link (cómo aparece: twoweb.cl/NOMBRE)</label><input id="nnSlug" placeholder="estetica-luna"><p class="nota" id="nnLink"></p></div>
             <div><label for="nnRubro">Categoría del negocio</label><select id="nnRubro" onchange="sugerirModulos()"></select></div>
-            <div><label for="nnPlan">Plan</label><select id="nnPlan" onchange="pintarPrecioNuevo()"></select><p class="nota" id="nnPrecio"></p></div>
+            <div><label for="nnPlan">Plan</label><select id="nnPlan" onchange="pintarPrecioNuevo(); venceNuevo()"></select><p class="nota" id="nnPrecio"></p></div>
             <div><label for="nnEspecial">Precio especial mensual (opcional)</label><input id="nnEspecial" type="number" min="0" step="10" placeholder="Vacío = precio del plan" oninput="pintarPrecioNuevo()"></div>
-            <div><label for="nnEstado">Estado</label><select id="nnEstado"><option value="prueba">Prueba gratis</option><option value="activo">Activo (pagando)</option></select></div>
+            <div><label for="nnEstado">Estado</label><select id="nnEstado" onchange="venceNuevo()"><option value="prueba">Prueba gratis</option><option value="activo">Activo (pagando)</option></select></div>
             <div><label for="nnAdmin">Nombre del administrador</label><input id="nnAdmin" placeholder="Ej: Nicolás"></div>
             <div><label for="nnCorreo">Correo del administrador (con este entra)</label><input id="nnCorreo" type="email" placeholder="dueño@gmail.com"></div>
             <div><label for="nnClave">Contraseña inicial (mín. 6)</label><input id="nnClave" type="text" placeholder="Ej: Equipo2026"></div>
@@ -902,7 +936,7 @@
         <div class="tarjeta solo-admin" style="margin-top:0;">
           <div class="barra" style="margin:0;">
             <a class="boton-linea" id="linkTiendaProd" target="_blank" rel="noopener">🛍 Ver mi tienda</a>
-            <button class="boton-linea" onclick="copiarTexto(linkTienda())">Copiar link</button>
+            <button class="boton-linea" onclick="copiarUrl(linkTienda())">Copiar link</button>
             <button class="boton" style="margin-left:auto;" onclick="editarProducto(0)">+ Nuevo producto</button>
           </div>
           <label for="fInfoTienda">Cómo comprar (lo ven tus clientes en la tienda y al enviar el pedido: retiro, despacho, formas de pago)</label>
@@ -956,6 +990,8 @@
 
       <!-- Mi horario (trabajador) -->
       <div id="tab-marca" class="oculto"><div id="marcaCont"></div></div>
+      <div id="tab-mensajes" class="oculto"><div id="mensajesCont"><p class="nota">Cargando…</p></div></div>
+      <div id="tab-comunicados" class="oculto"><div id="comunicadosCont"><p class="nota">Cargando…</p></div></div>
 
       <div id="tab-fondos" class="oculto">
         <div class="barra"><div><h2 style="margin:0;">🌊 Estilos de TwoWeb</h2>
@@ -1248,7 +1284,8 @@
       verTab(!conAgenda() ? 'pedidos' : yo.rol === 'admin' ? 'dia' : 'midia');
       if (conTienda()) cargarPedidos(true);
       iniciarNotif();
-      setTimeout(avisosApp, 1500);              // invitar a instalar la app y activar avisos (cada vez que entra, hasta que lo haga)
+      setTimeout(avisosApp, 1500);
+      if (yo.rol === 'admin' && !yo.super) setTimeout(verComunicados, 900);              // invitar a instalar la app y activar avisos (cada vez que entra, hasta que lo haga)
       if (entroConCodigo){ entroConCodigo = false; abrirMiCuenta('Entraste con un código. Crea tu nueva contraseña para la próxima vez.'); }
     }
     db.auth.onAuthStateChange((evento, session) => {
@@ -1302,7 +1339,7 @@
     }
     function verTab(t){
       document.querySelectorAll('.tab').forEach(b => b.classList.toggle('sel', b.dataset.tab === t));
-      ['midia','dia','semana','lista','caja','equipo','servicios','clientes','negocios','mihorario','pedidos','productos','cobros','marca','fondos'].forEach(x => $('tab-'+x).classList.toggle('oculto', x !== t));
+      ['midia','dia','semana','lista','caja','equipo','servicios','clientes','negocios','mihorario','pedidos','productos','cobros','marca','fondos','mensajes','comunicados'].forEach(x => $('tab-'+x).classList.toggle('oculto', x !== t));
       if (t === 'cobros') cargarCobros();
       if (t === 'pedidos') cargarPedidos();
       if (t === 'productos') cargarProductos();
@@ -1318,6 +1355,8 @@
       if (t === 'mihorario') dibujarMiHorario();
       if (t === 'marca') dibujarMarca();
       if (t === 'fondos') cargarFondosSuper();
+      if (t === 'mensajes') cargarMensajes();
+      if (t === 'comunicados') cargarComunicados();
       if (PROBANDO && t !== 'fondos'){ PROBANDO = false; aplicarFondoActual(); }
     }
 
@@ -2289,7 +2328,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F26 · 05-10';
+    const VERSION_PANEL = 'F27 · 06-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3066,6 +3105,251 @@
                                                      : `✓ Contraseña cambiada. Avísale a ${t.nombre} la nueva contraseña.`, 'ok');
     }
 
+    // ================= MENSAJES (Fase 27) =================
+    // Pide a la función de Supabase que envíe lo que quedó en la cola (si falla, se reintenta en el próximo envío)
+    function dispararCorreos(){
+      try { fetch(SUPABASE_URL + '/functions/v1/enviar-correos', { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: '{}', keepalive: true }).catch(() => {}); } catch (e) {}
+    }
+    const IDEAS_MSJ = {
+      fiestas: { t: '🇨🇱 Fiestas Patrias', asunto: '¡Estas Fiestas Patrias llega impecable!', msj: 'Hola {nombre} 👋\nSe vienen las Fiestas Patrias y la agenda se llena rápido. Reserva tu hora con tiempo y llega impecable a celebrar.\n¡Te esperamos!' },
+      navidad: { t: '🎄 Navidad y Año Nuevo', asunto: 'Reserva tu hora para Navidad y Año Nuevo', msj: 'Hola {nombre} 🎄\nDiciembre es nuestro mes más lleno. Asegura tu hora para las fiestas antes de que se agoten los cupos.\n¡Felices fiestas!' },
+      horas: { t: '📅 Horas disponibles', asunto: 'Tenemos horas disponibles esta semana', msj: 'Hola {nombre}\nEsta semana nos quedan algunas horas libres. Si quieres venir, reserva directo en nuestra agenda online en menos de un minuto.' },
+      descuento: { t: '💸 Descuento', asunto: 'Un descuento especial para ti', msj: 'Hola {nombre}\nQueremos agradecerte por preferirnos con un descuento especial. Reserva tu hora y menciona esta promoción al llegar.', oferta: { titulo: '15% de descuento', detalle: 'En tu próxima atención', hasta: '' } },
+      extrano: { t: '👋 Te extrañamos', asunto: '¡Hace tiempo que no te vemos!', msj: 'Hola {nombre}\nHace tiempo que no vienes y te extrañamos. Vuelve cuando quieras: tu hora está a un clic.', filtro: 'inactivos' },
+    };
+    let MSJ = { canal: 'correo', filtro: 'todos', info: null, wsp: null };
+    async function cargarMensajes(){
+      const el = $('mensajesCont');
+      const { data, error } = await db.rpc('mensajes_info');
+      if (error){ el.innerHTML = `<div class="tarjeta"><p class="error">${(error.message || '').includes('mensajes_info') ? 'Falta instalar la Fase 27 en Supabase (mensajes y correos).' : 'Error: ' + esc(error.message)}</p></div>`; return; }
+      MSJ.info = data;
+      const cupo = data.cupo_mes, libre = cupo == null ? null : Math.max(0, cupo - data.usados_mes);
+      el.innerHTML = `
+        <div class="kpis">
+          <div class="kpi destacado"><b>${data.aceptan}</b><span>aceptan promociones (de ${data.clientes})</span></div>
+          <div class="kpi"><b>${cupo == null ? '∞' : libre}</b><span>${cupo == null ? 'correos masivos sin límite' : `correos masivos disponibles este mes (de ${cupo})`}</span></div>
+          <div class="kpi"><b>${data.confirmaciones_mes}</b><span>confirmaciones enviadas este mes</span></div>
+          <div class="kpi"><b>${data.bajas}</b><span>se dieron de baja</span></div>
+        </div>
+        <div class="tarjeta">
+          <h2 style="margin:0 0 4px;">📣 Mensaje a tus clientes</h2>
+          <p class="nota">Solo les llega a <b>tus</b> clientes que aceptaron recibir promociones. Cada correo trae un link para darse de baja.</p>
+          <div class="msj-grid" style="margin-top:12px;">
+            <div>
+              <div class="msj-fila"><label>Canal</label><div class="segmentado" id="msjCanal">
+                <button class="seg ${MSJ.canal === 'correo' ? 'sel' : ''}" onclick="canalMsj('correo')">✉️ Correo</button>
+                <button class="seg ${MSJ.canal === 'whatsapp' ? 'sel' : ''}" onclick="canalMsj('whatsapp')">💬 WhatsApp</button></div></div>
+              <div class="msj-fila"><label>¿A quiénes?</label><div class="segmentado" id="msjFiltro"></div></div>
+              <div class="msj-fila"><label>Ideas rápidas (luego lo editas)</label><div class="ideas">${Object.entries(IDEAS_MSJ).map(([k, v]) => `<button class="chip" onclick="ideaMsj('${k}')">${v.t}</button>`).join('')}</div></div>
+              <div class="msj-fila solo-correo"><label for="msjAsunto">Asunto</label><input id="msjAsunto" maxlength="120" placeholder="Ej: ¡Abrimos este feriado!" oninput="vistaMsj()"></div>
+              <div class="msj-fila"><label for="msjTexto">Mensaje <span class="nota">· escribe {nombre} y se cambia por el nombre de cada cliente</span></label>
+                <textarea id="msjTexto" maxlength="2000" placeholder="Hola {nombre}…" oninput="vistaMsj()"></textarea></div>
+              <details class="msj-fila" id="msjOfertaBox"><summary style="cursor:pointer;color:var(--voltaje);font-weight:600;font-size:13px;">🎁 Agregar una oferta o descuento (opcional)</summary>
+                <div class="grid-2" style="margin-top:8px;">
+                  <div><label>Título de la oferta</label><input id="msjOfTit" maxlength="60" placeholder="Ej: 20% en coloración" oninput="vistaMsj()"></div>
+                  <div><label>Válida hasta</label><input id="msjOfHasta" maxlength="40" placeholder="Ej: domingo 21 de diciembre" oninput="vistaMsj()"></div>
+                  <div class="full" style="grid-column:1/-1;"><label>Detalle</label><input id="msjOfDet" maxlength="200" placeholder="Ej: Mencionando este mensaje al llegar" oninput="vistaMsj()"></div>
+                </div></details>
+              <label class="check-linea"><input type="checkbox" id="msjBoton" checked onchange="vistaMsj()"> <span>Incluir el link para reservar (${esc(linkAgenda().replace(/^https?:\/\//, ''))})</span></label>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;" id="msjAcciones"></div>
+              <p class="estado" id="estadoMsj"></p>
+            </div>
+            <div><label class="mini-lbl" style="display:block;margin-bottom:6px;">Vista previa</label><div id="msjVista"></div></div>
+          </div>
+        </div>
+        <div id="msjWsp"></div>
+        <div class="tarjeta">
+          <h3 style="margin:0 0 4px;">✉️ Correo automático de confirmación</h3>
+          <p class="nota">Cuando un cliente reserva en tu agenda online, le llega un correo con su hora, el profesional, la dirección y un botón para agregarla a su calendario. Si te responde, el correo te llega a ti.</p>
+          <label class="check-linea"><input type="checkbox" id="msjConf" ${data.confirmacion ? 'checked' : ''} onchange="guardarConfMsj(this)"> <span>Enviar confirmación por correo a cada reserva online</span></label>
+          <p class="estado" id="estadoConf"></p>
+        </div>
+        <div class="tarjeta">
+          <h3 style="margin:0 0 8px;">Mensajes enviados</h3>
+          ${data.campanas.length ? `<div style="overflow-x:auto;"><table class="tabla-caja"><tr><th>Fecha</th><th>Canal</th><th>Mensaje</th><th>Para</th><th class="num">Destinatarios</th><th class="num">Enviados</th></tr>
+            ${data.campanas.map(c => `<tr><td>${new Date(c.creado).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</td><td>${c.canal === 'correo' ? '✉️ Correo' : '💬 WhatsApp'}</td>
+              <td style="white-space:normal;min-width:220px;"><b>${esc(c.asunto || '')}</b>${c.asunto ? '<br>' : ''}<span class="nota">${esc(c.mensaje)}</span></td><td>${({ todos: 'Todos', recientes: 'Recientes', inactivos: 'Inactivos' })[c.filtro] || c.filtro}</td>
+              <td class="num">${c.destinatarios}</td><td class="num">${c.canal === 'correo' ? `${c.enviados}${c.errores ? ` <span class="nota">(${c.errores} con error)</span>` : ''}` : '—'}</td></tr>`).join('')}</table></div>`
+            : '<p class="nota">Aún no envías mensajes masivos.</p>'}
+        </div>`;
+      dibujarFiltroMsj(); vistaMsj();
+    }
+    function canalMsj(c){ MSJ.canal = c; document.querySelectorAll('#msjCanal .seg').forEach((b, i) => b.classList.toggle('sel', (i === 0) === (c === 'correo'))); dibujarFiltroMsj(); vistaMsj(); }
+    function dibujarFiltroMsj(){
+      const f = (MSJ.info && MSJ.info.filtros) || {};
+      $('msjFiltro').innerHTML = [['todos', 'Todos'], ['recientes', 'Vinieron en 90 días'], ['inactivos', 'No vienen hace 60+ días']].map(([k, v]) =>
+        `<button class="seg ${MSJ.filtro === k ? 'sel' : ''}" onclick="MSJ.filtro='${k}'; dibujarFiltroMsj(); vistaMsj()">${v} (${(f[k] || {})[MSJ.canal] ?? 0})</button>`).join('');
+      document.querySelectorAll('#tab-mensajes .solo-correo').forEach(x => x.classList.toggle('oculto', MSJ.canal !== 'correo'));
+    }
+    function ideaMsj(k){
+      const i = IDEAS_MSJ[k]; $('msjAsunto').value = i.asunto; $('msjTexto').value = i.msj;
+      $('msjOfTit').value = i.oferta?.titulo || ''; $('msjOfDet').value = i.oferta?.detalle || ''; $('msjOfHasta').value = i.oferta?.hasta || '';
+      if (i.oferta) $('msjOfertaBox').open = true;
+      if (i.filtro){ MSJ.filtro = i.filtro; dibujarFiltroMsj(); }
+      vistaMsj();
+    }
+    function datosMsj(){
+      const tit = $('msjOfTit').value.trim();
+      return { asunto: $('msjAsunto').value.trim(), mensaje: $('msjTexto').value.trim(), filtro: MSJ.filtro, boton: $('msjBoton').checked,
+               oferta: tit ? { titulo: tit, detalle: $('msjOfDet').value.trim(), hasta: $('msjOfHasta').value.trim() } : null };
+    }
+    // Texto de WhatsApp para un cliente
+    function textoWsp(d, nombre){
+      const pila = String(nombre || '').trim().split(/\s+/)[0] || '';
+      let t = d.mensaje.replace(/\{nombre\}/gi, pila || '');
+      if (d.oferta) t += `\n\n🎁 *${d.oferta.titulo}*${d.oferta.detalle ? '\n' + d.oferta.detalle : ''}${d.oferta.hasta ? '\nVálida hasta: ' + d.oferta.hasta : ''}`;
+      if (d.boton) t += `\n\nReserva aquí: ${linkAgenda()}`;
+      return t;
+    }
+    function vistaMsj(){
+      const d = datosMsj(), c = /^#[0-9a-f]{6}$/i.test(NEG.color || '') ? NEG.color : '#1d4ed8', n = ((MSJ.info?.filtros || {})[MSJ.filtro] || {})[MSJ.canal] ?? 0;
+      const ej = 'Camila';
+      if (MSJ.canal === 'correo'){
+        $('msjVista').innerHTML = `<div class="prev-correo"><div class="pc-asunto"><b>${esc(NEG.nombre || '')}</b> · ${esc(d.asunto || '(sin asunto)')}</div><div class="pc-card">
+          <div class="pc-cab" style="background:${c};">${esc(NEG.nombre || '')}</div>
+          <div class="pc-cuerpo">${esc((d.mensaje || 'Escribe tu mensaje…').replace(/\{nombre\}/gi, ej))}${d.oferta ? `<div class="pc-oferta" style="border-color:${c};"><small style="color:${c};font-weight:800;letter-spacing:.1em;">OFERTA</small><b>${esc(d.oferta.titulo)}</b>${esc(d.oferta.detalle)}${d.oferta.hasta ? `<div style="font-size:12px;color:#6b7280;margin-top:4px;">Válida hasta: ${esc(d.oferta.hasta)}</div>` : ''}</div>` : ''}${d.boton ? `<div><span class="pc-btn" style="background:${c};">Reservar mi hora</span></div>` : ''}</div>
+          <div class="pc-pie">Recibes este correo porque aceptaste recibir promociones de ${esc(NEG.nombre || '')}. <u>No quiero recibir más promociones</u>.</div></div></div>
+          <p class="nota" style="margin-top:6px;">Ejemplo con un cliente llamado ${ej}.</p>`;
+        $('msjAcciones').innerHTML = `<button class="boton-linea" onclick="enviarMsj(true)">Enviarme una prueba</button>
+          <button class="boton" onclick="enviarMsj(false)" ${n ? '' : 'disabled'}>✉️ Enviar a ${n} cliente${n === 1 ? '' : 's'}</button>`;
+      } else {
+        $('msjVista').innerHTML = `<div class="prev-wsp"><div class="burbuja">${esc(d.mensaje ? textoWsp(d, ej) : 'Escribe tu mensaje…').replace(/\*([^*\n]+)\*/g, '<b>$1</b>')}<div class="hora">${new Date().toTimeString().slice(0, 5)} ✓✓</div></div></div>
+          <p class="nota" style="margin-top:6px;">WhatsApp no permite envíos automáticos gratis: te armamos la lista y tú tocas "Enviar" en cada cliente (se abre tu WhatsApp con el mensaje listo).</p>`;
+        $('msjAcciones').innerHTML = `<button class="boton" style="background:#25d366;border-color:#25d366;color:#06240f;" onclick="prepararWsp()" ${n ? '' : 'disabled'}>💬 Preparar lista (${n})</button>`;
+      }
+    }
+    async function enviarMsj(prueba){
+      const d = datosMsj(), n = ((MSJ.info?.filtros || {})[MSJ.filtro] || {}).correo ?? 0;
+      if (d.asunto.length < 3) return estado('estadoMsj', 'Escribe el asunto.', 'error');
+      if (d.mensaje.length < 5) return estado('estadoMsj', 'Escribe el mensaje.', 'error');
+      if (!prueba && !confirm(`¿Enviar este correo a ${n} cliente${n === 1 ? '' : 's'}?\n\nAsunto: ${d.asunto}\n\nNo se puede deshacer.`)) return;
+      estado('estadoMsj', 'Enviando…');
+      const { data, error } = await db.rpc('enviar_campana', { p: { ...d, prueba } });
+      if (error) return estado('estadoMsj', error.message, 'error');
+      dispararCorreos();
+      if (prueba) return estado('estadoMsj', `✓ Prueba enviada a ${data.para}. Revisa tu bandeja (y la carpeta de spam) en 1 minuto.`, 'ok');
+      await cargarMensajes();
+      setTimeout(() => { if (!$('tab-mensajes').classList.contains('oculto') && !$('msjTexto').value) cargarMensajes(); }, 8000);   // refresca "enviados"
+      estado('estadoMsj', `✓ Listo: ${data.destinatarios} correo${data.destinatarios === 1 ? '' : 's'} en camino. En "Mensajes enviados" ves cuántos llegaron.`, 'ok');
+    }
+    async function prepararWsp(){
+      const d = datosMsj();
+      if (d.mensaje.length < 5) return estado('estadoMsj', 'Escribe el mensaje.', 'error');
+      const { data, error } = await db.rpc('campana_whatsapp', { p: { mensaje: d.mensaje, filtro: d.filtro } });
+      if (error) return estado('estadoMsj', error.message, 'error');
+      MSJ.wsp = { d, lista: data.lista, hechos: new Set() };
+      estado('estadoMsj', '');
+      dibujarWsp(); $('msjWsp').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    function telWsp(t){ let n = String(t || '').replace(/\D/g, ''); if (/^9\d{8}$/.test(n)) n = '56' + n; return n; }
+    function dibujarWsp(){
+      const W = MSJ.wsp; if (!W) { $('msjWsp').innerHTML = ''; return; }
+      const k = W.hechos.size, n = W.lista.length;
+      $('msjWsp').innerHTML = `<div class="tarjeta"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <h3 style="margin:0;">💬 Enviar por WhatsApp · ${k} de ${n}</h3>
+          <div style="display:flex;gap:8px;"><button class="boton-linea" onclick="copiarWsp()">📋 Copiar mensaje</button><button class="boton-linea" onclick="MSJ.wsp=null; dibujarWsp()">Cerrar</button></div></div>
+        <div class="barra-prog"><div style="width:${n ? Math.round(k * 100 / n) : 0}%"></div></div>
+        <p class="nota" style="margin-bottom:10px;">Toca "Enviar": se abre WhatsApp con el mensaje escrito para esa persona; lo mandas y vuelves aquí para el siguiente. Para muchos clientes, también puedes copiar el mensaje y usar una <b>lista de difusión</b> de WhatsApp Business.</p>
+        <div class="wsp-lista">${W.lista.map((c, i) => `<div class="wsp-item ${W.hechos.has(i) ? 'ok' : ''}"><div class="q"><b>${esc(c.nombre || 'Cliente')}</b><br><span class="nota">${esc(c.telefono)}</span></div>
+          <button class="boton" onclick="enviarWspMsj(${i})">${W.hechos.has(i) ? '✓ Enviado' : 'Enviar'}</button></div>`).join('')}</div></div>`;
+    }
+    function enviarWspMsj(i){
+      const W = MSJ.wsp, c = W.lista[i];
+      window.open('https://wa.me/' + telWsp(c.telefono) + '?text=' + encodeURIComponent(textoWsp(W.d, c.nombre)), '_blank', 'noopener');
+      W.hechos.add(i); dibujarWsp();
+    }
+    async function copiarWsp(){
+      const t = textoWsp(MSJ.wsp.d, '').replace(/Hola\s+([,!👋]|\n)/, 'Hola$1');
+      try { await navigator.clipboard.writeText(t); mostrarToast({ id: 0, tipo: 'completada', titulo: 'Mensaje copiado', detalle: 'Pégalo en tu lista de difusión de WhatsApp.' }); } catch (e) { prompt('Copia el mensaje:', t); }
+    }
+    async function guardarConfMsj(el){
+      const { error } = await db.rpc('guardar_correo_confirmacion', { p_on: el.checked });
+      if (error) { el.checked = !el.checked; return estado('estadoConf', 'Error: ' + error.message, 'error'); }
+      estado('estadoConf', el.checked ? '✓ Activado: cada reserva online recibe su correo de confirmación.' : '✓ Apagado.', 'ok');
+    }
+
+    // Avisos de TwoWeb para el admin (comunicados del super admin)
+    async function verComunicados(){
+      const { data, error } = await db.rpc('mis_comunicados');
+      if (error || !data || !data.length) { $('avisosTW').innerHTML = ''; return; }
+      $('avisosTW').innerHTML = data.slice(0, 3).map(c => `<div class="aviso-tw"><div class="t">Aviso de ${esc(MARCA)} · ${new Date(c.creado).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}</div>
+        <h3>${esc(c.asunto)}</h3><p>${esc(c.mensaje)}</p><button class="boton-linea" onclick="leerComunicado(${c.id}, this)">Entendido</button></div>`).join('');
+    }
+    async function leerComunicado(id, b){ b.closest('.aviso-tw').remove(); await db.rpc('leer_comunicado', { p_id: id }); }
+
+    // ================= COMUNICADOS (super admin) =================
+    let COM = { estados: [], planes: [] };
+    async function cargarComunicados(){
+      const el = $('comunicadosCont');
+      if (!PLANES_L.length) { const r = await db.rpc('planes_lista'); PLANES_L = (r.data && r.data.planes) || []; }
+      const { data, error } = await db.rpc('super_comunicados');
+      if (error){ el.innerHTML = `<div class="tarjeta"><p class="error">${(error.message || '').includes('super_comunicados') ? 'Falta instalar la Fase 27 en Supabase.' : 'Error: ' + esc(error.message)}</p></div>`; return; }
+      const q = data.cola;
+      el.innerHTML = `
+        <div class="kpis">
+          <div class="kpi destacado"><b>${q.hoy}</b><span>correos enviados hoy</span></div>
+          <div class="kpi"><b>${q.enviados_30d}</b><span>enviados en 30 días</span></div>
+          <div class="kpi"><b>${q.pendientes}</b><span>en cola</span></div>
+          <div class="kpi"><b>${q.errores_30d}</b><span>con error (30 días)</span></div>
+        </div>
+        ${q.ultimo_error ? `<p class="nota" style="margin:-4px 0 10px;">Último error: ${esc(q.ultimo_error)}</p>` : ''}
+        <div class="tarjeta">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><h2 style="margin:0;">📣 Comunicado a los negocios</h2>
+            <button class="boton-linea" onclick="procesarCola(this)">⟳ Procesar cola de correos ahora</button></div>
+          <p class="nota">Les llega a los administradores de los negocios que elijas (nunca a sus clientes): nuevos planes, descuentos, mantenciones o novedades.</p>
+          <div class="msj-grid" style="margin-top:12px;"><div>
+            <div class="msj-fila"><label>Estado del negocio</label><div class="ideas" id="comEstados">${[['activo', 'Activos (pagando)'], ['prueba', 'En prueba'], ['vencido', 'Pago vencido'], ['suspendido', 'Suspendidos']].map(([k, v]) =>
+              `<button class="chip ${COM.estados.includes(k) ? 'sel' : ''}" onclick="toggleCom('estados','${k}', this)">${v}</button>`).join('')}</div><p class="nota" style="margin-top:4px;">Sin marcar = todos menos suspendidos.</p></div>
+            <div class="msj-fila"><label>Plan</label><div class="ideas" id="comPlanes">${PLANES_L.map(p => `<button class="chip ${COM.planes.includes(p.codigo) ? 'sel' : ''}" onclick="toggleCom('planes','${esc(p.codigo)}', this)">${esc(p.nombre)}</button>`).join('')}</div><p class="nota" style="margin-top:4px;">Sin marcar = todos los planes.</p></div>
+            <div class="msj-fila"><label for="comAsunto">Asunto</label><input id="comAsunto" maxlength="120" placeholder="Ej: Nuevo plan con tarjeta de fidelidad"></div>
+            <div class="msj-fila"><label for="comTexto">Mensaje</label><textarea id="comTexto" maxlength="4000" placeholder="Hola, …"></textarea></div>
+            <div class="grid-2"><div><label>Botón (opcional)</label><input id="comBoton" maxlength="40" placeholder="Ej: Ver planes"></div><div><label>Link del botón</label><input id="comLink" placeholder="https://twoweb.cl/#planes"></div></div>
+            <label class="check-linea"><input type="checkbox" id="comCorreo" checked> <span>Enviar por correo</span></label>
+            <label class="check-linea" style="margin-top:4px !important;"><input type="checkbox" id="comPanel" checked> <span>Mostrar como aviso en su panel (hasta que lo lean)</span></label>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap;"><button class="boton" onclick="enviarComunicado()">📣 Enviar comunicado</button><span class="nota" id="comCuenta"></span></div>
+            <p class="estado" id="estadoCom"></p>
+          </div>
+          <div><label class="mini-lbl" style="display:block;margin-bottom:6px;">Ideas</label>
+            <div class="ideas">${[['💎 Nuevo plan', 'Nuevo plan disponible', 'Hola,\nLanzamos un nuevo plan con más funciones para tu negocio. Escríbenos y te contamos cómo cambiarte.'],
+                ['🏷 Descuento', 'Descuento por pago anual', 'Hola,\nSi pagas 12 meses por adelantado, te regalamos 2 meses. Válido hasta fin de mes.'],
+                ['🛠 Mantención', 'Mantención programada', 'Hola,\nEl domingo entre 03:00 y 04:00 haremos una mantención. La agenda puede no responder unos minutos.'],
+                ['✨ Novedad', 'Nueva función en tu panel', 'Hola,\nYa puedes enviar mensajes masivos a tus clientes desde la pestaña 📣 Mensajes de tu panel.']].map(([t, a, m]) =>
+                `<button class="chip" onclick="$('comAsunto').value=${esc(JSON.stringify(a))}; $('comTexto').value=${esc(JSON.stringify(m))}">${t}</button>`).join('')}</div></div></div>
+        </div>
+        <div class="tarjeta"><h3 style="margin:0 0 8px;">Comunicados enviados</h3>
+          ${data.comunicados.length ? `<div style="overflow-x:auto;"><table class="tabla-caja"><tr><th>Fecha</th><th>Asunto</th><th class="num">Negocios</th><th class="num">Leídos en panel</th><th class="num">Correos</th></tr>
+            ${data.comunicados.map(c => `<tr><td>${new Date(c.creado).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</td><td style="white-space:normal;min-width:220px;"><b>${esc(c.asunto)}</b><br><span class="nota">${esc(c.mensaje)}</span></td>
+              <td class="num">${c.negocios}</td><td class="num">${c.en_panel ? c.leidos : '—'}</td><td class="num">${c.por_correo ? c.enviados + (c.errores ? ` <span class="nota">(${c.errores} error)</span>` : '') : '—'}</td></tr>`).join('')}</table></div>`
+            : '<p class="nota">Aún no envías comunicados.</p>'}</div>`;
+      contarCom();
+    }
+    function toggleCom(tipo, k, b){ const l = COM[tipo]; l.includes(k) ? l.splice(l.indexOf(k), 1) : l.push(k); b.classList.toggle('sel'); contarCom(); }
+    async function contarCom(){
+      const { data } = await db.rpc('super_comunicado_destinatarios', { p_filtro: COM });
+      if (data && $('comCuenta')) $('comCuenta').textContent = `Le llega a ${data.negocios} negocio${data.negocios === 1 ? '' : 's'} · ${data.correos} correo${data.correos === 1 ? '' : 's'}`;
+    }
+    async function enviarComunicado(){
+      const p = { asunto: $('comAsunto').value.trim(), mensaje: $('comTexto').value.trim(), filtro: COM, por_correo: $('comCorreo').checked, en_panel: $('comPanel').checked,
+                  boton_texto: $('comBoton').value.trim(), boton_link: $('comLink').value.trim() };
+      if (p.asunto.length < 3 || p.mensaje.length < 5) return estado('estadoCom', 'Escribe el asunto y el mensaje.', 'error');
+      if (p.boton_link && !/^https:\/\//.test(p.boton_link)) return estado('estadoCom', 'El link del botón debe empezar con https://', 'error');
+      if (!confirm(`¿Enviar "${p.asunto}"? ${$('comCuenta').textContent}`)) return;
+      const { data, error } = await db.rpc('super_enviar_comunicado', { p });
+      if (error) return estado('estadoCom', error.message, 'error');
+      dispararCorreos();
+      await cargarComunicados();
+      estado('estadoCom', `✓ Enviado a ${data.negocios} negocio(s)${data.correos ? ` · ${data.correos} correo(s) en camino` : ''}.`, 'ok');
+    }
+    async function procesarCola(b){
+      b.disabled = true; b.textContent = 'Procesando…';
+      try {
+        const r = await fetch(SUPABASE_URL + '/functions/v1/enviar-correos', { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: '{}' });
+        const j = await r.json().catch(() => ({}));
+        alert(r.ok ? `Listo: ${j.enviados || 0} enviados, ${j.errores || 0} con error.` : `La función respondió ${r.status}: ${j.error || 'revisa que "enviar-correos" esté publicada y RESEND_API_KEY configurada.'}`);
+      } catch (e) { alert('No se pudo llamar a la función "enviar-correos". ¿Ya la publicaste en Supabase?'); }
+      cargarComunicados();
+    }
+
     // ================= TARJETA DE FIDELIDAD (admin, Fase 25) =================
     let FID = null, fidImg;          // fidImg: undefined = sin cambio, '' = quitar, data:... = nueva
     async function cargarFidelidadAdmin(){
@@ -3443,7 +3727,7 @@
       if (actPlan) $('nnPlan').value = actPlan; else if (PLANES_L.some(p => p.destacado)) $('nnPlan').value = PLANES_L.find(p => p.destacado).codigo;
       $('nnRubro').innerHTML = '<option value="">— Elige la categoría —</option>' + RUBROS_L.filter(r => r.activo).map(r => `<option value="${r.id}">${esc(r.icono)} ${esc(r.nombre)}</option>`).join('');
       if (actRub) $('nnRubro').value = actRub;
-      pintarPrecioNuevo();
+      pintarPrecioNuevo(); if (!$('nnVence').value) venceNuevo();
       return true;
     }
     function sugerirModulos(){
@@ -3454,6 +3738,13 @@
       pintarPrecioNuevo();
     }
     const mensualidadDe = (pl, agenda, tienda, especial) => especial !== '' && especial != null ? Number(especial) : (pl ? pl.precio + (agenda && tienda ? pl.precio_extra : 0) : 0);
+    // Al crear: si queda en prueba, el próximo pago es hoy + los días de prueba del plan
+    function venceNuevo(){
+      const pl = PLANES_L.find(p => p.codigo === $('nnPlan').value); if (!pl) return;
+      const d = $('nnEstado').value === 'prueba' ? (pl.dias_prueba || 0) : 30, f = new Date(); f.setDate(f.getDate() + (d || 30));
+      $('nnVence').value = f.toISOString().slice(0, 10);
+      $('nnPrecio').insertAdjacentHTML('beforeend', $('nnEstado').value === 'prueba' && pl.dias_prueba ? ` · <b>${pl.dias_prueba} días de prueba</b>` : '');
+    }
     function pintarPrecioNuevo(){
       const pl = PLANES_L.find(p => p.codigo === $('nnPlan').value); if (!pl) { $('nnPrecio').textContent = ''; return; }
       const lim = [pl.max_profesionales ? `${pl.max_profesionales} persona(s)` : 'equipo sin límite', pl.max_locales ? `${pl.max_locales} local(es)` : 'locales sin límite',
@@ -3502,7 +3793,9 @@
             <label><input type="checkbox" ${n.mod_tienda ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_tienda', this)"> 🛍 Tienda${n.mod_tienda ? ` <span class="nota">(${n.productos || 0} prod.)</span>` : ''}</label>
             ${'fid_plan' in n ? `<label title="Tarjeta de fidelidad para los clientes de este negocio"><input type="checkbox" ${(n.fid_otorgada ?? n.fid_plan) ? 'checked' : ''} onchange="cambiarFidelidad(${n.id}, this)"> 🎟 Fidelidad</label>
             <span class="nota" style="display:block;font-size:11px;">${n.fid_otorgada === null || n.fid_otorgada === undefined ? (n.fid_plan ? 'incluida en su plan' : 'su plan no la trae') : n.fid_otorgada ? (n.fid_plan ? 'otorgada' : '⭐ otorgada por ti') : '✕ quitada por ti'}${(n.fid_otorgada ?? n.fid_plan) ? (n.fid_activa ? ` · activa (${n.fid_meta} at.)` : ' · el admin aún no la activa') : ''}</span>` : ''}</div></td>
-          <td><span class="badge-plan ${esc(n.estado)}">${esc(n.estado)}</span></td>
+          <td><span class="badge-plan ${esc(n.estado)}">${esc(n.estado)}</span>
+            ${n.estado === 'prueba' && n.vence ? `<div class="nota" style="font-size:11.5px;margin-top:4px;">${diasHasta(n.vence) >= 0 ? `prueba: quedan ${diasHasta(n.vence)} día${diasHasta(n.vence) === 1 ? '' : 's'}` : '⚠️ prueba terminada'}</div>` : ''}
+            <button class="link" style="margin:4px 0 0;font-size:12px;" onclick="darPrueba(${n.id})">🎁 Dar prueba</button></td>
           <td><label class="switch-promo"><input type="checkbox" ${n.promo_10 ? 'checked' : ''} onchange="cambiarPromo(${n.id}, this)"> ${n.promo_10 ? 'Activo' : 'Apagado'}</label></td>
           <td><input type="date" value="${n.vence || ''}" style="width:auto;padding:5px 8px;font-size:12.5px;${n.vence && n.vence < hoy && n.estado !== 'suspendido' ? 'border-color:var(--rojo);' : ''}" onchange="actualizarNegocio(${n.id}, { vence: this.value })"></td>
           <td class="num">${n.profesionales}</td><td class="num">${n.reservas_30d}</td><td class="num">${n.pedidos_30d ?? '—'}</td><td class="num">${n.clientes}</td>
@@ -3562,6 +3855,16 @@
                      : `¿Apagar el 10% para "${n?.nombre}"?\n\nSe deja de mostrar en su agenda y las nuevas reservas ya no tendrán descuento (las horas ya reservadas con 10% lo mantienen).`;
       if (!confirm(msg)) { input.checked = !on; return; }
       actualizarNegocio(id, { promo_10: on });
+    }
+    const diasHasta = f => Math.round((new Date(f + 'T12:00') - new Date(hoyTxt() + 'T12:00')) / 86400000);
+    async function darPrueba(id){
+      const n = negocios.find(x => x.id === id), pl = PLANES_L.find(p => p.codigo === n.plan);
+      const r = prompt(`Días de prueba gratis para "${n.nombre}" (desde hoy).\nQueda en estado "prueba" con el plan ${pl ? pl.nombre : n.plan} (cámbialo en la columna Plan si quieres otro).`, pl && pl.dias_prueba ? pl.dias_prueba : 14);
+      if (r === null) return;
+      const dias = parseInt(r); if (!(dias >= 1 && dias <= 365)) return alert('Escribe un número de días entre 1 y 365.');
+      const { data, error } = await db.rpc('super_dar_prueba', { p_id: id, p_dias: dias, p_plan: null });
+      if (error) return alert(error.message);
+      alert(`✓ "${n.nombre}" en prueba hasta el ${data.vence}.`); cargarNegocios();
     }
     function cambiarFidelidad(id, input){
       const n = negocios.find(x => x.id === id), on = input.checked;
@@ -3776,7 +4079,7 @@
       if (error) return estado('estadoInfoTienda', error.message, 'error');
       NEG.tienda_info = v || null; estado('estadoInfoTienda', '✓ Guardado. Ya se ve en tu tienda.', 'ok');
     }
-    async function copiarTexto(t){
+    async function copiarUrl(t){
       try { await navigator.clipboard.writeText(t); alert('✓ Link copiado:\n' + t); } catch(e) { prompt('Copia el link:', t); }
     }
 
@@ -3882,6 +4185,8 @@
           <div><label>Máx. equipo</label><input data-k="max_profesionales" type="number" min="1" placeholder="sin límite" value="${vNum(p.max_profesionales)}"></div>
           <div><label>Máx. locales</label><input data-k="max_locales" type="number" min="1" placeholder="sin límite" value="${vNum(p.max_locales)}"></div>
           <div><label>Máx. productos</label><input data-k="max_productos" type="number" min="0" placeholder="sin límite" value="${vNum(p.max_productos)}"></div>
+          <div><label>Correos masivos al mes</label><input data-k="correos_mes" type="number" min="0" placeholder="sin límite" value="${'correos_mes' in p ? vNum(p.correos_mes) : 500}"></div>
+          <div><label>Días de prueba gratis</label><input data-k="dias_prueba" type="number" min="0" max="365" value="${p.dias_prueba ?? 14}"></div>
           <div class="acc"><button class="boton" onclick="guardarPlan(this)">Guardar</button>${p.negocios ? '' : `<button class="boton-linea rojo" onclick="eliminarPlan('${esc(p.codigo)}')">✕</button>`}</div>
           <div class="checks"><label><input type="checkbox" data-k="dominio_incluido" ${p.dominio_incluido ? 'checked' : ''}> Dominio propio incluido</label>
             <label><input type="checkbox" data-k="fidelidad" ${p.fidelidad ? 'checked' : ''}> 🎟 Tarjeta de fidelidad</label>

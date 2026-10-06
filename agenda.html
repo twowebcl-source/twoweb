@@ -1047,6 +1047,8 @@
           : "No se pudo reservar: " + error.message;
         return;
       }
+      // correo de confirmación: la función de Supabase lo envía desde la cola (si no está instalada, no pasa nada)
+      try { fetch(SUPABASE_URL + '/functions/v1/enviar-correos', { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: '{}', keepalive: true }).catch(() => {}); } catch (e) {}
       guardarLocal('twoweb-cliente', { ...d, obs:'', acomp:[] });
       const l = localSel();
       const detalle = data.map(r => `${r.nombre}: ${r.servicios} con ${r.trabajador} ${r.fecha} ${r.desde}-${r.hasta} (${clp(r.total)})`).join('\n');

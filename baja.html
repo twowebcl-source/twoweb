@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Promociones · TwoWeb</title>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+           background: #f2f4f7; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1f2430; }
+    .caja { background: #fff; border-radius: 18px; max-width: 440px; width: 100%; padding: 28px 24px; box-shadow: 0 10px 30px rgba(0,0,0,.07); text-align: center; }
+    .icono { font-size: 42px; }
+    h1 { font-size: 21px; margin: 10px 0 8px; }
+    p { color: #4b5563; line-height: 1.5; margin: 0 0 16px; }
+    button { font: inherit; font-weight: 700; border-radius: 11px; padding: 12px 20px; cursor: pointer; border: 1px solid #1d4ed8; }
+    .rojo { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .linea { background: #fff; color: #1d4ed8; }
+    .pie { margin-top: 18px; font-size: 12px; color: #9aa1ad; }
+  </style>
+</head>
+<body>
+  <div class="caja" id="caja"><div class="icono">✉️</div><h1>Cargando…</h1></div>
+  <script>
+    const CONF = window.TWOWEB || {};
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const token = new URLSearchParams(location.search).get('t') || '';
+    const pie = '<p class="pie">TwoWeb · agenda online</p>';
+    function pintar(icono, titulo, texto, botones = ''){ $('caja').innerHTML = `<div class="icono">${icono}</div><h1>${titulo}</h1><p>${texto}</p>${botones}${pie}`; }
+    let db, NEG = '';
+    async function iniciar(){
+      if (!/^[0-9a-f-]{36}$/i.test(token)) return pintar('🔗', 'Link incompleto', 'Abre el link "No quiero recibir más promociones" directo desde el correo.');
+      const { data, error } = await db.rpc('baja_info', { p_token: token });
+      if (error || !data) return pintar('🔗', 'Link no válido', 'Este link ya no existe. Si sigues recibiendo correos, responde uno de ellos y te sacamos de la lista.');
+      NEG = data.negocio;
+      if (data.ya) return listo(true);
+      pintar('✉️', `¿Dejar de recibir promociones de ${esc(NEG)}?`, 'Seguirás recibiendo la confirmación de tus reservas. Solo dejamos de enviarte ofertas y novedades.',
+             '<button class="rojo" onclick="cambiar(false)">Sí, no quiero recibir más</button>');
+    }
+    async function cambiar(volver){
+      const { error } = await db.rpc('darse_de_baja', { p_token: token, p_volver: volver });
+      if (error) return pintar('⚠️', 'No se pudo guardar', 'Inténtalo de nuevo en un momento.');
+      volver ? pintar('🎉', '¡Bienvenido de vuelta!', `Volverás a recibir las promociones de ${esc(NEG)}.`) : listo(false);
+    }
+    function listo(yaEstaba){
+      pintar('✅', yaEstaba ? 'Ya no recibes promociones' : 'Listo, te sacamos de la lista',
+             `No te enviaremos más promociones de ${esc(NEG)}. Tus reservas y sus confirmaciones siguen igual.`,
+             '<button class="linea" onclick="cambiar(true)">Me equivoqué, quiero seguir recibiéndolas</button>');
+    }
+    if (typeof supabase === 'undefined' || !CONF.SUPABASE_KEY) pintar('⚠️', 'Sin conexión', 'No se pudo cargar la página. Revisa tu internet.');
+    else { db = supabase.createClient(CONF.SUPABASE_URL, CONF.SUPABASE_KEY); iniciar(); }
+  </script>
+</body>
+</html>
