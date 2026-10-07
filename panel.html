@@ -274,6 +274,9 @@
     .ag-col { position:relative; border-left:1px solid var(--linea); }
     .ag-linea { position:absolute; left:0; right:0; border-top:1px solid color-mix(in srgb, var(--hueso) 5%, transparent); }
     .ag-fuera { position:absolute; left:0; right:0; background:repeating-linear-gradient(45deg, rgba(0,0,0,0.25) 0 6px, rgba(0,0,0,0.12) 6px 12px); }
+    .ag-fuera.tras { background:repeating-linear-gradient(45deg, rgba(0,0,0,0.14) 0 6px, rgba(0,0,0,0.05) 6px 12px); border-top:1px dashed color-mix(in srgb, var(--hueso) 30%, transparent); }
+    .ag-fuera.tras span { position:sticky; top:0; display:inline-block; margin:4px 6px; padding:1px 8px; border-radius:999px; font-size:11px; color:var(--gris);
+      background:color-mix(in srgb, var(--panel) 80%, transparent); pointer-events:none; }
     .ag-colacion { position:absolute; left:4px; right:4px; border-radius:6px; background:repeating-linear-gradient(45deg, rgba(154,160,168,0.18) 0 6px, rgba(154,160,168,0.08) 6px 12px); color:var(--gris); font-size:11px; padding:2px 8px; }
     .ag-res { position:absolute; left:4px; right:4px; border-radius:var(--r-cita); padding:3px 8px; font-size:12px; line-height:1.3; overflow:hidden; cursor:pointer; background:color-mix(in srgb, var(--voltaje) 22%, transparent); border-left:3px solid var(--voltaje); }
     .ag-res:hover { filter:brightness(1.25); }
@@ -293,7 +296,8 @@
     .ag-libre { position:absolute; top:50%; left:0; right:0; text-align:center; color:var(--gris); font-size:12px; }
 
     /* Mi día (profesional) */
-    .ag-cab.hoy { background:color-mix(in srgb, var(--voltaje) 14%, transparent); }
+    .ag-cab.hoy { background:color-mix(in srgb, var(--voltaje) 14%, var(--panel2)); }
+    .ag-cab { z-index:6; }
     .proxima { background:linear-gradient(135deg, color-mix(in srgb, var(--voltaje) 22%, transparent), color-mix(in srgb, var(--voltaje) 6%, transparent)); border:1px solid color-mix(in srgb, var(--voltaje) 40%, transparent); border-radius:var(--r); padding:16px 18px; margin-top:4px; cursor:pointer; }
     .proxima.libre { background:var(--panel); border-color:var(--linea); cursor:default; color:var(--gris); }
     .proxima .etq { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--voltaje); }
@@ -1909,7 +1913,12 @@
       let desde = Math.min(...hs.map(h => aMin(h.inicio)), ...rangos.map(r => r[0]));
       let hasta = Math.max(...hs.map(h => aMin(h.fin)), ...rangos.map(r => r[1]));
       if (!isFinite(desde)) { desde = 9*60; hasta = 18*60; }
-      desde = Math.floor(desde/60)*60; hasta = Math.ceil(hasta/60)*60;
+      // La agenda sigue después del horario (más transparente): se puede anotar a quien llega tarde o una atención que se alarga.
+      // 1 hora antes de abrir y hasta 4 horas después de cerrar (máx. 24:00); hoy, al menos hasta 1 hora después de ahora.
+      const ahoraM = new Date().getHours() * 60 + new Date().getMinutes();
+      if (hs.length){ desde = Math.min(desde, Math.min(...hs.map(h => aMin(h.inicio))) - 60); hasta = Math.max(hasta, Math.max(...hs.map(h => aMin(h.fin))) + 240); }
+      if (columnas.some(c => c.esHoy)) hasta = Math.max(hasta, ahoraM + 60);
+      desde = Math.max(0, Math.floor(desde/60)*60); hasta = Math.min(24*60, Math.ceil(hasta/60)*60);
       const alto = (hasta - desde) * PX_MIN, y = m => (m - desde) * PX_MIN;
 
       let marcas = '', lineas = '';
@@ -1930,7 +1939,7 @@
         else {
           const hi = aMin(h.inicio), hf = aMin(h.fin);
           if (hi > desde) x += `<div class="ag-fuera" style="top:0;height:${y(hi)}px"></div>`;
-          if (hf < hasta) x += `<div class="ag-fuera" style="top:${y(hf)}px;height:${alto - y(hf)}px"></div>`;
+          if (hf < hasta) x += `<div class="ag-fuera tras" style="top:${y(hf)}px;height:${alto - y(hf)}px">${alto - y(hf) > 24 ? `<span>Fuera de horario · desde ${aHora(hf)}</span>` : ''}</div>`;
           if (h.almuerzo_inicio){ const ai = aMin(h.almuerzo_inicio), af = aMin(h.almuerzo_fin);
             x += `<div class="ag-colacion" style="top:${y(ai)}px;height:${(af-ai)*PX_MIN}px">Colación ${aHora(ai)}–${aHora(af)}</div>`; }
         }
@@ -2961,7 +2970,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F45 · 07-10';
+    const VERSION_PANEL = 'F45 · 07-10 b';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
