@@ -1553,7 +1553,7 @@
                                        error.message.includes('confirm') ? "Falta confirmar tu correo: revisa tu bandeja de entrada." : "Error: " + error.message, 'error');
     }
     // Cierra la sesión SOLO en este dispositivo/pestaña (no saca a la persona de sus otros equipos)
-    async function salir(){ await quitarPush(); ponerIconos({}); try { const u = new URL(location.href); if (u.searchParams.has('n')){ u.searchParams.delete('n'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } } catch (e) {} FondoAnim.poner(null); aplicarFuente(null); ['twoweb-fondo-panel', 'twoweb-fuente-panel', 'twoweb-fondo-img'].forEach(k => { try { localStorage.removeItem(k); } catch(e) {} }); MI_IMG = null; clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
+    async function salir(){ FOTO_PROPIA = undefined; await quitarPush(); ponerIconos({}); try { const u = new URL(location.href); if (u.searchParams.has('n')){ u.searchParams.delete('n'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } } catch (e) {} FondoAnim.poner(null); aplicarFuente(null); ['twoweb-fondo-panel', 'twoweb-fuente-panel', 'twoweb-fondo-img'].forEach(k => { try { localStorage.removeItem(k); } catch(e) {} }); MI_IMG = null; clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
     function mostrarCodigo(){ $('cajaCodigo').classList.toggle('oculto'); }
     async function enviarCodigo(){
       const email = $('loginCorreo').value.trim().toLowerCase();
@@ -2082,8 +2082,11 @@
       const t = trabajadores.find(x => x.id === yo.trabajador_id) || trabajadores.find(x => x.correo && yo.correo && x.correo.toLowerCase() === yo.correo.toLowerCase());
       return t?.foto_url || null;
     }
-    function pintarMiAvatar(){
-      const a = $('yoAvatar'); if (!a) return; const f = miFoto();
+    let FOTO_PROPIA;                                                                   // undefined = aún no se consulta
+    async function pintarMiAvatar(){
+      const a = $('yoAvatar'); if (!a) return;
+      let f = miFoto();
+      if (!f && yo){ if (FOTO_PROPIA === undefined){ FOTO_PROPIA = null; try { const r = await db.rpc('mi_foto'); FOTO_PROPIA = r.error ? null : r.data || null; } catch (e) {} } f = FOTO_PROPIA; }
       a.textContent = (yo?.nombre || '?')[0].toUpperCase();
       a.style.cssText = f ? `background:url('${f.replace(/'/g, '%27')}') center/cover;color:transparent;` : '';
       a.title = f ? yo.nombre : '';
@@ -2958,7 +2961,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F43 · 07-10 e';
+    const VERSION_PANEL = 'F44 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
