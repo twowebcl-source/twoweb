@@ -229,6 +229,10 @@
     .cv-riel::after { content:""; position:absolute; left:0; right:0; top:var(--tt); height:var(--th); background:var(--voltaje); border-radius:6px; }
     .cv-riel:hover::after { filter:brightness(1.2); }
     .nombre-auto { margin:6px 0 0; }
+    .tabla-imp { width:100%; table-layout:fixed; font-size:12px; margin-top:6px; }
+    .tabla-imp th:first-child, .tabla-imp td:first-child { width:38px; } .tabla-imp th:nth-child(5), .tabla-imp td:nth-child(5) { width:48px; } .tabla-imp th:nth-child(6), .tabla-imp td:nth-child(6) { width:82px; }
+    .ventana.ancha { max-width:680px; }
+    .tabla-imp td { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .nombre-aviso { animation:nombreAviso .9s ease; }
     @keyframes nombreAviso { 0%, 100% { box-shadow:none; } 25%, 70% { box-shadow:0 0 0 2px #f59e0b; color:#f59e0b; } }
     .cv-flot { position:fixed; right:auto; bottom:auto; width:22px; }
@@ -2396,7 +2400,7 @@
       if (tr != null && r.origen !== 'llegada'){ const d = tr - rf; txt += d === 0 ? ' · a la hora' : ` · terminó ${Math.abs(d)} min ${d < 0 ? 'antes' : 'después'}`; }
       return `<div class="det-fila"><span>Atención real</span><span>${txt}</span></div>`;
     }
-    function cerrarDetalle(sinFondo){ $('fondoDetalle').classList.add('oculto'); if (yo) { aplicarTemaActual(); if (sinFondo !== true) aplicarFondoActual(); } }
+    function cerrarDetalle(sinFondo){ $('fondoDetalle').classList.add('oculto'); $('ventanaDetalle').classList.remove('ancha'); if (yo) { aplicarTemaActual(); if (sinFondo !== true) aplicarFondoActual(); } }
     function refrescarVista(){
       const t = document.querySelector('.tab.sel')?.dataset.tab;
       if (t === 'dia') { dibujarDia(); pintarSolicitudesPend(); } if (t === 'lista') dibujarLista();
@@ -2847,7 +2851,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F39 · 07-10 c';
+    const VERSION_PANEL = 'F40 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -4677,7 +4681,7 @@
     function descargarClientes(){
       const l = destinatarios();
       const cols = [['Nombre','nombre'],['Apellido','apellido'],['WhatsApp','telefono'],['Correo','correo'],
-        ['Fecha de nacimiento', c => c.fecha_nacimiento ? c.fecha_nacimiento.split('-').reverse().join('-') : ''],['Acepta promociones', c => c.acepta_promos ? 'sí' : 'no'],
+        ['Fecha de nacimiento', c => c.fecha_nacimiento ? (c.fecha_nacimiento.startsWith('1900-') ? c.fecha_nacimiento.slice(5) : c.fecha_nacimiento).split('-').reverse().join('-') : ''],['Acepta promociones', c => c.acepta_promos ? 'sí' : 'no'],
         ['Avisos WhatsApp', c => c.whatsapp ? 'sí' : 'no'],['Origen','origen'],['Beneficio 10%','beneficio'],['Registrado', c => (c.creado || '').slice(0, 10)],
         ['Reservas','reservas'],['Atendidas','atendidas'],['No asistió','no_asistio'],['Canceladas','canceladas'],['Gastado','gastado'],
         ['Primera visita','primera_visita'],['Última visita','ultima_visita'],['Próxima reserva','proxima'],['Local','local'],['Profesional habitual','profesional']];
@@ -4694,23 +4698,37 @@
 
     // ----- Importar clientes desde Excel o CSV (Fase 39) -----
     // Obligatorio: WhatsApp/teléfono y correo. Opcional: nombre, apellido, fecha de nacimiento, acepta promociones.
-    const COLS_IMP = { nombre: /^(nombre|nombres|name|cliente)$/, apellido: /^(apellido|apellidos|last ?name)$/,
-      telefono: /(whats|tel[eé]fono|celular|fono|m[oó]vil|phone|n[uú]mero)/, correo: /(correo|e-?mail|mail)/,
-      nacimiento: /(nacimiento|cumplea|birth|f\.? ?nac)/, acepta_promos: /(promo|acepta)/ };
+    // Columnas del Excel: se prueban en orden (la primera que calce gana). Sirve para Excels de otros sistemas.
+    const COLS_IMP = {
+      nombre: [/^(nombre|nombres|name|first ?name|cliente|nombre cliente|nombre del cliente)$/, /^nombre/],
+      apellido: [/^(apellido|apellidos|last ?name)$/, /^apellido/],
+      telefono: [/^(whats ?app|wsp|tel[eé]fono|celular|m[oó]vil|fono|phone|n[uú]mero de (tel[eé]fono|celular|whats ?app))$/, /(whats|celular|m[oó]vil)/, /^(tel[eé]fono|fono|phone)(?!.*secund)/],
+      telefono2: [/(tel[eé]fono|celular|fono|phone).*(secund|2|alternativ|otro)/],
+      correo: [/^(correo|e-?mail|mail|correo electr[oó]nico)$/, /(correo|e-?mail)/],
+      nacimiento: [/^(fecha (de )?nacimiento|nacimiento|f\.? ?nac\.?|cumplea[nñ]os|birthday|birth ?date|date of birth)$/, /^fecha.*(nacim|cumple)/],
+      nac_dia: [/^d[ií]a.*(nacim|cumple)/], nac_mes: [/^mes.*(nacim|cumple)/], nac_anio: [/^a[nñ]o.*(nacim|cumple)/],
+      acepta_promos: [/(promo|acepta)/] };
+    const mapaImp = tit => {
+      const mapa = {}, usadas = new Set();
+      for (const [k, res] of Object.entries(COLS_IMP)) for (const re of res){
+        const i = tit.findIndex((t, j) => !usadas.has(j) && re.test(t)); if (i >= 0){ mapa[k] = i; usadas.add(i); break; } }
+      return mapa;
+    };
     let IMP = null;
     function abrirImportar(){
       IMP = null;
       $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;margin:0 0 6px;">⬆ Importar clientes</h3>
-        <p class="nota">Sube un Excel (.xlsx) o CSV. Cada cliente necesita <b>sí o sí</b> su <b>WhatsApp</b> y su <b>correo</b>. Puedes agregar <b>nombre</b>, <b>apellido</b>,
+        <p class="nota">Sube un Excel (.xlsx) o CSV. Cada cliente necesita su <b>WhatsApp</b> o su <b>correo</b> (ideal los dos). Puedes agregar <b>nombre</b>, <b>apellido</b>,
           <b>fecha de nacimiento</b> (para su regalo de cumpleaños) y si <b>acepta promociones</b> (sí/no).
           Si un cliente ya existe (mismo WhatsApp o correo) no se duplica: se completan los datos que falten.</p>
+        <p class="nota" style="margin-top:6px;">🔗 Si a alguien le falta el WhatsApp o el correo, no pasa nada: la próxima vez que reserve en tu agenda online con su correo y su número, <b>se une solo a su ficha</b> (con su historial y cumpleaños).</p>
         <p class="nota" style="margin-top:6px;">Tip: el mismo Excel que descargas con "⬇ Descargar Excel" sirve para volver a importar.</p>
         <div class="det-acciones" style="margin-top:10px;"><button class="boton-linea" onclick="plantillaImportar()">📄 Descargar plantilla</button>
           <label class="boton" style="cursor:pointer;">📂 Elegir archivo<input type="file" accept=".xlsx,.xls,.csv,text/csv" class="oculto" onchange="leerImportar(this)"></label></div>
         <div id="impVista"></div>
         <div class="det-acciones"><button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
         <p class="estado" id="estadoImp"></p>`;
-      $('fondoDetalle').classList.remove('oculto');
+      $('ventanaDetalle').classList.add('ancha'); $('fondoDetalle').classList.remove('oculto');
     }
     function plantillaImportar(){
       const csv = '\ufeffNombre;Apellido;WhatsApp;Correo;Fecha de nacimiento;Acepta promociones\nCamila;Rojas;+56 9 1234 5678;camila@gmail.com;14-03-1995;sí\nDiego;Soto;912345678;diego@hotmail.com;;no\n';
@@ -4754,23 +4772,36 @@
         } else filas = filasCSV(await f.text());
         filas = filas.filter(r => r.some(x => String(x).trim() !== ''));
         if (filas.length < 2) throw new Error('El archivo no tiene clientes (necesita una fila de títulos y al menos un cliente).');
-        const tit = filas[0].map(x => String(x).trim().toLowerCase()), mapa = {};
-        for (const [k, re] of Object.entries(COLS_IMP)){ const i = tit.findIndex((t, j) => re.test(t) && !Object.values(mapa).includes(j)); if (i >= 0) mapa[k] = i; }
-        if (mapa.telefono == null || mapa.correo == null) throw new Error('No encontramos las columnas de WhatsApp/teléfono y correo. Usa la plantilla.');
+        const tit = filas[0].map(x => String(x).trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.:]+$/, '')), mapa = mapaImp(tit);
+        if (mapa.telefono == null && mapa.correo == null) throw new Error('No encontramos una columna de WhatsApp/teléfono ni de correo. Usa la plantilla o revisa los títulos de la primera fila.');
+        const celda = (r, k) => mapa[k] != null ? String(r[mapa[k]] ?? '').trim() : '';
+        const nacDe = r => {                                                            // fecha completa, o día + mes (+ año) en columnas separadas
+          const f = mapa.nacimiento != null ? fechaImp(r[mapa.nacimiento]) : ''; if (f) return f;
+          const d = parseInt(celda(r, 'nac_dia')), m = parseInt(celda(r, 'nac_mes')); let y = parseInt(celda(r, 'nac_anio'));
+          if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12)) return '';
+          if (!(y >= 1900 && y <= new Date().getFullYear())) y = 1900;                   // sin año: solo importa el día y el mes
+          const t = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`; return isNaN(new Date(t)) ? '' : t;
+        };
         const si = v => /^(s[ií]|si|yes|y|x|1|true|verdadero)$/i.test(String(v).trim());
         IMP = filas.slice(1).map((r, i) => ({ fila: i + 2, nombre: mapa.nombre != null ? String(r[mapa.nombre]).trim() : '', apellido: mapa.apellido != null ? String(r[mapa.apellido]).trim() : '',
-          telefono: String(r[mapa.telefono] ?? '').trim(), correo: String(r[mapa.correo] ?? '').trim().toLowerCase(),
-          nacimiento: mapa.nacimiento != null ? fechaImp(r[mapa.nacimiento]) : '', acepta_promos: mapa.acepta_promos != null ? si(r[mapa.acepta_promos]) : false }));
+          telefono: (celda(r, 'telefono').replace(/\D/g, '').length >= 8 ? celda(r, 'telefono') : celda(r, 'telefono2') || celda(r, 'telefono')), correo: celda(r, 'correo').toLowerCase(),
+          nacimiento: nacDe(r), acepta_promos: mapa.acepta_promos != null ? si(r[mapa.acepta_promos]) : false }));
         const okTel = x => x.telefono.replace(/\D/g, '').length >= 8, okMail = x => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(x.correo);
-        const buenos = IMP.filter(x => okTel(x) && okMail(x)), malos = IMP.length - buenos.length;
+        const buenos = IMP.filter(x => okTel(x) || okMail(x)), malos = IMP.length - buenos.length;
+        const soloMail = buenos.filter(x => !okTel(x)).length, soloTel = buenos.filter(x => !okMail(x)).length;
+        const est = x => okTel(x) && okMail(x) ? '<span style="color:#22c55e;" title="Tiene WhatsApp y correo">✓</span>' : okTel(x) ? '<span class="nota" title="Se importa; el correo se completa cuando reserve">✓ sin correo</span>'
+                        : okMail(x) ? '<span class="nota" title="Se importa; el WhatsApp se completa cuando reserve">✓ sin WSP</span>' : '<span class="error" title="No tiene WhatsApp ni correo: se omite">omitido</span>';
+        const orden = [...IMP].sort((a, b) => (okTel(a) || okMail(a)) - (okTel(b) || okMail(b)));   // primero los que se omiten, para revisarlos
         $('impVista').innerHTML = `<div class="imp-res">
-            <div class="kpis" style="margin:10px 0;"><div class="kpi destacado"><b>${buenos.length}</b><span>clientes listos</span></div>
-              <div class="kpi"><b>${malos}</b><span>sin WhatsApp o correo (se omiten)</span></div>
-              <div class="kpi"><b>${buenos.filter(x => x.nacimiento).length}</b><span>con cumpleaños</span></div></div>
-            <div style="max-height:220px;overflow:auto;font-size:.78rem;"><table class="tabla-caja" style="min-width:100%;"><tr><th>Fila</th><th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>🎂</th><th></th></tr>
-              ${IMP.slice(0, 50).map(x => `<tr><td>${x.fila}</td><td>${esc(x.nombre)} ${esc(x.apellido)}</td><td>${esc(x.telefono)}</td><td>${esc(x.correo)}</td><td>${x.nacimiento ? x.nacimiento.split('-').reverse().join('-') : ''}</td>
-                <td>${okTel(x) && okMail(x) ? '✓' : `<span class="error">${okTel(x) ? 'falta correo' : 'falta WhatsApp'}</span>`}</td></tr>`).join('')}</table></div>
-            ${IMP.length > 50 ? `<p class="nota">Mostrando 50 de ${IMP.length} filas.</p>` : ''}
+            <div class="kpis" style="margin:10px 0;"><div class="kpi destacado"><b>${fmtN(buenos.length)}</b><span>clientes listos</span></div>
+              <div class="kpi"><b>${fmtN(buenos.filter(x => x.nacimiento).length)}</b><span>con cumpleaños</span></div>
+              ${malos ? `<div class="kpi"><b>${fmtN(malos)}</b><span>sin WhatsApp ni correo (se omiten)</span></div>` : ''}</div>
+            ${soloMail || soloTel ? `<p class="nota">🔗 ${soloMail ? `${fmtN(soloMail)} solo con correo` : ''}${soloMail && soloTel ? ' y ' : ''}${soloTel ? `${fmtN(soloTel)} solo con WhatsApp` : ''}: se importan igual y se completan solos cuando reserven online.</p>` : ''}
+            <p class="nota" style="margin-top:4px;">Columnas que encontramos: ${['nombre', 'apellido', 'telefono', 'correo'].filter(k => mapa[k] != null).map(k => `<b>${esc(filas[0][mapa[k]])}</b>`).join(' · ')}${mapa.nacimiento != null || mapa.nac_dia != null ? ' · <b>cumpleaños</b>' : ''}</p>
+            <table class="tabla-caja tabla-imp"><tr><th>Fila</th><th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>🎂</th><th></th></tr>
+              ${orden.slice(0, 15).map(x => `<tr><td>${x.fila}</td><td>${esc(x.nombre)} ${esc(x.apellido)}</td><td>${esc(x.telefono)}</td><td>${esc(x.correo)}</td><td>${x.nacimiento ? x.nacimiento.slice(5).split('-').reverse().join('-') : ''}</td>
+                <td>${est(x)}</td></tr>`).join('')}</table>
+            ${IMP.length > 15 ? `<p class="nota">Mostrando 15 de ${fmtN(IMP.length)} filas (primero las que tienen problemas).</p>` : ''}
             <label class="check-linea" style="margin-top:8px;"><input type="checkbox" id="impPromosTodos"> <span>Todos aceptaron recibir promociones (solo si te dieron su permiso)</span></label>
             <button class="boton" style="margin-top:8px;" onclick="enviarImportar()" ${buenos.length ? '' : 'disabled'}>⬆ Importar ${buenos.length} cliente${buenos.length === 1 ? '' : 's'}</button></div>`;
         estado('estadoImp', '');
@@ -4783,7 +4814,7 @@
       estado('estadoImp', 'Importando…');
       for (let i = 0; i < lista.length; i += 1000){
         const { data, error } = await db.rpc('importar_clientes', { p: lista.slice(i, i + 1000) });
-        if (error) return estado('estadoImp', /importar_clientes/.test(error.message || '') ? 'Falta instalar la Fase 39 en Supabase.' : 'Error: ' + error.message, 'error');
+        if (error) return estado('estadoImp', /importar_clientes/.test(error.message || '') ? 'Falta instalar la Fase 39/40 en Supabase.' : 'Error: ' + error.message, 'error');
         nuevos += data.nuevos; act += data.actualizados; omit = omit.concat(data.omitidos || []);
       }
       $('impVista').innerHTML = `<div class="sol-caja aprobada"><div class="sol-tit">✓ Listo: ${nuevos} cliente${nuevos === 1 ? '' : 's'} nuevo${nuevos === 1 ? '' : 's'} y ${act} actualizado${act === 1 ? '' : 's'}.</div>
@@ -4800,9 +4831,9 @@
       const fidTxt = fid ? (fid.pendiente ? '🎁 premio reservado en su próxima hora' : fid.listo ? '🎉 tarjeta completa: el premio va en su próxima reserva' : `${fid.sellos} de ${fid.meta} sellos`) : '';
       $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">${esc(c.nombre)} ${esc(c.apellido || '')}</h3>
         ${fidTxt ? `<div class="det-fila"><span>🎟 Fidelidad</span><span>${fidTxt}</span></div>` : ''}
-        <div class="det-fila"><span>WhatsApp</span><span>${esc(c.telefono || '—')}${c.whatsapp ? ' · acepta avisos' : ''}</span></div>
-        <div class="det-fila"><span>Correo</span><span>${esc(c.correo || '—')}</span></div>
-        <div class="det-fila"><span>Registrado</span><span>${(c.creado || '').slice(0, 10)} · ${c.origen === 'inscripcion' ? 'se inscribió en la web' : c.origen === 'panel' ? 'desde el panel' : 'al reservar online'}</span></div>
+        <div class="det-fila"><span>WhatsApp</span><span>${c.telefono ? esc(c.telefono) : '<span class="nota">— se completa cuando reserve</span>'}${c.whatsapp ? ' · acepta avisos' : ''}</span></div>
+        <div class="det-fila"><span>Correo</span><span>${c.correo ? esc(c.correo) : '<span class="nota">— se completa cuando reserve</span>'}</span></div>
+        <div class="det-fila"><span>Registrado</span><span>${(c.creado || '').slice(0, 10)} · ${c.origen === 'inscripcion' ? 'se inscribió en la web' : c.origen === 'panel' ? 'desde el panel' : c.origen === 'importado' ? 'importado desde Excel' : 'al reservar online'}</span></div>
         <div class="det-fila"><span>Visitas</span><span>${c.atendidas} atendidas · ${c.no_asistio} no asistió · ${c.canceladas} canceladas · ${clp(c.gastado)}</span></div>
         <div class="det-fila"><span>🎂 Cumpleaños</span><span><input type="date" id="fNacCli" value="${esc(c.fecha_nacimiento || '')}" max="${hoyTxt()}" style="width:auto;padding:4px 8px;"></span></div>
         <label class="check-linea" style="margin-top:10px;"><input type="checkbox" id="fPromos" ${c.acepta_promos ? 'checked' : ''}> Acepta recibir promociones</label>
