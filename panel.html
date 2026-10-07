@@ -228,6 +228,9 @@
       -webkit-mask:var(--eslabon-v) repeat-y 50% var(--cy) / 10px 26px; mask:var(--eslabon-v) repeat-y 50% var(--cy) / 10px 26px; }
     .cv-riel::after { content:""; position:absolute; left:0; right:0; top:var(--tt); height:var(--th); background:var(--voltaje); border-radius:6px; }
     .cv-riel:hover::after { filter:brightness(1.2); }
+    .nombre-auto { margin:6px 0 0; }
+    .nombre-aviso { animation:nombreAviso .9s ease; }
+    @keyframes nombreAviso { 0%, 100% { box-shadow:none; } 25%, 70% { box-shadow:0 0 0 2px #f59e0b; color:#f59e0b; } }
     .cv-flot { position:fixed; right:auto; bottom:auto; width:22px; }
     .con-cadena { scrollbar-width:none; }
     .con-cadena::-webkit-scrollbar { display:none; }
@@ -2844,7 +2847,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F39 · 07-10 b';
+    const VERSION_PANEL = 'F39 · 07-10 c';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3838,8 +3841,9 @@
               <div class="msj-fila"><label>¿A quiénes?</label><div class="segmentado" id="msjFiltro"></div></div>
               <div class="msj-fila"><label>Ideas rápidas (luego lo editas)</label><div class="ideas">${Object.entries(IDEAS_MSJ).map(([k, v]) => `<button class="chip" onclick="ideaMsj('${k}')">${v.t}</button>`).join('')}</div></div>
               <div class="msj-fila solo-correo"><label for="msjAsunto">Asunto</label><input id="msjAsunto" maxlength="120" placeholder="Ej: ¡Abrimos este feriado!" oninput="vistaMsj()"></div>
-              <div class="msj-fila"><label for="msjTexto">Mensaje <span class="nota">· escribe {nombre} y se cambia por el nombre de cada cliente</span></label>
-                <textarea id="msjTexto" maxlength="2000" placeholder="Hola {nombre}…" oninput="vistaMsj()"></textarea></div>
+              <div class="msj-fila"><label for="msjTexto">Mensaje</label>
+                <textarea id="msjTexto" maxlength="2000" placeholder="Hola {nombre}…" oninput="protegerNombre(this); vistaMsj()" onfocus="protegerNombre(this)"></textarea>
+                <p class="nota nombre-auto">🔒 <b>{nombre}</b> es automático: en cada correo se cambia por el nombre que registró ese cliente. Puedes escribir antes o después, pero no se puede borrar.</p></div>
               <details class="msj-fila" id="msjOfertaBox"><summary style="cursor:pointer;color:var(--voltaje);font-weight:600;font-size:13px;">🎁 Agregar una oferta o descuento (opcional)</summary>
                 <div class="grid-2" style="margin-top:8px;">
                   <div><label>Título de la oferta</label><input id="msjOfTit" maxlength="60" placeholder="Ej: 20% en coloración" oninput="vistaMsj()"></div>
@@ -3911,7 +3915,7 @@
       document.querySelectorAll('#tab-mensajes .solo-correo').forEach(x => x.classList.toggle('oculto', MSJ.canal !== 'correo'));
     }
     function ideaMsj(k){
-      const i = IDEAS_MSJ[k]; $('msjAsunto').value = i.asunto; $('msjTexto').value = i.msj;
+      const i = IDEAS_MSJ[k]; $('msjAsunto').value = i.asunto; $('msjTexto').value = i.msj; $('msjTexto').dataset.okNombre = i.msj;
       $('msjOfTit').value = i.oferta?.titulo || ''; $('msjOfDet').value = i.oferta?.detalle || ''; $('msjOfHasta').value = i.oferta?.hasta || '';
       if (i.oferta) $('msjOfertaBox').open = true;
       if (i.filtro){ MSJ.filtro = i.filtro; dibujarFiltroMsj(); }
@@ -3923,6 +3927,17 @@
                oferta: tit ? { titulo: tit, detalle: $('msjOfDet').value.trim(), hasta: $('msjOfHasta').value.trim() } : null };
     }
     // Texto de WhatsApp para un cliente
+    // {nombre} no se puede borrar del mensaje: si desaparece, se vuelve a lo anterior (o a "Hola {nombre} ")
+    function protegerNombre(el){
+      const v = el.value, tiene = /\{nombre\}/i.test(v);
+      if (tiene){ el.dataset.okNombre = v; el.classList.remove('nombre-aviso'); return; }
+      const ant = el.dataset.okNombre, pos = el.selectionStart;
+      if (!v.trim() || !ant){ el.value = 'Hola {nombre} ' + v.trimStart(); el.setSelectionRange(el.value.length, el.value.length); }
+      else { el.value = ant; const p = Math.min(pos, ant.length); el.setSelectionRange(p, p); }
+      el.dataset.okNombre = el.value;
+      el.classList.remove('nombre-aviso'); void el.offsetWidth; el.classList.add('nombre-aviso');
+      const n = el.parentElement.querySelector('.nombre-auto'); if (n){ n.classList.remove('nombre-aviso'); void n.offsetWidth; n.classList.add('nombre-aviso'); }
+    }
     function textoWsp(d, nombre){
       const pila = String(nombre || '').trim().split(/\s+/)[0] || '';
       let t = d.mensaje.replace(/\{nombre\}/gi, pila || '');
@@ -4051,13 +4066,13 @@
     }
     function vistaMsj(){
       const d = datosMsj(), c = /^#[0-9a-f]{6}$/i.test(NEG.color || '') ? NEG.color : '#1d4ed8', n = ((MSJ.info?.filtros || {})[MSJ.filtro] || {})[MSJ.canal] ?? 0;
-      const ej = 'Camila';
+      const ej = 'NOMBREXCLIENTE', CHIP = '<span style="display:inline-block;background:#fde68a;color:#342d2d;border-radius:6px;padding:0 6px;font-weight:700;font-style:normal;" title="Aquí va el nombre de cada cliente">(nombre)</span>', conChip = h => h.split(ej).join(CHIP);   // (nombre) se reemplaza solo por el nombre de cada cliente
       if (MSJ.canal === 'correo'){
         const html = htmlCampana(negCorreo(), { asunto: d.asunto, mensaje: (d.mensaje || 'Escribe tu mensaje…').replace(/\{nombre\}/gi, ej), oferta: d.oferta },
           { link: d.boton ? linkAgenda() : '', pie: `Recibes este correo porque aceptaste recibir promociones de ${esc(NEG.nombre || '')}. <u>No quiero recibir más promociones</u>.` });
         $('msjVista').innerHTML = `<div class="prev-mail"><div class="pm-asunto"><b>${esc(NEG.nombre || '')}</b> · ${esc(d.asunto || '(sin asunto)')}</div><iframe id="msjFrame" title="Vista previa del correo" scrolling="no"></iframe></div>
-          <p class="nota" style="margin-top:6px;">Ejemplo con un cliente llamado ${ej}. Es exactamente el correo que les llega.</p>`;
-        const fr = $('msjFrame'); fr.onload = () => altoFrameMsj(fr); fr.srcdoc = html;
+          <p class="nota" style="margin-top:6px;">Donde dice ${CHIP} cada cliente verá su propio nombre (el que registró al reservar). Es exactamente el correo que les llega.</p>`;
+        const fr = $('msjFrame'); fr.onload = () => altoFrameMsj(fr); fr.srcdoc = conChip(html);
         const L = MSJ.info?.limites || {}, sinCupo = L.campanas_mes != null && L.usadas_mes >= L.campanas_mes, nn = L.max_destinatarios ? Math.min(n, L.max_destinatarios) : n;
         const pr = (MSJ.info?.pruebas || [])[0];
         $('msjAcciones').innerHTML = `<button class="boton-linea" onclick="enviarMsj(true)">Enviarme una prueba</button>
@@ -4066,7 +4081,7 @@
           ${nn < n ? `<p class="nota" style="width:100%;margin:2px 0 0;">Tu plan permite ${fmtN(L.max_destinatarios)} clientes por envío: se enviará a los ${fmtN(nn)} que vinieron más recientemente (de ${fmtN(n)}).</p>` : ''}
           ${pr ? `<p class="nota" style="width:100%;margin:2px 0 0;">Última prueba (${new Date(pr.creado).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}): ${estadoCorreo(pr)}</p>` : ''}`;
       } else {
-        $('msjVista').innerHTML = `<div class="prev-wsp"><div class="burbuja">${esc(d.mensaje ? textoWsp(d, ej) : 'Escribe tu mensaje…').replace(/\*([^*\n]+)\*/g, '<b>$1</b>')}<div class="hora">${new Date().toTimeString().slice(0, 5)} ✓✓</div></div></div>
+        $('msjVista').innerHTML = `<div class="prev-wsp"><div class="burbuja">${conChip(esc(d.mensaje ? textoWsp(d, ej) : 'Escribe tu mensaje…').replace(/\*([^*\n]+)\*/g, '<b>$1</b>'))}<div class="hora">${new Date().toTimeString().slice(0, 5)} ✓✓</div></div></div>
           <p class="nota" style="margin-top:6px;">WhatsApp no permite envíos automáticos gratis: te armamos la lista y tú tocas "Enviar" en cada cliente (se abre tu WhatsApp con el mensaje listo).</p>`;
         $('msjAcciones').innerHTML = `<button class="boton" style="background:#25d366;border-color:#25d366;color:#06240f;" onclick="prepararWsp()" ${n ? '' : 'disabled'}>💬 Preparar lista (${n})</button>`;
       }
@@ -4828,8 +4843,9 @@
         <label class="check-linea"><input type="checkbox" ${envio.soloPromos ? 'checked' : ''} onchange="envio.soloPromos = this.checked; dibujarEnvio()"> Solo a quienes aceptaron promociones
           <span class="nota">(desmárcalo solo para avisos importantes, ej: cambio de horario)</span></label>
         ${wsp ? '' : `<label for="envAsunto">Asunto</label><input id="envAsunto" value="${esc(prev.asunto ?? 'Novedades ' + (NEG.nombre || ''))}">`}
-        <label for="envMsg">Mensaje ${wsp ? '— {nombre} se reemplaza por el nombre de cada cliente' : ''}</label>
-        <textarea id="envMsg" style="min-height:110px;">${esc(msg)}</textarea>
+        <label for="envMsg">Mensaje</label>
+        <textarea id="envMsg" style="min-height:110px;" oninput="protegerNombre(this)" onfocus="protegerNombre(this)">${esc(msg)}</textarea>
+        <p class="nota nombre-auto">🔒 <b>{nombre}</b> es automático: se cambia por el nombre de cada cliente. No se puede borrar.</p>
         ${wsp ? `<p class="nota" style="margin:8px 0;">WhatsApp no permite mandar a muchos de una vez sin su servicio pagado: toca "Enviar" en cada uno (se abre WhatsApp con el mensaje listo) o usa "Abrir siguiente".</p>
           <div class="det-acciones" style="margin-top:0;"><button class="boton" onclick="siguienteWsp()">▶ Abrir siguiente (${l.filter(c => !envio.hechos.has(c.id)).length} pendientes)</button></div>
           <div style="max-height:240px;overflow:auto;">${l.map(c => `<div class="det-fila"><span>${envio.hechos.has(c.id) ? '✓ ' : ''}${esc(c.nombre)} ${esc(c.apellido || '')} · ${esc(c.telefono)}</span>
