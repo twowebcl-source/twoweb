@@ -7,6 +7,8 @@
   <meta name="google" content="notranslate">
   <title>Panel</title>
   <!-- App instalable (añadir a inicio / escritorio) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#1d4ed8">
   <meta name="mobile-web-app-capable" content="yes">
@@ -52,6 +54,60 @@
     .caja { max-width:1100px; margin:0 auto; }
     .oculto { display:none !important; }
     h1 { font-size:24px; }
+    /* ===== Ingreso (login) profesional ===== */
+    .login-pro { --lp-acento:#3b82f6; position:fixed; inset:0; z-index:40; overflow-y:auto; display:flex; align-items:center; justify-content:center; padding:32px 16px;
+                 background:radial-gradient(1200px 600px at 50% -10%, #1b2a55 0%, transparent 60%), linear-gradient(160deg, #0a0f1f 0%, #0d1428 55%, #0a0e1a 100%);
+                 font-family:Inter, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color:#e8ecf6; }
+    .login-pro.oculto { display:none; }
+    .lp-luz { position:fixed; width:420px; height:420px; border-radius:50%; filter:blur(90px); opacity:.35; pointer-events:none; }
+    .lp-l1 { background:var(--lp-acento); top:-120px; left:-120px; }
+    .lp-l2 { background:#7c3aed; bottom:-160px; right:-120px; opacity:.22; }
+    .login-pro.con-estilo { background:transparent; }
+    .login-pro.con-estilo::before { content:""; position:fixed; inset:0; background:rgba(5,8,18,var(--lp-osc, .35)); pointer-events:none; }
+    .login-pro.con-estilo .lp-luz { display:none; }
+    html.fuente-propia .login-pro { font-family:var(--fuente); }
+    html.fuente-propia .login-pro h1.marca-neg, html.fuente-propia .login-pro .lp-entrar { font-family:var(--fuente-tit); }
+    .lp-aviso { background:color-mix(in srgb, var(--lp-acento) 18%, rgba(10,14,28,.7)); border:1px solid color-mix(in srgb, var(--lp-acento) 50%, transparent); color:#fff;
+                border-radius:14px; padding:10px 14px; font-size:13.5px; text-align:center; margin:0 0 14px; backdrop-filter:blur(10px); }
+    .lp-prev { position:fixed; top:0; left:0; right:0; z-index:5; background:#fbbf24; color:#1a1300; text-align:center; font:600 13px Inter, sans-serif; padding:6px; }
+    .lp-prev a { color:#1a1300; }
+    .ing-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; }
+    .ing-grid .full { grid-column:1 / -1; }
+    @media (max-width:700px){ .ing-grid { grid-template-columns:1fr; } }
+    .ing-logo { width:64px; height:64px; border-radius:16px; object-fit:contain; background:rgba(255,255,255,.06); }
+    .lp-caja { position:relative; width:100%; max-width:400px; margin:auto; }
+    .lp-marca { text-align:center; margin-bottom:22px; }
+    .lp-logo { width:76px; height:76px; object-fit:contain; border-radius:20px; display:block; margin:0 auto 14px; box-shadow:0 12px 34px rgba(0,0,0,.45); }
+    .login-pro h1.marca-neg { justify-content:center; font-size:34px; font-weight:800; letter-spacing:-0.02em; margin:0; color:#fff; text-transform:none; }
+    .login-pro h1.marca-neg .logo-neg { height:52px; width:52px; }
+    .login-pro h1.marca-neg span { color:#fff; background:none; -webkit-text-fill-color:#fff; }
+    .lp-ini { width:76px; height:76px; border-radius:20px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center; font:800 34px Inter, sans-serif; color:#fff;
+              background:linear-gradient(135deg, var(--lp-acento), color-mix(in srgb, var(--lp-acento) 55%, #000)); box-shadow:0 12px 34px rgba(0,0,0,.45); }
+    .login-pro .modo-pestana .nota { font-size:11.5px; opacity:.8; }
+    .login-pro .sub { color:#9aa6c2; margin:6px 0 0; font-size:14.5px; }
+    .lp-card { background:rgba(255,255,255,0.045); border:1px solid rgba(255,255,255,0.09); border-radius:20px; padding:26px 24px 20px;
+               backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:0 24px 60px rgba(0,0,0,.45); }
+    .lp-card label { display:block; font-size:12.5px; font-weight:600; color:#aeb8d0; margin:0 0 6px; letter-spacing:.01em; }
+    .lp-campo { position:relative; display:flex; align-items:center; margin-bottom:16px; }
+    .lp-campo input { width:100%; background:rgba(8,12,26,0.65); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:12px; padding:13px 14px 13px 42px; font-size:15px; font-family:inherit; transition:border-color .15s, box-shadow .15s; }
+    .lp-campo input::placeholder { color:#5d6884; }
+    .lp-campo input:focus { outline:none; border-color:var(--lp-acento); box-shadow:0 0 0 4px color-mix(in srgb, var(--lp-acento) 25%, transparent); }
+    .lp-ico { position:absolute; left:14px; font-size:15px; opacity:.6; pointer-events:none; }
+    .lp-ver { position:absolute; right:8px; background:none; border:none; color:#9aa6c2; font:600 12.5px Inter, sans-serif; cursor:pointer; padding:6px 8px; border-radius:8px; }
+    .lp-ver:hover { color:#fff; background:rgba(255,255,255,.06); }
+    .login-pro .lp-entrar { margin-top:6px; padding:14px; font-size:15.5px; font-weight:700; border-radius:12px; border:none; color:#fff;
+                            background:linear-gradient(135deg, var(--lp-acento), color-mix(in srgb, var(--lp-acento) 60%, #7c3aed)); box-shadow:0 10px 26px color-mix(in srgb, var(--lp-acento) 35%, transparent); }
+    .login-pro .lp-entrar:hover { filter:brightness(1.08); }
+    .login-pro .estado { text-align:center; min-height:0; margin:10px 0 0; }
+    .login-pro .lp-olvido { display:block; margin:12px auto 0; color:#9aa6c2; font-size:13.5px; }
+    .login-pro .lp-olvido:hover { color:#fff; }
+    .lp-codigo { margin-top:14px; border-top:1px solid rgba(255,255,255,.08); padding-top:14px; }
+    .lp-codigo input { width:100%; background:rgba(8,12,26,0.65); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+    .login-pro .modo-pestana { margin-top:14px; border-top:1px solid rgba(255,255,255,.06); padding-top:12px; text-align:center; }
+    .login-pro .modo-pestana .nota, .login-pro .nota { color:#7f8aa6; font-size:12px; }
+    .lp-pie { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin:18px 0 0; font-size:12.5px; color:#6f7a96; }
+    .lp-pie a { color:#9aa6c2; text-decoration:none; }
+    .lp-pie a:hover { color:#fff; }
     h1.marca-neg { display:flex; align-items:center; gap:10px; }
     h1.marca-neg .logo-neg { height:42px; width:42px; object-fit:contain; border-radius:var(--r-s); background:color-mix(in srgb, var(--hueso) 7%, transparent); }
     .prev-img { display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap; }
@@ -615,25 +671,35 @@
   <div class="caja">
 
     <!-- ========== LOGIN ========== -->
-    <section id="vistaLogin" class="oculto">
-      <h1 class="marca-neg"><img class="logo-neg oculto" alt=""><span>TwoWeb</span></h1>
-      <p class="sub">Acceso para el equipo.</p>
-      <div class="tarjeta" style="max-width:420px;">
-        <label for="loginCorreo">Correo</label>
-        <input type="email" id="loginCorreo" autocomplete="username">
-        <label for="loginClave">Contraseña</label>
-        <input type="password" id="loginClave" autocomplete="current-password" onkeydown="if(event.key==='Enter')entrar()">
-        <button class="boton ancho" onclick="entrar()">Entrar</button>
-        <div class="modo-pestana" id="modoPestanaLogin"></div>
-        <button class="link" onclick="mostrarCodigo()">¿Olvidaste tu contraseña? Entra con un código a tu correo</button>
-        <p class="estado" id="estadoLogin"></p>
-        <div id="cajaCodigo" class="oculto" style="margin-top:6px;border-top:1px solid var(--linea);padding-top:12px;">
-          <p class="nota">Te enviaremos un código de acceso al correo de arriba. Después podrás crear una contraseña nueva en <b>Mi cuenta</b>.</p>
-          <button class="boton-linea" style="margin-top:10px;" onclick="enviarCodigo()">Enviar código</button>
-          <label for="loginCodigo">Código recibido</label>
-          <input id="loginCodigo" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" onkeydown="if(event.key==='Enter')entrarConCodigo()">
-          <button class="boton ancho" onclick="entrarConCodigo()">Entrar con código</button>
+    <section id="vistaLogin" class="oculto login-pro">
+      <div class="lp-prev oculto" id="lpPrev">👁 Vista previa de la pantalla de ingreso · <a href="#" onclick="window.close(); return false;">cerrar</a></div>
+      <div class="lp-luz lp-l1"></div><div class="lp-luz lp-l2"></div>
+      <div class="lp-caja">
+        <div class="lp-marca">
+          <img class="lp-logo" src="imagenes/logo-twoweb.png" alt="twoweb" onerror="if(!this.dataset.r){this.dataset.r=1;this.src='imagenes/app-192.png'}">
+          <h1 class="marca-neg"><img class="logo-neg oculto" alt=""><span>twoweb</span></h1>
+          <p class="sub">Ingresa a tu panel de agenda y ventas</p>
         </div>
+        <div class="lp-aviso oculto" id="lpAviso"></div>
+        <div class="lp-card">
+          <label for="loginCorreo">Correo</label>
+          <div class="lp-campo"><span class="lp-ico">✉</span><input type="email" id="loginCorreo" autocomplete="username" placeholder="tu@correo.com"></div>
+          <label for="loginClave">Contraseña</label>
+          <div class="lp-campo"><span class="lp-ico">🔒</span><input type="password" id="loginClave" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')entrar()">
+            <button type="button" class="lp-ver" onclick="const i=$('loginClave'); i.type = i.type === 'password' ? 'text' : 'password'; this.textContent = i.type === 'password' ? 'Ver' : 'Ocultar'">Ver</button></div>
+          <button class="boton ancho lp-entrar" onclick="entrar()">Entrar</button>
+          <p class="estado" id="estadoLogin"></p>
+          <button class="link lp-olvido" onclick="mostrarCodigo()">¿Olvidaste tu contraseña?</button>
+          <div id="cajaCodigo" class="oculto lp-codigo">
+            <p class="nota">Te enviamos un código de acceso al correo de arriba. Después creas una contraseña nueva en <b>Mi cuenta</b>.</p>
+            <button class="boton-linea ancho" style="margin-top:10px;" onclick="enviarCodigo()">Enviar código a mi correo</button>
+            <label for="loginCodigo">Código recibido</label>
+            <input id="loginCodigo" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" onkeydown="if(event.key==='Enter')entrarConCodigo()">
+            <button class="boton ancho" onclick="entrarConCodigo()">Entrar con código</button>
+          </div>
+          <div class="modo-pestana" id="modoPestanaLogin"></div>
+        </div>
+        <p class="lp-pie"><span>🔒 Conexión segura</span><span>·</span><a href="/">twoweb.cl</a><span>·</span><a href="https://wa.me/56940263337" target="_blank" rel="noopener">Soporte</a></p>
       </div>
     </section>
 
@@ -1001,6 +1067,8 @@
           <p class="nota">Los estilos que todos (paneles y páginas de los negocios) pueden elegir en "Personalizar". Sube imágenes o crea animaciones con colores, formas y emojis.</p></div>
           <span class="barra-der"><label class="boton-linea" style="cursor:pointer;">📷 Subir imagen como estilo<input type="file" accept="image/*" class="oculto" onchange="subirEstiloImagen(this)"></label>
             <button class="boton" onclick="editarFondo('')">+ Nuevo estilo animado</button></span></div>
+        <div id="ingresoSuper"></div>
+        <h3 style="margin:18px 0 8px;">Catálogo de estilos</h3>
         <div id="listaFondos" class="pz-estilos super"><p class="nota">Cargando…</p></div>
       </div>
 
@@ -1254,21 +1322,49 @@
     }
 
     // Login con la marca del negocio cuando se entra desde su página (panel.html?n=link-del-negocio)
-    async function marcaLogin(){
-      const slug = new URLSearchParams(location.search).get('n'); if (!slug || marcaLogin.hecho) return; marcaLogin.hecho = true;
-      try {
-        const { data } = await db.rpc('agenda_config', { p_negocio: slug });
-        const n = data?.negocio; if (!n?.nombre) return;
-        document.querySelectorAll('#vistaLogin h1.marca-neg span').forEach(e => e.textContent = n.nombre);
-        const img = document.querySelector('#vistaLogin .logo-neg');
-        if (img && n.logo_url){ img.src = n.logo_url; img.classList.remove('oculto'); }
-        document.querySelector('#vistaLogin .sub').textContent = 'Acceso para el equipo de ' + n.nombre + '.';
-        document.title = n.nombre + ' — Acceso equipo';
-        aplicarTema(n.tema, n.color);
-      } catch (e) {}
+    // Pantalla de ingreso: con ?n=slug toma la marca del negocio; si no, la que diseñó el super admin (Fase 29)
+    let ING = null;
+    async function marcaLogin(forzar){
+      const slug = new URLSearchParams(location.search).get('n');
+      if (slug){
+        if (marcaLogin.hecho) return; marcaLogin.hecho = true;
+        try {
+          const { data } = await db.rpc('agenda_config', { p_negocio: slug });
+          const n = data?.negocio; if (!n?.nombre) return;
+          document.querySelectorAll('#vistaLogin h1.marca-neg span').forEach(e => e.textContent = n.nombre);
+          const img = document.querySelector('#vistaLogin .logo-neg');
+          if (img && n.logo_url){ img.src = n.logo_url; img.classList.remove('oculto'); }
+          const def = document.querySelector('#vistaLogin .lp-logo');
+          if (def){ def.classList.add('oculto'); if (!n.logo_url) def.insertAdjacentHTML('afterend', `<div class="lp-ini">${esc((n.nombre || '?').trim()[0].toUpperCase())}</div>`); }
+          if (/^#[0-9a-f]{6}$/i.test(n.color || '')) $('vistaLogin').style.setProperty('--lp-acento', n.color);
+          document.querySelector('#vistaLogin .sub').textContent = 'Acceso para el equipo de ' + n.nombre;
+          document.title = n.nombre + ' — Acceso equipo';
+          aplicarTema(n.tema, n.color);
+          if (n.estilo && n.estilo.sel && n.estilo.fondo){ $('vistaLogin').classList.add('con-estilo'); aplicarEstiloPublico(n); }
+        } catch (e) {}
+        return;
+      }
+      try { if (!ING || forzar){ const { data } = await db.rpc('ingreso_config'); ING = data || {}; } } catch (e) { ING = ING || {}; }
+      pintarIngreso(ING);
+    }
+    function pintarIngreso(c){
+      const v = $('vistaLogin'); c = c || {};
+      v.style.setProperty('--lp-acento', /^#[0-9a-f]{6}$/i.test(c.acento || '') ? c.acento : '#3b82f6');
+      v.style.setProperty('--lp-osc', ((c.oscurecer ?? 35) / 100).toFixed(2));
+      v.querySelector('h1.marca-neg span').textContent = c.titulo || 'twoweb';
+      v.querySelector('.sub').textContent = c.subtitulo || 'Ingresa a tu panel de agenda y ventas';
+      const logo = v.querySelector('.lp-logo'); if (logo && c.logo) logo.src = c.logo;
+      $('lpAviso').classList.toggle('oculto', !c.aviso); $('lpAviso').textContent = c.aviso || '';
+      const e = c.estilo;
+      if (e && e.sel && e.fondo){ v.classList.add('con-estilo'); FondoAnim.poner(e.sel, { ...e.fondo, capaItem: e.capa || null }); }
+      else { v.classList.remove('con-estilo'); FondoAnim.poner(null); }
+      aplicarFuente(e && e.fuente || null);
     }
     async function cargarSesion(session){
       if (modoRecuperacion){ mostrar('vistaNuevaClave'); return; }
+      if (new URLSearchParams(location.search).get('vista') === 'ingreso'){     // vista previa para el super admin
+        mostrar('vistaLogin'); $('lpPrev').classList.remove('oculto'); ING = null; marcaLogin(true); return;
+      }
       if (!session){
         yo = null; mostrar('vistaLogin'); marcaLogin();
         $('modoPestanaLogin').innerHTML = MODO_PESTANA
@@ -2343,7 +2439,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F28 · 06-10 b';
+    const VERSION_PANEL = 'F29 · 06-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -2521,11 +2617,12 @@
     let PZ = null;     // { para:'yo'|'negocio', tab, sel, fuente, imagen, imagenNueva }
     async function abrirPersonalizar(para){
       await cargarFondos();
-      const neg = para === 'negocio';
-      PZ = { para, tab: 'estilo', sel: neg ? (NEG.estilo ? { ...NEG.estilo } : null) : (fondoGuardado() ? { ...fondoGuardado() } : null),
-             fuente: (neg ? NEG.fuente : yo.mi_fuente) || 'defecto', imagen: null, imagenNueva: undefined };
+      const neg = para === 'negocio', ing = para === 'ingreso';
+      PZ = { para, tab: 'estilo', sel: ing ? (ING_ED?.estilo?.sel ? { ...ING_ED.estilo.sel } : null) : neg ? (NEG.estilo ? { ...NEG.estilo } : null) : (fondoGuardado() ? { ...fondoGuardado() } : null),
+             fuente: (ing ? ING_ED?.estilo?.fuente : neg ? NEG.fuente : yo.mi_fuente) || 'defecto', imagen: ing ? (ING_ED?.estilo?.fondo?.propia ? ING_ED.estilo.fondo.imagen : null) : null, imagenNueva: undefined };
       if (PZ.sel && PZ.sel.tipo && !PZ.sel.codigo) PZ.sel.codigo = PZ.sel.tipo;
-      if (!neg) PZ.imagen = await imagenPropia();
+      if (ing) {}
+      else if (!neg) PZ.imagen = await imagenPropia();
       else if (NEG.tiene_imagen_fondo) {
         try { const { data } = await db.rpc('agenda_config', { p_negocio: NEG.slug }); PZ.imagen = data?.negocio?.estilo?.fondo?.imagen || null; } catch(e) {}
       }
@@ -2551,9 +2648,10 @@
     const tarjetaMini = f => f.imagen ? `background-image:url('${f.imagen}');background-size:cover;background-position:center;`
       : `background:linear-gradient(160deg, ${f.params?.c1 || '#444'}, ${f.params?.c2 || '#222'} 70%, ${f.params?.c3 || f.params?.c1 || '#444'});`;
     function dibujarPz(){
-      const s = PZ.sel, img = PZ.imagenNueva !== undefined ? PZ.imagenNueva : PZ.imagen, neg = PZ.para === 'negocio';
-      $('pzTitulo').textContent = neg ? 'Personalizar mi página' : 'Personalizar mi panel';
-      $('pzSub').textContent = neg ? 'Lo verán tus clientes en tu agenda, tienda y página. Mientras eliges, se ve aquí detrás.' : 'Solo cambia tu panel. Mientras eliges, se ve aquí detrás.';
+      const s = PZ.sel, img = PZ.imagenNueva !== undefined ? PZ.imagenNueva : PZ.imagen, neg = PZ.para !== 'yo';
+      $('pzTitulo').textContent = PZ.para === 'ingreso' ? 'Pantalla de ingreso' : neg ? 'Personalizar mi página' : 'Personalizar mi panel';
+      $('pzSub').textContent = PZ.para === 'ingreso' ? 'Fondo y fuente de la pantalla donde todos entran a su cuenta. Mientras eliges, se ve aquí detrás.'
+        : neg ? 'Lo verán tus clientes en tu agenda, tienda y página. Mientras eliges, se ve aquí detrás.' : 'Solo cambia tu panel. Mientras eliges, se ve aquí detrás.';
       document.querySelectorAll('#hojaPz .pz-tab').forEach(b => b.classList.toggle('sel', b.dataset.t === PZ.tab));
       if (PZ.tab === 'fuente'){
         $('pzCuerpo').innerHTML = `<div class="pz-fuentes">${Object.entries(FUENTES_ESTILO).map(([k, f]) => `<button class="pz-fuente ${PZ.fuente === k ? 'sel' : ''}" onclick="PZ.fuente='${k}'; dibujarPz(); previewPz()"
@@ -2614,7 +2712,9 @@
       const b = $('pzAplicar'); b.disabled = true; b.textContent = 'Guardando…';
       const fondo = PZ.sel ? { ...PZ.sel } : { codigo: 'ninguno' };
       let r;
-      if (PZ.para === 'negocio'){
+      if (PZ.para === 'ingreso'){
+        r = await db.rpc('super_guardar_ingreso', { p: { estilo: fondo, fuente: PZ.fuente, ...(PZ.imagenNueva !== undefined ? { imagen: PZ.imagenNueva || '' } : {}) } });
+      } else if (PZ.para === 'negocio'){
         r = await db.rpc('guardar_mi_negocio', { p: { estilo: fondo, fuente: PZ.fuente, ...(PZ.imagenNueva !== undefined ? { imagen_fondo: PZ.imagenNueva || '' } : {}) } });
         if (!r.error){ const { data } = await db.rpc('mi_sesion'); if (data?.negocio) NEG = data.negocio; }
       } else {
@@ -2626,6 +2726,7 @@
       }
       b.disabled = false; b.textContent = 'Aplicar';
       if (r.error) return alert(/guardar_mi_estilo|estilo|fuente/.test(r.error.message || '') && /function|schema/i.test(r.error.message || '') ? 'Falta instalar la Fase 22 en la base de datos.' : r.error.message);
+      if (PZ.para === 'ingreso'){ cerrarPz(); mostrarToast({ id: 0, tipo: 'completada', titulo: 'Pantalla de ingreso actualizada', detalle: 'Ábrela con "Ver cómo queda".' }); cargarIngresoSuper(); return; }
       const neg = PZ.para === 'negocio'; cerrarPz();
       mostrarToast({ id: 0, tipo: 'completada', titulo: neg ? 'Tu página quedó con su nuevo estilo' : 'Listo, tu panel quedó personalizado',
         detalle: neg ? 'Ábrela con "Ver cómo quedó" en Mi página.' : 'Se ve igual en todos tus dispositivos.' });
@@ -2635,8 +2736,63 @@
 
     // ================= SUPER ADMIN: CATÁLOGO DE ESTILOS =================
     let FONDO_ED = null, PROBANDO = false;
+    // ----- Pantalla de ingreso (Fase 29) -----
+    let ING_ED = null;
+    async function cargarIngresoSuper(){
+      const el = $('ingresoSuper'); if (!el) return;
+      const { data, error } = await db.rpc('ingreso_config');
+      if (error){ el.innerHTML = /ingreso_config/.test(error.message || '') ? '<div class="tarjeta"><p class="nota">🔐 Pantalla de ingreso: falta instalar la Fase 29.</p></div>' : ''; return; }
+      ING_ED = data || {}; ING = ING_ED;
+      const c = ING_ED, e = c.estilo || {};
+      el.innerHTML = `<div class="tarjeta">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+            <div><h3 style="margin:0 0 4px;">🔐 Pantalla de ingreso al panel</h3>
+              <p class="nota">Es lo primero que ven todos al entrar a su cuenta (tú, los admins y sus equipos). Los links con la marca de un negocio (?n=) usan la de ese negocio.</p></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="boton" onclick="abrirPersonalizar('ingreso')">🎨 Fondo y fuente</button>
+              <a class="boton-linea" href="panel.html?vista=ingreso" target="_blank" rel="noopener">👁 Ver cómo queda</a></div></div>
+          <p class="nota" style="margin:8px 0 12px;">Fondo actual: <b>${esc(resumenEstilo(e.sel || null, e.fuente))}</b></p>
+          <div class="ing-grid">
+            <div><label>Título</label><input id="ingTitulo" maxlength="40" value="${esc(c.titulo || '')}" placeholder="twoweb"></div>
+            <div><label>Subtítulo</label><input id="ingSub" maxlength="100" value="${esc(c.subtitulo || '')}" placeholder="Ingresa a tu panel de agenda y ventas"></div>
+            <div class="full"><label>Aviso sobre el formulario (opcional)</label><input id="ingAviso" maxlength="200" value="${esc(c.aviso || '')}" placeholder="Ej: ✨ Nuevo: mensajes masivos a tus clientes"></div>
+            <div><label>Color del botón</label><input type="color" id="ingAcento" value="${esc(c.acento || '#3b82f6')}" style="height:42px;padding:2px;"></div>
+            <div><label>Oscurecer el fondo · <span id="ingOscTxt">${c.oscurecer ?? 35}%</span></label><input type="range" id="ingOsc" min="0" max="85" step="5" value="${c.oscurecer ?? 35}" oninput="$('ingOscTxt').textContent=this.value+'%'"></div>
+            <div class="full"><label>Logo</label><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <img class="ing-logo" id="ingLogoPrev" src="${esc(c.logo || 'imagenes/logo-twoweb.png')}" onerror="this.src='imagenes/app-192.png'">
+              <label class="boton-linea" style="cursor:pointer;">📷 Subir logo (PNG transparente)<input type="file" accept="image/*" class="oculto" onchange="subirLogoIngreso(this)"></label>
+              ${c.logo ? '<button class="link" style="margin:0;" onclick="quitarLogoIngreso()">Quitar logo</button>' : ''}</div></div>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;"><button class="boton" onclick="guardarIngreso()">Guardar textos y colores</button><span class="estado" id="estadoIng"></span></div>
+        </div>`;
+    }
+    let logoIngNuevo;
+    function logoPNG(archivo){
+      return new Promise((ok, mal) => {
+        if (!archivo || !/^image\//.test(archivo.type)) return mal(new Error('Elige una imagen (PNG, JPG o WEBP).'));
+        const u = URL.createObjectURL(archivo), img = new Image();
+        img.onload = () => { URL.revokeObjectURL(u); const f = Math.min(1, 320 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+          c.width = Math.round(img.naturalWidth * f); c.height = Math.round(img.naturalHeight * f); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          const d = c.toDataURL('image/png'); d.length <= 300000 ? ok(d) : comprimirImagen(archivo, 256, 300000).then(ok, mal); };
+        img.onerror = () => { URL.revokeObjectURL(u); mal(new Error('No se pudo leer la imagen.')); };
+        img.src = u;
+      });
+    }
+    async function subirLogoIngreso(input){
+      try { logoIngNuevo = await logoPNG(input.files[0]); $('ingLogoPrev').src = logoIngNuevo; estado('estadoIng', 'Logo listo · falta Guardar', ''); }
+      catch (e) { estado('estadoIng', e.message, 'error'); }
+      input.value = '';
+    }
+    function quitarLogoIngreso(){ logoIngNuevo = ''; $('ingLogoPrev').src = 'imagenes/logo-twoweb.png'; estado('estadoIng', 'Se quitará al guardar', ''); }
+    async function guardarIngreso(){
+      const p = { titulo: $('ingTitulo').value.trim(), subtitulo: $('ingSub').value.trim(), aviso: $('ingAviso').value.trim(), acento: $('ingAcento').value, oscurecer: Number($('ingOsc').value) };
+      if (logoIngNuevo !== undefined) p.logo = logoIngNuevo;
+      const { error } = await db.rpc('super_guardar_ingreso', { p });
+      if (error) return estado('estadoIng', 'Error: ' + error.message, 'error');
+      logoIngNuevo = undefined; await cargarIngresoSuper();
+      estado('estadoIng', '✓ Guardado. Revisa con "Ver cómo queda".', 'ok');
+    }
     async function cargarFondosSuper(){
-      await cargarFondos();
+      await cargarFondos(); cargarIngresoSuper();
       $('listaFondos').innerHTML = FONDOS_CAT.map(f => `<div class="pz-est super ${f.activo === false ? 'off' : ''}">
           <span class="pz-img" style="${tarjetaMini(f)}" onclick="probarFondoCat('${f.codigo}')">${f.imagen ? '' : esc(f.icono || '✨')}</span>
           <b>${esc(f.nombre)}</b><small>${esc(f.descripcion || (MOTORES[f.motor]?.n || f.motor).split(' (')[0])}${f.usan != null ? ` · ${f.usan} 👤` : ''}${f.activo === false ? ' · apagado' : ''}</small>
