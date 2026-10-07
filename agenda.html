@@ -499,6 +499,9 @@
     const trabsLocal = () => CFG.trabajadores.filter(t => t.local_id === LOCAL);
     const servsLocal = () => CFG.servicios.filter(s => s.local_id === LOCAL && trabsLocal().some(t => t.servicios.includes(s.id)));
     const prosLocal  = () => trabsLocal().filter(t => t.servicios.some(id => CFG.servicios.some(s => s.id === id && s.local_id === LOCAL)));
+    // Locales que de verdad se pueden reservar (tienen al menos un profesional con servicios). Los vacíos no se muestran.
+    const prosDe = lid => CFG.trabajadores.filter(t => t.local_id === lid && (t.servicios || []).some(id => CFG.servicios.some(s => s.id === id && s.local_id === lid)));
+    const localesOk = () => { const ok = CFG.locales.filter(l => prosDe(l.id).length); return ok.length ? ok : CFG.locales; };
     const aptos      = ids => trabsLocal().filter(t => ids.every(id => t.servicios.includes(id)));   // barberos que hacen TODOS esos servicios
     const trab       = id => CFG.trabajadores.find(t => t.id === id);
     const nombreTrab = id => trab(id)?.nombre || '';
@@ -549,7 +552,7 @@
       const tFijo = con && CFG.trabajadores.find(t => String(t.id) === con || slugTrab(t) === con || slugTxt(t.nombre) === con || slugTxt(t.nombre) + '-' + t.id === con);
       if (tFijo) { FIJO = tFijo.id; LOCAL = tFijo.local_id; paso = inicioPersona(); }
       else if (pre) { LOCAL = pre.id; paso = inicioPersona(); }
-      else if (CFG.locales.length === 1) { LOCAL = CFG.locales[0].id; paso = inicioPersona(); }
+      else if (localesOk().length === 1) { LOCAL = localesOk()[0].id; paso = inicioPersona(); }
       if (con && !tFijo) setTimeout(() => $('contexto').insertAdjacentHTML('afterbegin', `<span class="pill">No encontramos a "${esc(con)}": elige con quién atenderte</span>`), 0);
       history.replaceState({ paso, i: 0 }, '', urlCorta(FIJO ? slugTrab(trab(FIJO)) : 'reservar'));
       dibujar();
@@ -613,7 +616,7 @@
     const nombreNegocio = () => CFG.negocio?.nombre || CONF.MARCA || 'TwoWeb';
     // ¿Esta barbería tiene activo el 10% en la primera visita? (lo activa TwoWeb desde el panel)
     const promoActiva = () => CFG.negocio && 'promo_10' in CFG.negocio ? !!CFG.negocio.promo_10 : (!SLUG || SLUG === PRINCIPAL);
-    const pasoInicial = () => CFG.locales.length === 1 ? 2 : 1;
+    const pasoInicial = () => localesOk().length === 1 ? 2 : 1;
     // Portada, frase de bienvenida y banner del 10% (solo en el primer paso)
     function pintarInicio(){
       const n = CFG.negocio || {}, el = $('inicio');
@@ -655,9 +658,9 @@
       } else if (paso === 5 || paso === 6){
         draft = citas.pop(); paso = 4;
       } else if (paso === 3 && saltaPro()){
-        if (!FIJO && CFG.locales.length > 1) paso = 1;
+        if (!FIJO && localesOk().length > 1) paso = 1;
       } else if (paso === 2){
-        if (CFG.locales.length > 1) paso = 1;
+        if (localesOk().length > 1) paso = 1;
       } else if (paso > 1){
         paso--;
       }
@@ -665,7 +668,7 @@
     // Tocar un paso ya hecho del stepper
     function irAPaso(k){
       if (pos_(k) < 0 || pos_(k) >= pos_(paso)) return;
-      if (k === 1 && CFG.locales.length === 1) return;
+      if (k === 1 && localesOk().length === 1) return;
       if (k === 2 && saltaPro()) return;
       if ((paso === 5 || paso === 6) && k <= 4){ draft = citas.pop(); }
       paso = k; empujar({ paso }); dibujar(true);
@@ -679,7 +682,7 @@
       }).join('');
       const l = localSel();
       let ctx = '';
-      if (l && paso > 1) ctx += `<span class="pill">📍 Reservando en ${esc(l.nombre)} ${CFG.locales.length > 1 ? `<button onclick="cambiarLocal()">cambiar</button>` : ''}</span>`;
+      if (l && paso > 1) ctx += `<span class="pill">📍 Reservando en ${esc(l.nombre)} ${localesOk().length > 1 ? `<button onclick="cambiarLocal()">cambiar</button>` : ''}</span>`;
       if (FIJO && paso !== 3) ctx += `<span class="pill">👤 Agendando con ${esc(nombreTrab(FIJO))}</span>`;
       if (n > 1 && paso !== 5 && paso !== 6) ctx += `<span class="pill persona">👤 ${etiqueta(persona())} de ${n}</span>`;
       const partes = [];
@@ -748,8 +751,8 @@
     // ---------- 1) SUCURSAL ----------
     function capaSucursal(){
       $('vista').innerHTML = `<h2>¿Dónde te quieres atender?</h2><p class="ayuda">Elige el local. Cada uno tiene su propio equipo y precios.</p>
-        <div class="locales">${CFG.locales.map(l => {
-          const nb = CFG.trabajadores.filter(t => t.local_id === l.id).length;
+        <div class="locales">${localesOk().map(l => {
+          const nb = prosDe(l.id).length;
           const mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.direccion || l.nombre);
           return `<button class="local ${l.id === LOCAL ? 'sel' : ''}" onclick="elegirLocal(${l.id})">
             <div class="local-ic">📍</div><b>${esc(l.nombre)}</b>
@@ -772,7 +775,7 @@
       const cats = [...new Set(servs.map(s => s.categoria || 'Servicios'))].sort((a, b) => (b.toLowerCase().startsWith('promo')) - (a.toLowerCase().startsWith('promo')));
       const posible = id => fijo ? fijo.servicios.includes(id) : aptos([...new Set([...draft.servicios, id])]).length > 0;
       const quien = persona() === 0 ? '' : ` para ${etiqueta(persona()).toLowerCase()}`;
-      const volver = persona() > 0 ? '← Volver' : !saltaPro() ? '← Cambiar ' + esc(pro()) : (!FIJO && CFG.locales.length > 1) ? '← Cambiar sucursal' : '';
+      const volver = persona() > 0 ? '← Volver' : !saltaPro() ? '← Cambiar ' + esc(pro()) : (!FIJO && localesOk().length > 1) ? '← Cambiar sucursal' : '';
       $('vista').innerHTML = `${volver ? `<button class="volver" onclick="atras()">${volver}</button>` : ''}
         ${fijo ? cabeceraPro(fijo) : ''}
         <h2>Elige tu servicio${quien}</h2><p class="ayuda">Puedes elegir más de uno. ${fijo ? 'Son los servicios que realiza ' + esc(fijo.nombre) + '.' : 'Los precios son de ' + esc(localSel().nombre) + '.'}</p>
@@ -801,6 +804,12 @@
       const y = window.scrollY; capaServicio(); window.scrollTo({ top:y });
     }
 
+    // Cuando el negocio todavía no deja horas para reservar online: mensaje amable + WhatsApp (nunca un error)
+    function sinAgendaHTML(){
+      const n = CFG.negocio || {}, w = String(n.whatsapp || '').replace(/\D/g, '');
+      return `<div class="vacio" style="text-align:center;">📅 Estamos preparando nuestra agenda online.<br>Mientras tanto, reserva tu hora escribiéndonos:
+        ${w ? `<div style="margin-top:14px;"><a class="boton" style="display:inline-flex;width:auto;text-decoration:none;" href="https://wa.me/${w}?text=${encodeURIComponent('Hola, quiero reservar una hora en ' + (n.nombre || ''))}" target="_blank" rel="noopener">💬 Reservar por WhatsApp</a></div>` : ''}</div>`;
+    }
     // ---------- 3) BARBERO ----------
     function cabeceraPro(t){
       return `<div class="pro-cab"><div class="foto" ${t.foto_url ? `style="background-image:url('${esc(t.foto_url)}')"` : ''}>${t.foto_url ? '' : esc(t.nombre[0])}</div>
@@ -809,14 +818,14 @@
     function capaBarbero(){
       const lista = prosLocal();
       const foto = t => t.foto_url ? `style="background-image:url('${esc(t.foto_url)}')"` : '';
-      const volver = persona() > 0 ? '← Volver' : CFG.locales.length > 1 ? '← Cambiar sucursal' : '';
+      const volver = persona() > 0 ? '← Volver' : localesOk().length > 1 ? '← Cambiar sucursal' : '';
       $('vista').innerHTML = `${volver ? `<button class="volver" onclick="atras()">${volver}</button>` : ''}
         <h2>¿Con quién te quieres atender?</h2><p class="ayuda">Elige a tu ${esc(pro())} y después tus servicios.</p>
         ${lista.length ? `<div class="barberos">
           ${lista.length > 1 ? `<button class="barbero cualquiera ${draft.eleccion === AUTO ? 'sel' : ''}" onclick="elegirBarbero('${AUTO}')"><div class="foto">⚡</div><b>Cualquiera disponible</b><small>Más horas para elegir</small></button>` : ''}
           ${lista.map(t => `<button class="barbero ${draft.eleccion === t.id ? 'sel' : ''}" onclick="elegirBarbero(${t.id})">
             <div class="foto" ${foto(t)}>${t.foto_url ? '' : esc(t.nombre[0])}</div><b>${esc(t.nombre)}</b><small>Ver sus servicios</small></button>`).join('')}
-        </div>` : `<div class="vacio">Este local aún no tiene ${esc(pros())} con servicios para reservar online.</div>`}
+        </div>` : sinAgendaHTML()}
         ${vitrinaMini()}`;
     }
     function elegirBarbero(v){
