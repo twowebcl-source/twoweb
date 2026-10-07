@@ -10,13 +10,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Archivo+Black&display=swap">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#1d4ed8">
+  <meta name="theme-color" content="#342d2d">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TwoWeb">
-  <link rel="apple-touch-icon" href="/imagenes/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/imagenes/favicon-32.png">
+  <link rel="apple-touch-icon" href="/imagenes/apple-touch-icon.png?v=2">
+  <link rel="icon" type="image/png" sizes="32x32" href="/imagenes/favicon-32.png?v=2">
   <script src="config.js"></script>
   <script src="fondos.js"></script>
   <script src="fidelidad.js"></script>
@@ -229,6 +229,16 @@
     .cv-riel::after { content:""; position:absolute; left:0; right:0; top:var(--tt); height:var(--th); background:var(--voltaje); border-radius:6px; }
     .cv-riel:hover::after { filter:brightness(1.2); }
     .nombre-auto { margin:6px 0 0; }
+    #cliNegocios { margin-bottom:14px; padding:14px; border:1px solid var(--linea); border-radius:var(--r); background:var(--panel); }
+    .cn-cab { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 12px; margin-bottom:10px; }
+    .cn-cab .nota { flex:1 1 300px; margin:0; }
+    .cn-buscar { max-width:240px; padding:6px 10px; }
+    .cn-lista { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:8px; }
+    .cn-item { text-align:left; display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:12px; border:1px solid var(--linea); background:var(--panel2); color:var(--hueso); cursor:pointer; font:inherit; }
+    .cn-item span { font-size:12px; color:var(--gris); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cn-item em { font-style:normal; font-size:12px; color:var(--voltaje); }
+    .cn-item:hover { border-color:var(--voltaje); }
+    .cn-item.sel { border-color:var(--voltaje); box-shadow:0 0 0 1px var(--voltaje) inset; cursor:default; }
     .tabla-imp { width:100%; table-layout:fixed; font-size:12px; margin-top:6px; }
     .tabla-imp th:first-child, .tabla-imp td:first-child { width:38px; } .tabla-imp th:nth-child(5), .tabla-imp td:nth-child(5) { width:48px; } .tabla-imp th:nth-child(6), .tabla-imp td:nth-child(6) { width:82px; }
     .ventana.ancha { max-width:680px; }
@@ -1084,6 +1094,7 @@
 
       <!-- Clientes (admin) -->
       <div id="tab-clientes" class="oculto">
+        <div id="cliNegocios" class="oculto"></div>
         <div class="kpis" id="kpisCli"></div>
         <div class="filtros" id="filtrosCli">
           <button class="chip sel" data-fc="todos" onclick="filtroCli('todos')">Todos</button>
@@ -1350,8 +1361,7 @@
       document.querySelectorAll('h1.marca-neg .logo-neg').forEach(img => {
         if (NEG.logo_url) { img.src = NEG.logo_url; img.classList.remove('oculto'); } else { img.removeAttribute('src'); img.classList.add('oculto'); }
       });
-      let fav = document.querySelector('link[rel="icon"]');
-      if (NEG.logo_url) { if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); } fav.href = NEG.logo_url; }
+      // El ícono de la pestaña del panel es siempre el de two (no el logo del negocio que se está viendo)
       aplicarTemaActual();
       $('linkAgenda').href = conAgenda() ? linkAgenda() : linkTienda();
       $('linkAgenda').textContent = conAgenda() ? 'Ver agenda pública' : 'Ver mi tienda';
@@ -2851,7 +2861,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F40 · 07-10';
+    const VERSION_PANEL = 'F40 · 07-10 b';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -2882,7 +2892,8 @@
         ${yo.rol === 'admin' ? `<h3 style="margin-top:18px;">Mi negocio</h3>
           <p class="nota">El nombre, logo, portada, colores y cómo se ve tu agenda ahora están en la pestaña <b>🎨 Mi página</b>.</p>
           <button class="boton-linea" style="margin-top:8px;" onclick="cerrarDetalle(); verTab('marca')">Ir a 🎨 Mi página</button>` : ''}
-        <div class="det-acciones"><button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
+        <div class="det-acciones"><a class="link" href="privacidad.html" target="_blank" rel="noopener" style="margin:0;font-size:13px;">Política de privacidad</a>
+          <button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
         <p class="estado" id="estadoCuenta"></p>`;
       $('fondoDetalle').classList.remove('oculto');
       if ($('miPlan')) pintarMiPlan();
@@ -4623,7 +4634,28 @@
 
     // ================= CLIENTES (admin) =================
     let clientes = [], filtroC = 'todos', selCli = new Set();
+    // Super admin: elige de qué negocio ver los clientes (cada admin sigue viendo solo los suyos)
+    let SUP_NEGS = null;
+    async function pintarCliNegocios(){
+      const el = $('cliNegocios'); if (!el) return;
+      if (!yo?.super){ el.classList.add('oculto'); return; }
+      if (!SUP_NEGS){ const { data } = await db.rpc('super_negocios'); SUP_NEGS = data || []; }
+      const q = (el.dataset.q || '').toLowerCase();
+      const l = SUP_NEGS.filter(n => !q || (n.nombre + ' ' + (n.admins || '')).toLowerCase().includes(q));
+      el.classList.remove('oculto');
+      el.innerHTML = `<div class="cn-cab"><b>🏢 Clientes por negocio</b><span class="nota">Solo tú (super admin) puedes ver esta lista. Cada admin ve únicamente los clientes de su negocio.</span>
+          ${SUP_NEGS.length > 6 ? `<input class="cn-buscar" placeholder="Buscar negocio o admin…" value="${esc(el.dataset.q || '')}" oninput="$('cliNegocios').dataset.q = this.value; pintarCliNegocios()">` : ''}</div>
+        <div class="cn-lista">${l.map(n => `<button class="cn-item ${n.id === NEG.id ? 'sel' : ''}" onclick="verClientesDe(${n.id})" ${n.id === NEG.id ? 'aria-current="true"' : ''}>
+            <b>${esc(n.nombre)}</b><span>${esc(n.admins || 'sin admin')}</span>
+            <em>${fmtN(n.clientes)} cliente${n.clientes === 1 ? '' : 's'}${n.estado !== 'activo' ? ' · ' + esc(n.estado) : ''}</em></button>`).join('') || '<p class="nota">Sin resultados.</p>'}</div>`;
+    }
+    async function verClientesDe(id){
+      if (id === NEG.id) return;
+      $('tablaCli').innerHTML = '<p class="nota">Cargando…</p>';
+      await entrarNegocio(id); SUP_NEGS = null; verTab('clientes');
+    }
     async function cargarClientes(){
+      pintarCliNegocios();
       $('tablaCli').innerHTML = '<p class="nota">Cargando…</p>';
       const { data, error } = await db.rpc('clientes_admin');
       if (error){ $('tablaCli').innerHTML = `<p class="error">Error: ${esc(error.message)}${(error.message || '').includes('clientes_admin') ? ' — falta instalar la Fase 9.' : ''}</p>`; return; }
