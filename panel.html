@@ -228,6 +228,9 @@
       -webkit-mask:var(--eslabon-v) repeat-y 50% var(--cy) / 10px 26px; mask:var(--eslabon-v) repeat-y 50% var(--cy) / 10px 26px; }
     .cv-riel::after { content:""; position:absolute; left:0; right:0; top:var(--tt); height:var(--th); background:var(--voltaje); border-radius:6px; }
     .cv-riel:hover::after { filter:brightness(1.2); }
+    .cv-flot { position:fixed; right:auto; bottom:auto; width:22px; }
+    .con-cadena { scrollbar-width:none; }
+    .con-cadena::-webkit-scrollbar { display:none; }
     .cadena-h { position:absolute; left:0; right:30px; bottom:0; height:18px; display:none; align-items:center; gap:6px; }
     .ag-marco.con-h .cadena-h { display:flex; }
     .cadena-h button { width:18px; height:18px; font-size:10px; }
@@ -1687,6 +1690,45 @@
       requestAnimationFrame(() => { const t = a.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop; sc.scrollTop = Math.max(0, t - sc.clientHeight * 0.3); });
     }
     document.querySelectorAll('.agenda-scroll').forEach(encadenarAgenda);
+    // Ventanas (Mi cuenta, detalle, editores…): la misma cadena vertical en vez de la barra gris
+    function encadenarVentana(sc){
+      if (!sc || sc.dataset.cadena) return; sc.dataset.cadena = '1'; sc.classList.add('con-cadena');
+      const c = document.createElement('div'); c.className = 'cadena-v cv-flot'; c.setAttribute('aria-hidden', 'true');
+      c.innerHTML = '<button type="button" tabindex="-1" data-d="-1" title="Subir">▲</button><div class="cv-riel"></div><button type="button" tabindex="-1" data-d="1" title="Bajar">▼</button>';
+      document.body.appendChild(c);
+      const rv = c.querySelector('.cv-riel'), [bu, bd] = c.querySelectorAll('button');
+      const pintar = () => {
+        const r = sc.getBoundingClientRect(), maxY = sc.scrollHeight - sc.clientHeight;
+        if (!r.width || !r.height || maxY <= 2 || !document.body.contains(sc)){ c.style.display = 'none'; return; }
+        const fuera = innerWidth - r.right >= 30;                                         // al lado de la ventana si hay espacio; si no, adentro
+        if (!c.style.zIndex){ let a = sc, z = 0; while (a && a !== document.body){ const cs = getComputedStyle(a); if (cs.position === 'fixed' && cs.zIndex !== 'auto'){ z = +cs.zIndex; break; } a = a.parentElement; } c.style.zIndex = (z || 20) + 1; }
+        c.style.display = 'flex'; c.style.top = (r.top + 10) + 'px'; c.style.height = (r.height - 20) + 'px';
+        c.style.left = (fuera ? r.right + 6 : r.right - 25) + 'px';
+        const y = sc.scrollTop, hv = rv.clientHeight, thv = Math.max(30, hv * sc.clientHeight / sc.scrollHeight);
+        bu.disabled = y <= 2; bd.disabled = y >= maxY - 2;
+        rv.style.setProperty('--cy', (-y * 0.5).toFixed(1) + 'px');
+        rv.style.setProperty('--th', thv.toFixed(1) + 'px'); rv.style.setProperty('--tt', ((hv - thv) * y / maxY).toFixed(1) + 'px');
+      };
+      sc.addEventListener('scroll', pintar, { passive: true }); addEventListener('resize', pintar);
+      if (window.ResizeObserver){ const ro = new ResizeObserver(pintar); ro.observe(sc); }
+      if (window.MutationObserver){
+        new MutationObserver(() => requestAnimationFrame(pintar)).observe(sc, { childList: true, subtree: true });
+        let p = sc.parentElement; while (p && p !== document.body){ new MutationObserver(() => requestAnimationFrame(pintar)).observe(p, { attributes: true, attributeFilter: ['class', 'style'] }); p = p.parentElement; }
+      }
+      bu.onclick = bd.onclick = e => sc.scrollBy({ top: +e.currentTarget.dataset.d * sc.clientHeight * 0.6, behavior: 'smooth' });
+      c.addEventListener('wheel', e => { e.preventDefault(); sc.scrollTop += e.deltaY; }, { passive: false });
+      let act = false;
+      const mover = ev => { const r = rv.getBoundingClientRect(); sc.scrollTop = Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)) * (sc.scrollHeight - sc.clientHeight); };
+      rv.addEventListener('pointerdown', ev => { act = true; rv.setPointerCapture(ev.pointerId); sc.style.scrollBehavior = 'auto'; mover(ev); });
+      rv.addEventListener('pointermove', ev => { if (act) mover(ev); });
+      rv.addEventListener('pointerup', () => { act = false; sc.style.scrollBehavior = ''; });
+      pintar();
+    }
+    const SEL_CADENA = '.ventana, .pz-cuerpo, .panel-notif, .ed-panel';
+    document.querySelectorAll(SEL_CADENA).forEach(encadenarVentana);
+    if (window.MutationObserver) new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes)
+      if (n.nodeType === 1){ if (n.matches(SEL_CADENA)) encadenarVentana(n); n.querySelectorAll && n.querySelectorAll(SEL_CADENA).forEach(encadenarVentana); } })
+      .observe(document.body, { childList: true, subtree: true });
     // ----- Riel de pestañas (cadena) -----
     function pintarRiel(){
       const r = $('tabsRiel'), t = $('tabsBarra'); if (!r || !t) return;
@@ -1892,12 +1934,8 @@
       $('diaTxt').textContent = (diaVista === hoyTxt() ? 'Hoy · ' : '') + f.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long' });
       $('diaInput').value = diaVista;
       const delDia = reservasTodas.filter(r => r.fecha === diaVista && enFiltro(r.trabajador_id));
-      const vivas = delDia.filter(activa);
-      $('kpis').innerHTML =
-        `<div class="kpi"><b>${vivas.length}</b><span>reservas</span></div>` +
-        `<div class="kpi"><b>${clp(sumaTotal(delDia))}</b><span>total del día</span></div>` +
-        `<div class="kpi"><b>${delDia.filter(r => r.estado === 'completada').length}</b><span>completadas</span></div>`;
       $('ctrlDia').innerHTML = controlesVista(true, diaVista === hoyTxt() ? (VISTA.trab || 0) : undefined);
+      pintarKpisDia(delDia);
       const cols = trabsFiltro().filter(t => (t.activo || delDia.some(r => r.trabajador_id === t.id)) && (!VISTA.trab || t.id === VISTA.trab));
       const lista = VISTA.modo === 'lista';
       $('agendaDiaCaja').classList.toggle('oculto', lista); $('listaDia').classList.toggle('oculto', !lista);
@@ -1916,6 +1954,25 @@
                  tid: t.id, fecha: diaVista, bloqueos: bloqueosDe(t.id, diaVista),
                  sub: h ? `${h.inicio.slice(0,5)}–${h.fin.slice(0,5)} · ${n} reserva${n===1?'':'s'}` : 'No trabaja' };
       }));
+    }
+
+    // KPIs del día: de todo el equipo o, si el admin eligió a alguien en "Todos", solo de esa persona
+    function pintarKpisDia(delDia){
+      const t = VISTA.trab ? trabajadores.find(x => x.id === VISTA.trab) : null;
+      const l = t ? delDia.filter(r => r.trabajador_id === t.id) : delDia;
+      const hechas = l.filter(r => r.estado === 'completada');
+      const cobrado = hechas.reduce((a, r) => a + (r.total || 0), 0), propinas = hechas.reduce((a, r) => a + (r.propina || 0), 0);
+      const de = t ? ' · ' + esc(t.nombre) : '';
+      let h = `<div class="kpi"><b>${l.filter(activa).length}</b><span>reservas${de}</span></div>` +
+        `<div class="kpi"><b>${clp(sumaTotal(l))}</b><span>total del día${de}</span></div>` +
+        `<div class="kpi"><b>${hechas.length}</b><span>completadas</span></div>` +
+        `<div class="kpi"><b>${clp(cobrado)}</b><span>cobrado (servicios)</span></div>`;
+      if (propinas) h += `<div class="kpi"><b>${clp(propinas)}</b><span>propinas</span></div>`;
+      if (t){
+        const pct = t.comision ?? 50, parte = Math.round(cobrado * pct / 100) + propinas;
+        h += `<div class="kpi destacado"><b>${clp(parte)}</b><span>ganancia de ${esc(t.nombre)} (${pct}% + propinas)</span></div>`;
+      }
+      $('kpis').innerHTML = h;
     }
 
     // ================= SEMANA (una columna por día, de un profesional) =================
@@ -2787,7 +2844,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F39 · 07-10';
+    const VERSION_PANEL = 'F39 · 07-10 b';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
