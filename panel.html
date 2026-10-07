@@ -429,6 +429,10 @@
     .ideas .chip { padding:5px 11px; font-size:12.5px; }
     /* Vista previa del correo: estilo pergamino */
     .prev-mail { background:transparent; }
+    .lim-fila { margin-top:12px; }
+    .lim-fila > label { display:block; font-weight:600; font-size:13.5px; margin-bottom:6px; }
+    .lim-fila .ideas { align-items:center; }
+    .btn-lim { padding:4px 9px !important; font-size:12px !important; margin:0 0 6px !important; }
     .kpi.lleno { border-color:color-mix(in srgb, var(--rojo) 55%, transparent) !important; }
     .uso-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-top:12px; }
     .uso-barra .ub-txt { display:flex; justify-content:space-between; gap:8px; font-size:13px; margin-bottom:5px; }
@@ -2608,7 +2612,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F35 · 07-10';
+    const VERSION_PANEL = 'F36 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3592,7 +3596,7 @@
         <div class="tarjeta">
           <h2 style="margin:0 0 4px;">📣 Mensaje a tus clientes</h2>
           <p class="nota">Solo les llega a <b>tus</b> clientes que aceptaron recibir promociones. Cada correo trae un link para darse de baja.
-            ${L.plan ? `Tu plan <b>${esc(L.plan)}</b> incluye ${limTxt(L.campanas_mes, 'envío', 'envíos')} por correo y ${limTxt(L.wsp_campanas_mes, 'lista', 'listas')} de WhatsApp al mes${L.max_destinatarios ? `, hasta <b>${fmtN(L.max_destinatarios)}</b> clientes cada uno` : ''}. Se renueva el ${fechaRenueva(L.renueva)}.` : ''}</p>
+            ${L.plan ? `${L.ajustado ? `Tu cuenta (plan <b>${esc(L.plan)}</b>, con condiciones especiales) incluye` : `Tu plan <b>${esc(L.plan)}</b> incluye`} ${limTxt(L.campanas_mes, 'envío', 'envíos')} por correo y ${limTxt(L.wsp_campanas_mes, 'lista', 'listas')} de WhatsApp al mes${L.max_destinatarios ? `, hasta <b>${fmtN(L.max_destinatarios)}</b> clientes cada uno` : ''}. Se renueva el ${fechaRenueva(L.renueva)}.` : ''}</p>
           <div class="msj-grid" style="margin-top:12px;">
             <div>
               <div class="msj-fila"><label>Canal</label><div class="segmentado" id="msjCanal">
@@ -4501,6 +4505,7 @@
             ${n.mensualidad != null ? `<div class="nota" style="margin-top:4px;">Mensualidad: <b>${clp(n.mensualidad)}</b>${n.precio_especial != null ? ' (especial)' : ''}</div>` : ''}</td>
           <td><div class="chk-mod">
             <label><input type="checkbox" ${n.mod_agenda !== false ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_agenda', this)"> 📅 Agenda</label>
+            <button class="boton-linea btn-lim" onclick="abrirLimitesNeg(${n.id})" title="Envíos masivos por correo y WhatsApp de este negocio">✉️ Límites de mensajes</button>
             <label><input type="checkbox" ${n.mod_tienda ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_tienda', this)"> 🛍 Tienda${n.mod_tienda ? ` <span class="nota">(${n.productos || 0} prod.)</span>` : ''}</label>
             ${'fid_plan' in n ? `<label title="Tarjeta de fidelidad para los clientes de este negocio"><input type="checkbox" ${(n.fid_otorgada ?? n.fid_plan) ? 'checked' : ''} onchange="cambiarFidelidad(${n.id}, this)"> 🎟 Fidelidad</label>
             <span class="nota" style="display:block;font-size:11px;">${n.fid_otorgada === null || n.fid_otorgada === undefined ? (n.fid_plan ? 'incluida en su plan' : 'su plan no la trae') : n.fid_otorgada ? (n.fid_plan ? 'otorgada' : '⭐ otorgada por ti') : '✕ quitada por ti'}${(n.fid_otorgada ?? n.fid_plan) ? (n.fid_activa ? ` · activa (${n.fid_meta} at.)` : ' · el admin aún no la activa') : ''}</span>` : ''}</div></td>
@@ -4566,6 +4571,57 @@
                      : `¿Apagar el 10% para "${n?.nombre}"?\n\nSe deja de mostrar en su agenda y las nuevas reservas ya no tendrán descuento (las horas ya reservadas con 10% lo mantienen).`;
       if (!confirm(msg)) { input.checked = !on; return; }
       actualizarNegocio(id, { promo_10: on });
+    }
+    // ----- Límites de mensajes de UN negocio (Fase 36): el ajuste manda sobre el plan -----
+    const OPC_LIM = {
+      campanas_mes: { t: '✉️ Envíos masivos por correo al mes', op: [1, 2, 3, 4, 6, 10], cero: true },
+      max_destinatarios: { t: '✉️ Clientes máximos por envío', op: [100, 500, 1000, 2000, 5000], cero: false },
+      wsp_campanas_mes: { t: '💬 Listas de WhatsApp al mes', op: [1, 2, 3, 4, 6, 10], cero: true },
+      wsp_max_destinatarios: { t: '💬 Clientes máximos por lista', op: [100, 500, 1000, 2000, 5000], cero: false } };
+    let LIMN = null;
+    async function abrirLimitesNeg(id){
+      const { data, error } = await db.rpc('super_limites_negocio', { p_id: id });
+      if (error) return alert(/super_limites_negocio/.test(error.message || '') ? 'Falta instalar la Fase 36 en Supabase.' : error.message);
+      LIMN = { id, d: data, aj: { ...(data.ajustes || {}) } };
+      dibujarLimitesNeg(); $('fondoDetalle').classList.remove('oculto');
+    }
+    const txtLim = v => v == null ? 'sin límite' : v === 0 ? 'no incluye' : fmtN(v);
+    function dibujarLimitesNeg(){
+      const { d, aj } = LIMN;
+      const fila = (k, o) => {
+        const plan = d.del_plan[k], tiene = k in aj, v = aj[k];
+        const chip = (val, txt, sel) => `<button class="chip ${sel ? 'sel' : ''}" onclick="ajLim('${k}', ${val === undefined ? 'undefined' : val})">${txt}</button>`;
+        const otro = tiene && v > 0 && !o.op.includes(v);
+        return `<div class="lim-fila"><label>${o.t}</label><div class="ideas">
+          ${chip(undefined, `Según su plan (${txtLim(plan)})`, !tiene)}
+          ${o.cero ? chip(0, 'No incluye', tiene && v === 0) : ''}
+          ${o.op.map(n => chip(n, fmtN(n), tiene && v === n)).join('')}
+          ${chip(-1, '∞ Sin límite', tiene && v === -1)}
+          <input type="number" min="1" placeholder="Otro" value="${otro ? v : ''}" style="width:90px;padding:6px 8px;" onchange="ajLim('${k}', this.value ? parseInt(this.value) : undefined)">
+        </div></div>`;
+      };
+      const efc = k => { const v = k in LIMN.aj ? (LIMN.aj[k] < 0 ? null : LIMN.aj[k]) : d.del_plan[k]; return v; };
+      $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;margin:0 0 4px;">✉️ Límites de mensajes · ${esc(d.negocio)}</h3>
+        <p class="nota">Plan <b>${esc(d.plan || '—')}</b>. Lo que ajustes aquí vale solo para este negocio y manda sobre su plan; "Según su plan" vuelve a lo del plan.
+          El tope total de tu plan de Resend se sigue respetando y se mantiene el máximo de 3 envíos por día.</p>
+        <div class="kpis" style="margin:10px 0;">
+          <div class="kpi"><b>${d.usadas_mes} <small style="font-size:13px;opacity:.7;">de ${efc('campanas_mes') == null ? '∞' : efc('campanas_mes')}</small></b><span>envíos por correo este mes</span></div>
+          <div class="kpi"><b>${d.wsp_usadas_mes} <small style="font-size:13px;opacity:.7;">de ${efc('wsp_campanas_mes') == null ? '∞' : efc('wsp_campanas_mes')}</small></b><span>listas de WhatsApp este mes</span></div>
+          <div class="kpi"><b>${fmtN(d.clientes_correo)}</b><span>clientes con correo que aceptan promos</span></div>
+        </div>
+        ${Object.entries(OPC_LIM).map(([k, o]) => fila(k, o)).join('')}
+        <div class="det-acciones" style="margin-top:14px;"><button class="boton" onclick="guardarLimitesNeg()">Guardar</button>
+          <button class="boton-linea" onclick="LIMN.aj = {}; dibujarLimitesNeg()">↺ Todo según su plan</button>
+          <button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
+        <p class="estado" id="estadoLimN"></p>`;
+    }
+    function ajLim(k, v){ if (v === undefined || Number.isNaN(v)) delete LIMN.aj[k]; else LIMN.aj[k] = v; dibujarLimitesNeg(); }
+    async function guardarLimitesNeg(){
+      const p = Object.fromEntries(Object.keys(OPC_LIM).map(k => [k, k in LIMN.aj ? LIMN.aj[k] : null]));
+      const { data, error } = await db.rpc('super_guardar_limites_negocio', { p_id: LIMN.id, p });
+      if (error) return estado('estadoLimN', 'Error: ' + error.message, 'error');
+      LIMN.d = data; LIMN.aj = { ...(data.ajustes || {}) }; dibujarLimitesNeg();
+      estado('estadoLimN', data.ajustado ? '✓ Guardado. El admin ya lo ve así en su pestaña 📣 Mensajes.' : '✓ Guardado: este negocio usa lo de su plan.', 'ok');
     }
     const diasHasta = f => Math.round((new Date(f + 'T12:00') - new Date(hoyTxt() + 'T12:00')) / 86400000);
     async function darPrueba(id){
