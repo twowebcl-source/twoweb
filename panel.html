@@ -229,6 +229,12 @@
     .cv-riel::after { content:""; position:absolute; left:0; right:0; top:var(--tt); height:var(--th); background:var(--voltaje); border-radius:6px; }
     .cv-riel:hover::after { filter:brightness(1.2); }
     .nombre-auto { margin:6px 0 0; }
+    .app-prev { margin-top:10px; }
+    .ap-tel { display:inline-flex; gap:14px; padding:14px 16px; border-radius:18px; background:linear-gradient(160deg, #2b3a55, #5b3f5e); }
+    .ap-ic { width:58px; display:flex; flex-direction:column; align-items:center; gap:5px; }
+    .ap-ic img { width:54px; height:54px; border-radius:13px; object-fit:cover; box-shadow:0 2px 6px rgba(0,0,0,.35); }
+    .ap-ic span { font:500 11px/1.1 system-ui, sans-serif; color:#fff; text-align:center; max-width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ap-ic.falso::before { content:""; width:54px; height:54px; border-radius:13px; background:rgba(255,255,255,.22); }
     #cliNegocios { margin-bottom:14px; padding:14px; border:1px solid var(--linea); border-radius:var(--r); background:var(--panel); }
     .cn-cab { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 12px; margin-bottom:10px; }
     .cn-cab .nota { flex:1 1 300px; margin:0; }
@@ -1517,7 +1523,7 @@
                                        error.message.includes('confirm') ? "Falta confirmar tu correo: revisa tu bandeja de entrada." : "Error: " + error.message, 'error');
     }
     // Cierra la sesión SOLO en este dispositivo/pestaña (no saca a la persona de sus otros equipos)
-    async function salir(){ ponerIconos({}); FondoAnim.poner(null); aplicarFuente(null); ['twoweb-fondo-panel', 'twoweb-fuente-panel', 'twoweb-fondo-img'].forEach(k => { try { localStorage.removeItem(k); } catch(e) {} }); MI_IMG = null; clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
+    async function salir(){ await quitarPush(); ponerIconos({}); FondoAnim.poner(null); aplicarFuente(null); ['twoweb-fondo-panel', 'twoweb-fuente-panel', 'twoweb-fondo-img'].forEach(k => { try { localStorage.removeItem(k); } catch(e) {} }); MI_IMG = null; clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
     function mostrarCodigo(){ $('cajaCodigo').classList.toggle('oculto'); }
     async function enviarCodigo(){
       const email = $('loginCorreo').value.trim().toLowerCase();
@@ -1657,6 +1663,7 @@
       if (conTienda()) cargarPedidos(true);
       iniciarNotif();
       setTimeout(avisosApp, 1500);
+      if ('Notification' in window && Notification.permission === 'granted') setTimeout(suscribirPush, 2500);   // Fase 43: avisos con la app cerrada
       if (yo.rol === 'admin' && !yo.super) setTimeout(verComunicados, 900);              // invitar a instalar la app y activar avisos (cada vez que entra, hasta que lo haga)
       if (entroConCodigo){ entroConCodigo = false; abrirMiCuenta('Entraste con un código. Crea tu nueva contraseña para la próxima vez.'); }
     }
@@ -2903,7 +2910,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F42 · 07-10';
+    const VERSION_PANEL = 'F43 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -2923,9 +2930,12 @@
         ${yo.super ? `<h3 style="margin-top:18px;">🔐 Pantalla de ingreso a las cuentas</h3>
         <p class="nota">Solo tú (super admin) puedes cambiarla. Es la pantalla donde todos entran a su cuenta: la ves en vivo y la guardas solo si te gusta.</p>
         <button class="boton-linea" style="margin-top:8px;" onclick="abrirEditorIngreso()">✏️ Editar pantalla de ingreso</button>` : ''}
-        <h3 style="margin-top:18px;">Avisos del navegador</h3>
-        <p class="nota">Te avisa cuando te agendan, cancelan o modifican una hora, aunque estés en otra pestaña.</p>
-        <button class="boton-linea" style="margin-top:8px;" onclick="activarAvisosNavegador()">${permiso === 'granted' ? '✓ Activados' : permiso === 'denied' ? 'Bloqueados en el navegador' : 'Activar avisos'}</button>
+        <h3 style="margin-top:18px;">🔔 Avisos en este ${esMovil() ? 'teléfono' : 'computador'}</h3>
+        <p class="nota">Te avisa cuando te agendan, cancelan o modifican una hora, llegan pedidos o solicitudes, <b>aunque la app esté cerrada o el teléfono bloqueado</b>.
+          ${esIOS() && !esApp() ? '<br>📱 En iPhone primero agrega el panel a tu pantalla de inicio (Compartir → "Agregar a inicio") y actívalos desde ahí.' : ''}</p>
+        <div class="det-acciones" style="margin-top:8px;"><button class="boton-linea" onclick="activarAvisosNavegador()">${permiso === 'granted' ? '✓ Activados' : permiso === 'denied' ? 'Bloqueados en el navegador' : 'Activar avisos'}</button>
+          ${permiso === 'granted' ? '<button class="boton-linea" onclick="probarPush()">Enviarme una prueba</button>' : ''}</div>
+        <p class="estado" id="estadoPush"></p>
         <h3 style="margin-top:18px;">✨ Personalizar mi panel</h3>
         <p class="nota">Colores, estilo de fondo (con movimiento o tu propia foto) y fuente, como en Instagram. Solo cambia <b>tu</b> panel.</p>
         <p class="nota" style="margin-top:4px;">Ahora: <b>${esc(resumenEstilo(fondoGuardado(), yo.mi_fuente))}</b></p>
@@ -2989,17 +2999,29 @@
         const d = await comprimirImagen(input.files[0], t.lado, t.max);
         imgNegNueva[t.campo] = d;
         $(t.prev).innerHTML = `<img src="${d}" alt="${t.txt}"><span class="nota">${Math.round(d.length / 1024)} KB · falta Guardar</span>`;
+        if (tipo === 'logo') pintarAppPrev();
         estado('estadoMarca', 'Listo. Presiona "Guardar mi página".', 'ok');
       } catch(e) { estado('estadoMarca', e.message, 'error'); input.value = ''; }
     }
     function quitarImagenNegocio(tipo){
       const t = IMG_NEG[tipo]; imgNegNueva[t.campo] = '';
       $(t.prev).innerHTML = `<span class="nota">Se quitará al guardar.</span>`;
+      if (tipo === 'logo') pintarAppPrev();
     }
     // ----- Pestaña 🎨 Mi página (solo admin) -----
+    // Vista previa: así se ve el ícono de la app del panel en el teléfono de tu equipo (Fase 42)
+    async function pintarAppPrev(){
+      const el = $('appPrev'); if (!el) return;
+      const logo = imgNegNueva.logo_url !== undefined ? imgNegNueva.logo_url : NEG.logo_url;
+      let src = '/imagenes/app-192.png'; if (logo) try { src = await iconoDesdeLogo(logo); } catch (e) {}
+      const nom = (($('fNegNombre') && $('fNegNombre').value.trim()) || NEG.nombre || 'Mi negocio').slice(0, 12);
+      el.innerHTML = `<div class="ap-tel"><div class="ap-ic"><img src="${src}" alt=""><span>${esc(nom)}</span></div>
+          <div class="ap-ic falso"></div><div class="ap-ic falso"></div><div class="ap-ic falso"></div></div>
+        <p class="nota" style="margin:6px 0 0;">📱 Así se verá la app del panel en el teléfono de tu equipo al "Agregar a inicio"${logo ? '' : ' (sube tu logo para que salga tu marca)'}.</p>`;
+    }
     function dibujarMarca(){
       if (yo.rol !== 'admin') return;
-      imgNegNueva = {}; temaNegNuevo = '';
+      imgNegNueva = {}; temaNegNuevo = ''; setTimeout(pintarAppPrev, 0);
       $('marcaCont').innerHTML = `<div class="tarjeta">
           <h2 style="margin:0 0 4px;">🎨 Mi página</h2>
           <p class="nota" style="margin-bottom:10px;">Así te ven tus clientes: tu nombre, logo, portada, colores y la agenda${conTienda() ? ' y tienda' : ''}. Solo el administrador puede cambiarlo.</p>
@@ -3016,7 +3038,8 @@
             <div class="full"><label>Frase de bienvenida en tu agenda (opcional, máx. 160)</label><input id="fNegBienv" maxlength="160" value="${esc(NEG.bienvenida || '')}" placeholder="Ej: Atención personalizada desde 2015 · Te esperamos"></div>
             <div class="full"><label>Logo (cuadrado, se ve arriba en tu panel y agenda)</label>
               <input type="file" id="fNegLogoArch" accept="image/*" onchange="subirImagenNegocio('logo', this)">
-              <div class="prev-img" id="prevLogo">${NEG.logo_url ? `<img src="${esc(NEG.logo_url)}" alt="logo"><button class="link" style="margin:0;" onclick="quitarImagenNegocio('logo')">Quitar logo</button>` : '<span class="nota">Sin logo: se muestra el nombre.</span>'}</div></div>
+              <div class="prev-img" id="prevLogo">${NEG.logo_url ? `<img src="${esc(NEG.logo_url)}" alt="logo"><button class="link" style="margin:0;" onclick="quitarImagenNegocio('logo')">Quitar logo</button>` : '<span class="nota">Sin logo: se muestra el nombre.</span>'}</div>
+              <div class="app-prev" id="appPrev"></div></div>
             <div class="full"><label>Imagen de portada (foto de tu local o de tu trabajo; se ve arriba de tu página y agenda)</label>
               <input type="file" id="fNegPortadaArch" accept="image/*" onchange="subirImagenNegocio('portada', this)">
               <div class="prev-img" id="prevPortada">${NEG.portada_url ? `<img src="${esc(NEG.portada_url)}" alt="portada"><button class="link" style="margin:0;" onclick="quitarImagenNegocio('portada')">Quitar portada</button>` : '<span class="nota">Sin portada.</span>'}</div></div>
@@ -3505,8 +3528,43 @@
     async function activarAvisosNavegador(){
       if (!('Notification' in window)) return estado('estadoCuenta', 'Este navegador no permite avisos.', 'error');
       const p = await Notification.requestPermission();
-      if (p === 'granted') avisoSistema('✓ Avisos activados', 'Te avisaremos cuando te agenden, cancelen o lleguen pedidos.', 'twoweb-prueba');
-      estado('estadoCuenta', p === 'granted' ? '✓ Avisos activados.' : 'No se activaron: revisa los permisos del sitio en tu navegador.', p === 'granted' ? 'ok' : 'error');
+      if (p !== 'granted') return estado('estadoCuenta', 'No se activaron: revisa los permisos del sitio en tu navegador.', 'error');
+      const r = await suscribirPush();
+      if (!r.ok) avisoSistema('✓ Avisos activados', 'Te avisaremos cuando te agenden, cancelen o lleguen pedidos.', 'twoweb-prueba');
+      abrirMiCuenta(r.ok ? '✓ Avisos activados en este dispositivo, también con la app cerrada.' : '✓ Avisos activados (con el panel abierto). ' + (r.motivo || ''));
+    }
+    // ----- Avisos con la app cerrada: Web Push (Fase 43) -----
+    const deB64u = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); s += '='.repeat((4 - s.length % 4) % 4); return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+    const aB64u = b => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const equipoTxt = () => (esIOS() ? 'iPhone/iPad' : /android/i.test(navigator.userAgent) ? 'Android' : /windows/i.test(navigator.userAgent) ? 'Windows' : /mac/i.test(navigator.userAgent) ? 'Mac' : 'Otro')
+      + (esApp() ? ' · app' : ' · navegador') + (/edg\//i.test(navigator.userAgent) ? ' · Edge' : /chrome/i.test(navigator.userAgent) ? ' · Chrome' : /safari/i.test(navigator.userAgent) ? ' · Safari' : /firefox/i.test(navigator.userAgent) ? ' · Firefox' : '');
+    async function suscribirPush(){
+      try {
+        if (!yo || !('serviceWorker' in navigator) || !('PushManager' in window)) return { ok: false, motivo: esIOS() && !esApp() ? 'En iPhone, agrega el panel a tu inicio para recibirlos con la app cerrada.' : 'Este navegador no permite avisos con la app cerrada.' };
+        if (Notification.permission !== 'granted') return { ok: false };
+        const { data: pub, error } = await db.rpc('push_publica');
+        if (error || !pub) return { ok: false, motivo: 'Los avisos con la app cerrada se activan apenas TwoWeb termine de configurarlos.' };
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (sub && sub.options?.applicationServerKey && aB64u(sub.options.applicationServerKey) !== pub){ await sub.unsubscribe().catch(() => {}); sub = null; }
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: deB64u(pub) });
+        const j = sub.toJSON();
+        const r = await db.rpc('guardar_push', { p: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, equipo: equipoTxt() } });
+        return { ok: !r.error, motivo: r.error ? r.error.message : '' };
+      } catch (e) { return { ok: false, motivo: 'No se pudo registrar este dispositivo (' + (e.message || e) + ').' }; }
+    }
+    async function quitarPush(){
+      try {
+        const reg = 'serviceWorker' in navigator && await navigator.serviceWorker.getRegistration();
+        const sub = reg && reg.pushManager && await reg.pushManager.getSubscription();
+        if (sub){ await db.rpc('borrar_push', { p_endpoint: sub.endpoint }); await sub.unsubscribe(); }
+      } catch (e) {}
+    }
+    async function probarPush(){
+      const r = await suscribirPush();
+      if (!r.ok) return estado('estadoPush', r.motivo || 'No se pudo.', 'error');
+      const { data, error } = await db.rpc('push_prueba');
+      estado('estadoPush', error ? 'Error: ' + error.message : `✓ Enviado a ${data.dispositivos} dispositivo${data.dispositivos === 1 ? '' : 's'}. Si no te llega en unos segundos, cierra la app y espera: debe aparecer igual.`, error ? 'error' : 'ok');
     }
 
     // ================= APP INSTALABLE Y AVISOS =================
@@ -3557,7 +3615,7 @@
     }
     async function activarAvisosApp(){
       const p = await Notification.requestPermission().catch(() => 'default');
-      if (p === 'granted') avisoSistema('✓ Avisos activados', 'Te avisaremos cuando te agenden, cancelen o lleguen pedidos.', 'twoweb-prueba');
+      if (p === 'granted'){ const r = await suscribirPush(); if (r.ok) db.rpc('push_prueba'); else avisoSistema('✓ Avisos activados', 'Te avisaremos cuando te agenden, cancelen o lleguen pedidos.', 'twoweb-prueba'); }
       avisosApp();
     }
 
@@ -4258,6 +4316,7 @@
         ${q.ultimo_error ? `<p class="nota" style="margin:-4px 0 10px;">Último error: ${esc(q.ultimo_error)} → <b>${esc(explicarError(q.ultimo_error))}</b></p>` : ''}
         <div id="usoCorreos"></div>
         <div id="wspMonitor"></div>
+        <div id="pushMonitor"></div>
         <div class="tarjeta">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><h2 style="margin:0;">📣 Comunicado a los negocios</h2>
             <button class="boton-linea" onclick="procesarCola(this)">⟳ Procesar cola de correos ahora</button></div>
@@ -4286,7 +4345,7 @@
             ${data.comunicados.map(c => `<tr><td>${new Date(c.creado).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</td><td style="white-space:normal;min-width:220px;"><b>${esc(c.asunto)}</b><br><span class="nota">${esc(c.mensaje)}</span></td>
               <td class="num">${c.negocios}</td><td class="num">${c.en_panel ? c.leidos : '—'}</td><td class="num">${c.por_correo ? c.enviados + (c.errores ? ` <span class="nota">(${c.errores} error)</span>` : '') : '—'}</td></tr>`).join('')}</table></div>`
             : '<p class="nota">Aún no envías comunicados.</p>'}</div>`;
-      contarCom(); monitorWsp(); usoCorreos();
+      contarCom(); monitorWsp(); usoCorreos(); monitorPush();
     }
     // Uso de correos de toda la plataforma vs. tu plan de Resend (Fase 35)
     const PLANES_RESEND = { free: { n: 'Free · gratis', mes: 3000, dia: 100 }, pro: { n: 'Pro · US$20/mes', mes: 50000, dia: null }, scale: { n: 'Scale · US$90/mes', mes: 100000, dia: null }, otro: { n: 'Otro / personalizado' } };
@@ -4336,6 +4395,38 @@
       const { error } = await db.rpc('super_guardar_limite_correos', { p });
       if (error) return estado('estadoLr', 'Error: ' + error.message, 'error');
       await usoCorreos(); estado('estadoLr', '✓ Guardado.', 'ok');
+    }
+    async function monitorPush(){
+      const el = $('pushMonitor'); if (!el) return;
+      const { data, error } = await db.rpc('super_push_estado');
+      if (error){ el.innerHTML = /super_push_estado/.test(error.message || '') ? '<p class="nota">🔔 Avisos con la app cerrada: falta instalar la Fase 43.</p>' : ''; return; }
+      const d = data || {};
+      el.innerHTML = `<div class="tarjeta" style="margin-bottom:14px;"><h2 style="margin:0 0 6px;">🔔 Avisos al celular y computador (con la app cerrada)</h2>
+        ${d.publica ? `<div class="kpis"><div class="kpi destacado"><b>${fmtN(d.dispositivos)}</b><span>dispositivos con avisos</span></div>
+            <div class="kpi"><b>${fmtN(d.admins)} / ${fmtN(d.trabajadores)}</b><span>admins / equipo</span></div><div class="kpi"><b>${fmtN(d.negocios)}</b><span>negocios</span></div>
+            <div class="kpi"><b>${fmtN(d.enviados_24h)}</b><span>enviados 24 h</span></div><div class="kpi"><b>${fmtN(d.en_cola)}</b><span>en cola</span></div><div class="kpi"><b>${fmtN(d.errores_24h)}</b><span>con error 24 h</span></div></div>
+          ${d.ultimo_error ? `<p class="nota">Último error: ${esc(d.ultimo_error)}${/Push 403|401|VAPID|vapid/.test(d.ultimo_error) ? ' → revisa que el secreto <b>VAPID_PRIVADA</b> sea el de estas llaves.' : ''}</p>` : ''}
+          ${d.en_cola > 0 && !d.enviados_24h ? '<p class="nota">⚠️ Hay avisos en cola y ninguno enviado: revisa que el secreto <b>VAPID_PRIVADA</b> esté en Supabase y que la función enviar-correos esté actualizada (Deploy).</p>' : ''}
+          <div class="det-acciones"><button class="boton-linea" onclick="probarPush().then(monitorPush)">Enviarme una prueba</button>
+            <button class="link" onclick="generarLlavesPush(true)">Generar llaves nuevas</button></div><p class="estado" id="estadoPush"></p>`
+        : `<p class="nota">Para que las reservas, cancelaciones y pedidos lleguen al teléfono <b>aunque la app esté cerrada</b>, primero genera las llaves de la plataforma (una sola vez).</p>
+          <button class="boton" onclick="generarLlavesPush(false)">🔑 Generar llaves de avisos</button>`}
+        <div id="pushLlaves"></div></div>`;
+    }
+    async function generarLlavesPush(regenerar){
+      if (regenerar && !confirm('¿Generar llaves nuevas?\n\nTodos los dispositivos tendrán que volver a activarse (se hace solo al abrir el panel) y debes cambiar el secreto VAPID_PRIVADA en Supabase.')) return;
+      const kp = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+      const pub = aB64u(await crypto.subtle.exportKey('raw', kp.publicKey)), priv = (await crypto.subtle.exportKey('jwk', kp.privateKey)).d;
+      const { error } = await db.rpc('super_guardar_push_publica', { p: pub });
+      if (error) return alert('Error: ' + error.message);
+      await monitorPush();
+      $('pushLlaves').innerHTML = `<div class="sol-caja" style="margin-top:12px;"><div class="sol-tit">✓ Llaves creadas. Falta un paso (solo tú lo puedes hacer):</div>
+        <ol class="nota" style="margin:8px 0 8px 18px;"><li>En Supabase entra a <b>Edge Functions → Secrets</b> (o "Manage secrets").</li>
+          <li>Agrega un secreto con nombre <b>VAPID_PRIVADA</b> y este valor:</li></ol>
+        <div style="display:flex;gap:6px;"><input id="vapidPriv" readonly value="${esc(priv)}" style="font-family:monospace;"><button class="boton-linea" onclick="copiarTexto('vapidPriv', 'estadoVapid')">Copiar</button></div>
+        <p class="estado" id="estadoVapid"></p>
+        <p class="nota">⚠️ Esta llave <b>no se guarda en ninguna parte</b> y no se vuelve a mostrar: cópiala ahora. Nunca la pongas en GitHub ni en config.js.
+          La pública ya quedó guardada. Luego presiona "Enviarme una prueba" (activa los avisos de este dispositivo primero en Mi cuenta).</p></div>`;
     }
     async function monitorWsp(){
       const { data, error } = await db.rpc('super_wsp_estado'); if (error || !data || !$('wspMonitor')) return;
