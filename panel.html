@@ -211,6 +211,34 @@
 
     /* Agenda del día (columnas por trabajador) */
     .agenda-scroll { overflow-x:auto; border:1px solid var(--linea); border-radius:var(--r); background:var(--panel); }
+    /* Agenda con cadena vertical (y horizontal si hay muchos profesionales): se desliza dentro de su marco, sin la barra gris */
+    .ag-marco { position:relative; padding-right:30px; }
+    .ag-marco.con-h { padding-bottom:22px; }
+    .ag-marco > .agenda-scroll { overflow:auto; max-height:clamp(440px, calc(100vh - 170px), 1500px); scrollbar-width:none; overscroll-behavior:contain; }
+    .ag-marco > .agenda-scroll::-webkit-scrollbar { display:none; }
+    .cadena-v { position:absolute; top:0; right:0; bottom:0; width:22px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .ag-marco.con-h .cadena-v { bottom:22px; }
+    .cadena-v button, .cadena-h button { width:22px; height:22px; flex-shrink:0; border-radius:50%; border:1px solid var(--linea); background:var(--panel2); color:var(--hueso);
+      font:700 11px/1 system-ui, sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; transition:opacity .2s, border-color .2s; }
+    .cadena-v button:hover, .cadena-h button:hover { border-color:var(--voltaje); color:var(--voltaje); }
+    .cadena-v button:disabled, .cadena-h button:disabled { opacity:.25; cursor:default; }
+    .cv-riel { position:relative; flex:1; width:10px; cursor:pointer; touch-action:none; --cy:0px; --tt:0px; --th:100%;
+      background:color-mix(in srgb, var(--hueso) 18%, transparent);
+      --eslabon-v:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='26'%3E%3Crect x='1' y='1' width='8' height='14' rx='4' fill='none' stroke='black' stroke-width='1.7'/%3E%3Crect x='4.1' y='13.5' width='1.8' height='12' rx='.9'/%3E%3C/svg%3E");
+      -webkit-mask:var(--eslabon-v) repeat-y 50% var(--cy) / 10px 26px; mask:var(--eslabon-v) repeat-y 50% var(--cy) / 10px 26px; }
+    .cv-riel::after { content:""; position:absolute; left:0; right:0; top:var(--tt); height:var(--th); background:var(--voltaje); border-radius:6px; }
+    .cv-riel:hover::after { filter:brightness(1.2); }
+    .cadena-h { position:absolute; left:0; right:30px; bottom:0; height:18px; display:none; align-items:center; gap:6px; }
+    .ag-marco.con-h .cadena-h { display:flex; }
+    .cadena-h button { width:18px; height:18px; font-size:10px; }
+    .ch-riel { position:relative; flex:1; height:8px; cursor:pointer; touch-action:none; --cx:0px; --tl:0px; --tw:100%;
+      background:color-mix(in srgb, var(--hueso) 18%, transparent);
+      --eslabon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Crect x='1' y='1' width='13' height='6' rx='3' fill='none' stroke='black' stroke-width='1.6'/%3E%3Crect x='12.5' y='3.1' width='11' height='1.8' rx='.9'/%3E%3C/svg%3E");
+      -webkit-mask:var(--eslabon) repeat-x var(--cx) 50% / 24px 8px; mask:var(--eslabon) repeat-x var(--cx) 50% / 24px 8px; }
+    .ch-riel::after { content:""; position:absolute; top:0; bottom:0; left:var(--tl); width:var(--tw); background:var(--voltaje); }
+    .ag-marco.sin-v .cadena-v { opacity:.45; }
+    .ag-marco.sin-v .cv-riel::after { display:none; }
+    @media (max-width:640px){ .ag-marco { padding-right:20px; } .cadena-v { width:14px; } .cadena-v button { display:none; } .cv-riel { width:8px; } .ag-marco > .agenda-scroll { max-height:calc(100vh - 140px); } }
     .agenda { display:grid; min-width:100%; }
     .ag-cab { position:sticky; top:0; background:var(--panel2); padding:10px; font-weight:600; font-size:14px; border-bottom:1px solid var(--linea); border-left:1px solid var(--linea); display:flex; align-items:center; gap:8px; }
     .ag-cab .mini { width:26px; height:26px; font-size:12px; }
@@ -1590,6 +1618,52 @@
 
     // Muestra u oculta cada parte del panel según el rol (admin / profesional / dueño de la plataforma)
     // y los módulos del negocio (agenda / tienda)
+    // ----- Agenda con cadena vertical y horizontal (reemplaza las barras grises) -----
+    function encadenarAgenda(sc){
+      if (!sc || sc.parentNode.classList.contains('ag-marco')) return;
+      const m = document.createElement('div'); m.className = 'ag-marco';
+      sc.parentNode.insertBefore(m, sc); m.appendChild(sc);
+      m.insertAdjacentHTML('beforeend', `<div class="cadena-v" aria-hidden="true"><button type="button" tabindex="-1" data-d="-1" title="Subir">▲</button><div class="cv-riel"></div><button type="button" tabindex="-1" data-d="1" title="Bajar">▼</button></div>
+        <div class="cadena-h" aria-hidden="true"><button type="button" tabindex="-1" data-h="-1" title="Izquierda">◀</button><div class="ch-riel"></div><button type="button" tabindex="-1" data-h="1" title="Derecha">▶</button></div>`);
+      const rv = m.querySelector('.cv-riel'), rh = m.querySelector('.ch-riel'), [bu, bd] = m.querySelectorAll('.cadena-v button'), [bl, br] = m.querySelectorAll('.cadena-h button');
+      const pintar = () => {
+        const maxY = sc.scrollHeight - sc.clientHeight, y = sc.scrollTop, hv = rv.clientHeight;
+        const thv = maxY > 2 ? Math.max(36, hv * sc.clientHeight / sc.scrollHeight) : hv;
+        m.classList.toggle('sin-v', maxY <= 2); bu.disabled = y <= 2; bd.disabled = y >= maxY - 2;
+        rv.style.setProperty('--cy', (-y * 0.5).toFixed(1) + 'px');                       // los eslabones avanzan al deslizar
+        rv.style.setProperty('--th', thv.toFixed(1) + 'px'); rv.style.setProperty('--tt', (maxY > 2 ? (hv - thv) * y / maxY : 0).toFixed(1) + 'px');
+        const maxX = sc.scrollWidth - sc.clientWidth, x = sc.scrollLeft, wh = rh.clientWidth;
+        m.classList.toggle('con-h', maxX > 2); bl.disabled = x <= 2; br.disabled = x >= maxX - 2;
+        const thw = maxX > 2 ? Math.max(40, wh * sc.clientWidth / sc.scrollWidth) : wh;
+        rh.style.setProperty('--cx', (-x * 0.5).toFixed(1) + 'px'); rh.style.setProperty('--tw', thw.toFixed(1) + 'px');
+        rh.style.setProperty('--tl', (maxX > 2 ? (wh - thw) * x / maxX : 0).toFixed(1) + 'px');
+      };
+      sc.addEventListener('scroll', pintar, { passive: true });
+      if (window.ResizeObserver) { const ro = new ResizeObserver(pintar); ro.observe(sc); if (sc.firstElementChild) ro.observe(sc.firstElementChild); }
+      if (window.MutationObserver) new MutationObserver(() => { pintar(); llevarAhora(sc); }).observe(sc, { childList: true, subtree: true });
+      bu.onclick = bd.onclick = e => sc.scrollBy({ top: +e.currentTarget.dataset.d * sc.clientHeight * 0.6, behavior: 'smooth' });
+      bl.onclick = br.onclick = e => sc.scrollBy({ left: +e.currentTarget.dataset.h * sc.clientWidth * 0.6, behavior: 'smooth' });
+      const arrastre = (riel, vert) => {                                                         // tomar la cadena y arrastrarla
+        let act = false;
+        const mover = ev => {
+          const r = riel.getBoundingClientRect(), f = vert ? (ev.clientY - r.top) / r.height : (ev.clientX - r.left) / r.width;
+          if (vert) sc.scrollTop = Math.max(0, Math.min(1, f)) * (sc.scrollHeight - sc.clientHeight);
+          else sc.scrollLeft = Math.max(0, Math.min(1, f)) * (sc.scrollWidth - sc.clientWidth);
+        };
+        riel.addEventListener('pointerdown', ev => { act = true; riel.setPointerCapture(ev.pointerId); sc.style.scrollBehavior = 'auto'; mover(ev); });
+        riel.addEventListener('pointermove', ev => { if (act) mover(ev); });
+        riel.addEventListener('pointerup', () => { act = false; sc.style.scrollBehavior = ''; });
+      };
+      arrastre(rv, true); arrastre(rh, false);
+      pintar(); llevarAhora(sc);
+    }
+    // La primera vez que se ve la agenda de hoy, se desliza sola hasta la hora actual
+    function llevarAhora(sc){
+      const a = sc.querySelector('.ag-ahora'); if (!a || sc.dataset.ahora === hoyTxt()) return;
+      sc.dataset.ahora = hoyTxt();
+      requestAnimationFrame(() => { const t = a.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop; sc.scrollTop = Math.max(0, t - sc.clientHeight * 0.3); });
+    }
+    document.querySelectorAll('.agenda-scroll').forEach(encadenarAgenda);
     // ----- Riel de pestañas (cadena) -----
     function pintarRiel(){
       const r = $('tabsRiel'), t = $('tabsBarra'); if (!r || !t) return;
@@ -2624,7 +2698,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F37 · 07-10';
+    const VERSION_PANEL = 'F37 · 07-10 b';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
