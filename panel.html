@@ -122,6 +122,7 @@
     .ag-extra { position:absolute; left:4px; right:4px; z-index:1; pointer-events:none; border-radius:0 0 7px 7px; border:1px dashed rgba(251,191,36,0.7); border-top:none;
                 background:repeating-linear-gradient(135deg, rgba(251,191,36,0.20) 0 6px, transparent 6px 12px); }
     .ag-extra.real span { background:#fbbf24; }
+    .ag-pagado { display:inline-block; font-size:10.5px; font-weight:700; color:#1a1300; background:#fbbf24; border-radius:999px; padding:1px 7px; margin-left:4px; white-space:nowrap; }
     .ag-libre { position:absolute; top:50%; left:0; right:0; text-align:center; color:var(--gris); font-size:12px; }
 
     /* Mi día (profesional) */
@@ -1188,6 +1189,13 @@
     }
     // Lo que se ve en la agenda: una atención terminada ANTES de su hora ocupa solo hasta su término real
     // (el resto queda libre para otro cliente, igual que en la base de datos)
+    // Si se cobró después de la hora (atraso o se olvidaron de marcarlo), no se estira el bloque:
+    // se anota dentro del mismo bloque a qué hora se dio por pagado.
+    function pagoTarde(r){
+      if (r.origen === 'llegada' || r.estado !== 'completada' || !r.termino_real || r.termino_real.slice(0, 10) !== r.fecha) return '';
+      const [, rf] = rangoDe(r), tr = aMin(r.termino_real.slice(11, 16)), dif = tr - rf;
+      return dif >= 1 ? ` <span class="ag-pagado" title="Se marcó como terminado y pagado a las ${aHora(tr)}">✓ pagado ${aHora(tr)} · +${dif} min</span>` : '';
+    }
     function rangoVisible(r){
       const [ri, rf] = rangoDe(r);
       if (r.origen !== 'llegada' && r.estado === 'completada' && r.termino_real && r.termino_real.slice(0, 10) === r.fecha){
@@ -1414,15 +1422,7 @@
           const [ri, rf, antes] = rangoVisible(r), est = r.estado || 'confirmada';
           const enHora = est === 'confirmada' && c.esHoy && ri <= ahoraMin && rf > ahoraMin;
           x += `<div class="ag-res ${est} ${enHora ? 'ahora' : ''}" style="top:${y(ri)+1}px;height:${Math.max((rf-ri)*PX_MIN-2, 18)}px" onclick="event.stopPropagation(); abrirDetalle(${r.id})" title="${esc(r.nombre)}${antes ? ' · terminó ' + antes + ' min antes' : ''}">
-            <b>${aHora(ri)}–${aHora(rf)} ${esc(r.nombre)}</b>${marcasCliente(r, true)}${antes ? ` <span class="ag-antes">✓ ${antes} min antes</span>` : ''}${(rf-ri) * PX_MIN >= 34 ? `<br>${esc(r.servicios || r.descripcion || '')}` : ''}</div>`;
-        });
-        // Agendados terminados: se marca la hora real de término (antes = franja verde libre; después = franja amarilla)
-        c.reservas.forEach(r => {
-          if (r.origen === 'llegada' || r.estado !== 'completada' || !r.termino_real || r.termino_real.slice(0, 10) !== r.fecha) return;
-          const [ri, rf] = rangoDe(r), tr = Math.max(ri, aMin(r.termino_real.slice(11, 16))), dif = tr - rf;
-          if (dif < 1) return;                                // terminó antes o a la hora: ya se ve en la tarjeta
-          x += `<div class="ag-extra" style="top:${y(rf)}px;height:${dif * PX_MIN}px"></div>`;
-          x += `<div class="ag-real ${dif > 0 ? 'ag-extra real' : ''}" style="top:${y(tr)}px;${dif > 0 ? 'border:none;border-top:2px dashed #fbbf24;background:none;height:0;' : ''}"><span>✓ ${aHora(tr)} · ${Math.abs(dif)} min ${dif < 0 ? 'antes' : 'después'}</span></div>`;
+            <b>${aHora(ri)}–${aHora(rf)} ${esc(r.nombre)}</b>${marcasCliente(r, true)}${antes ? ` <span class="ag-antes">✓ ${antes} min antes</span>` : ''}${pagoTarde(r)}${(rf-ri) * PX_MIN >= 34 ? `<br>${esc(r.servicios || r.descripcion || '')}` : ''}</div>`;
         });
         if (c.esHoy && ahoraMin > desde && ahoraMin < hasta) x += `<div class="ag-ahora" style="top:${y(ahoraMin)}px"></div>`;
         const clic = c.tid ? `onclick="clicGrilla(event, ${c.tid}, '${c.fecha}', ${desde})"` : '';
@@ -1647,7 +1647,7 @@
       const [ri, rf] = rangoDe(r), est = r.estado || 'confirmada';
       const llegada = r.origen === 'llegada';
       return `<div class="cita ${est}">
-        <div class="r-hora">${aHora(ri)}<small>${est === 'en_atencion' ? 'en curso' : 'hasta ' + aHora(rangoVisible(r)[1])}${rangoVisible(r)[2] ? `<br><span class="ag-antes">✓ ${rangoVisible(r)[2]} min antes</span>` : ''}</small></div>
+        <div class="r-hora">${aHora(ri)}<small>${est === 'en_atencion' ? 'en curso' : 'hasta ' + aHora(rangoVisible(r)[1])}${rangoVisible(r)[2] ? `<br><span class="ag-antes">✓ ${rangoVisible(r)[2]} min antes</span>` : ''}${pagoTarde(r) ? '<br>' + pagoTarde(r) : ''}</small></div>
         <div>
           <div class="r-top"><div class="r-nombre">${esc(r.nombre)}${llegada ? ' <span class="badge grupo">Llegada</span>' : ''}${marcasCliente(r)}</div>
             <span class="badge ${est}">${est === 'en_atencion' ? '<i class="pulso"></i> ' : ''}${ESTADOS[est] || est}${r.metodo_pago ? ' · ' + PAGOS[r.metodo_pago] : ''}</span></div>
@@ -2343,7 +2343,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F28 · 06-10';
+    const VERSION_PANEL = 'F28 · 06-10 b';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
