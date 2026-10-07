@@ -2861,7 +2861,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F40 · 07-10 b';
+    const VERSION_PANEL = 'F41 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -4821,6 +4821,9 @@
         const okTel = x => x.telefono.replace(/\D/g, '').length >= 8, okMail = x => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(x.correo);
         const buenos = IMP.filter(x => okTel(x) || okMail(x)), malos = IMP.length - buenos.length;
         const soloMail = buenos.filter(x => !okTel(x)).length, soloTel = buenos.filter(x => !okMail(x)).length;
+        const vistos = new Set(); let repetidas = 0;                                     // misma persona más de una vez en el archivo
+        for (const x of buenos){ const k = [okTel(x) ? 't' + x.telefono.replace(/\D/g, '').slice(-8) : '', okMail(x) ? 'c' + x.correo : ''].filter(Boolean);
+          if (k.some(v => vistos.has(v))) repetidas++; k.forEach(v => vistos.add(v)); }
         const est = x => okTel(x) && okMail(x) ? '<span style="color:#22c55e;" title="Tiene WhatsApp y correo">✓</span>' : okTel(x) ? '<span class="nota" title="Se importa; el correo se completa cuando reserve">✓ sin correo</span>'
                         : okMail(x) ? '<span class="nota" title="Se importa; el WhatsApp se completa cuando reserve">✓ sin WSP</span>' : '<span class="error" title="No tiene WhatsApp ni correo: se omite">omitido</span>';
         const orden = [...IMP].sort((a, b) => (okTel(a) || okMail(a)) - (okTel(b) || okMail(b)));   // primero los que se omiten, para revisarlos
@@ -4828,6 +4831,7 @@
             <div class="kpis" style="margin:10px 0;"><div class="kpi destacado"><b>${fmtN(buenos.length)}</b><span>clientes listos</span></div>
               <div class="kpi"><b>${fmtN(buenos.filter(x => x.nacimiento).length)}</b><span>con cumpleaños</span></div>
               ${malos ? `<div class="kpi"><b>${fmtN(malos)}</b><span>sin WhatsApp ni correo (se omiten)</span></div>` : ''}</div>
+            ${repetidas ? `<p class="nota">👥 ${fmtN(repetidas)} fila${repetidas === 1 ? ' repite' : 's repiten'} un WhatsApp o correo que ya aparece más arriba en el archivo: se juntan en la misma ficha (no se duplica el cliente).</p>` : ''}
             ${soloMail || soloTel ? `<p class="nota">🔗 ${soloMail ? `${fmtN(soloMail)} solo con correo` : ''}${soloMail && soloTel ? ' y ' : ''}${soloTel ? `${fmtN(soloTel)} solo con WhatsApp` : ''}: se importan igual y se completan solos cuando reserven online.</p>` : ''}
             <p class="nota" style="margin-top:4px;">Columnas que encontramos: ${['nombre', 'apellido', 'telefono', 'correo'].filter(k => mapa[k] != null).map(k => `<b>${esc(filas[0][mapa[k]])}</b>`).join(' · ')}${mapa.nacimiento != null || mapa.nac_dia != null ? ' · <b>cumpleaños</b>' : ''}</p>
             <table class="tabla-caja tabla-imp"><tr><th>Fila</th><th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>🎂</th><th></th></tr>
@@ -4842,14 +4846,16 @@
     async function enviarImportar(){
       if (!IMP) return;
       const todos = $('impPromosTodos').checked, lista = IMP.map(x => ({ ...x, acepta_promos: todos || x.acepta_promos }));
-      let nuevos = 0, act = 0, omit = [];
+      let nuevos = 0, act = 0, rep = 0, omit = [];
       estado('estadoImp', 'Importando…');
       for (let i = 0; i < lista.length; i += 1000){
         const { data, error } = await db.rpc('importar_clientes', { p: lista.slice(i, i + 1000) });
         if (error) return estado('estadoImp', /importar_clientes/.test(error.message || '') ? 'Falta instalar la Fase 39/40 en Supabase.' : 'Error: ' + error.message, 'error');
-        nuevos += data.nuevos; act += data.actualizados; omit = omit.concat(data.omitidos || []);
+        nuevos += data.nuevos; act += data.actualizados; rep += data.repetidos || 0; omit = omit.concat(data.omitidos || []);
       }
-      $('impVista').innerHTML = `<div class="sol-caja aprobada"><div class="sol-tit">✓ Listo: ${nuevos} cliente${nuevos === 1 ? '' : 's'} nuevo${nuevos === 1 ? '' : 's'} y ${act} actualizado${act === 1 ? '' : 's'}.</div>
+      $('impVista').innerHTML = `<div class="sol-caja aprobada"><div class="sol-tit">✓ Listo: ${fmtN(nuevos)} cliente${nuevos === 1 ? '' : 's'} nuevo${nuevos === 1 ? '' : 's'}.</div>
+        ${act ? `<div class="sol-prop">🔄 ${fmtN(act)} ya estaba${act === 1 ? '' : 'n'} en tu lista: se completaron sus datos que faltaban (su nombre e historial no cambian).</div>` : ''}
+        ${rep ? `<div class="sol-prop">👥 ${fmtN(rep)} fila${rep === 1 ? '' : 's'} repetida${rep === 1 ? '' : 's'} en el Excel (mismo WhatsApp o correo): se juntaron en la misma ficha.</div>` : ''}
         ${omit.length ? `<div class="sol-prop">Se omitieron ${omit.length}: ${omit.slice(0, 15).map(o => `fila ${o.fila} (${esc(o.motivo)})`).join(' · ')}${omit.length > 15 ? '…' : ''}</div>` : ''}</div>`;
       estado('estadoImp', ''); IMP = null; cargarClientes();
     }
