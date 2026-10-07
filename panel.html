@@ -429,6 +429,17 @@
     .ideas .chip { padding:5px 11px; font-size:12.5px; }
     /* Vista previa del correo: estilo pergamino */
     .prev-mail { background:transparent; }
+    .portada-ed { display:grid; grid-template-columns:minmax(0, 1.3fr) minmax(0, 1fr); gap:18px; margin-bottom:16px; align-items:start; }
+    .pe-prev { position:relative; aspect-ratio:16/8; border-radius:12px; overflow:hidden; background:#cdeefe center bottom / cover no-repeat; display:flex; flex-direction:column; align-items:center; text-align:center; padding:6% 4% 0; font-family:Montserrat, system-ui, sans-serif; }
+    .pe-prev i { position:absolute; inset:0; }
+    .pe-prev > *:not(i) { position:relative; }
+    .pe-prev .pe-et { border:1px solid currentColor; border-radius:5px; padding:2px 16px; font-size:10px; }
+    .pe-prev b { margin-top:7%; font-size:clamp(18px, 2.6vw, 32px); font-weight:800; letter-spacing:-.03em; line-height:1; }
+    .pe-prev small { margin-top:3%; font-size:clamp(9px, 1vw, 13px); font-weight:700; }
+    .pe-prev .pe-bt { display:flex; gap:10%; margin-top:6%; width:70%; justify-content:center; }
+    .pe-prev .pe-bt em { font:600 9px Poppins, sans-serif; font-style:normal; color:#fff; padding:6px 10px; border-radius:3px; white-space:nowrap; }
+    .pe-ctrl { display:grid; gap:10px; align-content:start; }
+    @media (max-width:760px){ .portada-ed { grid-template-columns:1fr; } }
     .lim-fila { margin-top:12px; }
     .lim-fila > label { display:block; font-weight:600; font-size:13.5px; margin-bottom:6px; }
     .lim-fila .ideas { align-items:center; }
@@ -1146,8 +1157,9 @@
           <div id="listaPlanes"></div>
         </div>
         <div class="tarjeta">
-          <h3 style="margin:0 0 4px;">🌐 Textos de la página web (twoweb.cl)</h3>
-          <p class="nota" style="margin-bottom:10px;">Cambia títulos y subtítulos sin tocar el código. Lo que dejes vacío muestra el texto original (el gris de ejemplo).</p>
+          <h3 style="margin:0 0 4px;">🌐 Página web (twoweb.cl): portada y textos</h3>
+          <p class="nota" style="margin-bottom:10px;">Solo tú la editas. Cambia la imagen de fondo de la portada y los títulos sin tocar el código. Lo que dejes vacío muestra el texto original (el gris de ejemplo).</p>
+          <div id="portadaWeb"></div>
           <div id="textosWeb"><p class="nota">Cargando…</p></div>
         </div>
         <div class="tarjeta">
@@ -2612,7 +2624,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F36 · 07-10';
+    const VERSION_PANEL = 'F37 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -4974,18 +4986,59 @@
       await guardarPlan(card.querySelector('.acc .boton'));
     }
     // ----- Textos de la página web (Fase 31) -----
-    const TEXTOS_WEB = [
-      ['Inicio (arriba)', [['hero_etiqueta', 'Etiqueta', '🇨🇱 Hecho en Chile para pymes'], ['hero_titulo', 'Título', 'Tu negocio,'], ['hero_resaltado', 'Título · parte en color', 'online y ordenado'],
-                          ['hero_sub', 'Subtítulo', 'Agenda de horas, tienda online y panel de gestión para tu local…', 1], ['hero_boton', 'Botón principal', 'Ver planes y precios']]],
-      ['Servicios', [['serv_kicker', 'Etiqueta', 'Servicios'], ['serv_titulo', 'Título', 'Todo lo que tu negocio necesita para vender y atender online'], ['serv_sub', 'Subtítulo', 'Elige lo que usas: agenda, tienda o ambas…', 1]]],
-      ['Para quién', [['rubros_kicker', 'Etiqueta', 'Para quién'], ['rubros_titulo', 'Título', 'Hecho para negocios que atienden y venden']]],
-      ['Cómo funciona', [['como_kicker', 'Etiqueta', 'Cómo funciona'], ['como_titulo', 'Título', 'Empiezas a recibir reservas y pedidos en días, no en meses']]],
-      ['Planes', [['planes_kicker', 'Etiqueta', 'Planes'], ['planes_titulo', 'Título', 'Un precio mensual simple'], ['planes_sub', 'Subtítulo', 'Elige según el tamaño de tu negocio. Puedes cambiar de plan cuando crezcas.', 1]]],
-      ['Preguntas', [['faq_kicker', 'Etiqueta', 'Preguntas frecuentes'], ['faq_titulo', 'Título', 'Lo que nos preguntan antes de partir']]],
-      ['Contacto', [['contacto_titulo', 'Título', '¿Listo para ordenar tu negocio?'], ['contacto_sub', 'Subtítulo', 'Cuéntanos de tu negocio y te mostramos cómo quedaría…', 1]]],
+    const TEXTOS_WEB = [   // página "two" (Fase 37)
+      ['Portada (arriba)', [['hero_etiqueta', 'Etiqueta', 'Agenda de horas online'], ['hero_titulo', 'Título', 'Haz crecer tu negocio'],
+                          ['hero_sub', 'Subtítulo', 'Más que una agenda, todo el control en un solo panel', 1], ['hero_boton', 'Botón café', '¿Qué es two?'],
+                          ['hero_boton2', 'Botón rojo', 'Inicia tu prueba gratis'], ['hero_franja', 'Franja bajo la portada', 'Sin contratos - Lista en minutos - Soporte en español - personalizada']]],
+      ['Para cualquier tipo de negocio', [['rubros_titulo', 'Título', 'Para cualquier tipo de negocio'], ['rubros_sub', 'Texto', 'Hecho para negocios que atienden y venden. ¿No ves tu rubro? Escríbenos: lo adaptamos a tu negocio.', 1]]],
+      ['Servicios', [['serv_titulo', 'Título', 'Todo el orden de tu negocio, en un solo sistema.'], ['serv_sub', 'Subtítulo', 'Elige lo que usas: agenda, tienda o ambas. Nosotros lo configuramos contigo.', 1]]],
+      ['Cómo funciona (título rojo)', [['como_titulo', 'Título', 'Empiezas a recibir reservas y pedidos en días, no en meses']]],
+      ['Planes', [['planes_titulo', 'Título (rojo)', 'Planes'], ['planes_sub', 'Subtítulo (opcional)', 'Elige según el tamaño de tu negocio…', 1]]],
+      ['Preguntas', [['faq_titulo', 'Título', 'Preguntas frecuentes']]],
+      ['Contáctanos y pie', [['contacto_titulo', 'Título', 'Contáctanos'], ['contacto_sub', 'Subtítulo', 'Cuéntanos de tu negocio y te mostramos cómo quedaría. Te respondemos el mismo día.', 1],
+                            ['pie_boton', 'Botón del pie', 'Registrate gratis']]],
     ];
+    // Portada de twoweb.cl (Fase 37): imagen de fondo, color del texto y oscurecer
+    let PORTADA = null;
+    async function cargarPortadaWeb(){
+      const el = $('portadaWeb'); if (!el) return;
+      const { data, error } = await db.rpc('sitio_portada');
+      if (error){ el.innerHTML = /sitio_portada/.test(error.message || '') ? '<p class="nota" style="margin-bottom:12px;">Para cambiar la imagen de la portada, instala la Fase 37 en Supabase.</p>' : ''; return; }
+      PORTADA = { imagen: data?.imagen || null, tono: data?.tono || 'oscuro', osc: data?.osc || 0, cambio: false };
+      dibujarPortadaWeb();
+    }
+    function dibujarPortadaWeb(){
+      const P = PORTADA, img = P.imagen || 'imagenes/portada-two.jpg';
+      $('portadaWeb').innerHTML = `<div class="portada-ed">
+          <div class="pe-prev" style="background-image:url('${P.imagen ? P.imagen : img}');color:${P.tono === 'claro' ? '#fcf9f2' : '#342d2d'};">
+            <i style="background:rgba(0,0,0,${P.osc / 100});"></i>
+            <span class="pe-et">Agenda de horas online</span><b>Haz crecer tu negocio</b><small>Más que una agenda, todo el control en un solo panel</small>
+            <span class="pe-bt"><em style="background:#623e2a;">¿Qué es two?</em><em style="background:#ff3131;">Inicia tu prueba gratis</em></span></div>
+          <div class="pe-ctrl">
+            <label class="boton-linea" style="cursor:pointer;display:inline-block;">🖼 ${P.imagen ? 'Cambiar imagen' : 'Subir imagen de fondo'}<input type="file" accept="image/*" class="oculto" onchange="imagenPortadaWeb(this)"></label>
+            ${P.imagen ? '<button class="boton-linea" onclick="PORTADA.imagen = null; PORTADA.cambio = true; dibujarPortadaWeb()">↺ Volver a la ilustración</button>' : '<span class="nota">Ahora: ilustración original (cielo y cerros).</span>'}
+            <div><label>Color del texto</label><div class="segmentado"><button class="seg ${P.tono === 'oscuro' ? 'sel' : ''}" onclick="PORTADA.tono='oscuro'; dibujarPortadaWeb()">Oscuro</button>
+              <button class="seg ${P.tono === 'claro' ? 'sel' : ''}" onclick="PORTADA.tono='claro'; dibujarPortadaWeb()">Claro</button></div></div>
+            <div><label>Oscurecer la imagen · <span id="peOscTxt">${P.osc}%</span></label><input type="range" min="0" max="80" step="5" value="${P.osc}" oninput="PORTADA.osc=+this.value; $('peOscTxt').textContent=this.value+'%'; document.querySelector('.pe-prev i').style.background='rgba(0,0,0,'+(this.value/100)+')'"></div>
+            <p class="nota">Ideal: foto horizontal (más ancha que alta), de al menos 1600 px. Con una foto oscura usa texto claro.</p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="boton" onclick="guardarPortadaWeb()">Guardar portada</button><a class="boton-linea" href="/" target="_blank" rel="noopener">👁 Ver la página</a></div>
+            <p class="estado" id="estadoPortada"></p>
+          </div></div>`;
+    }
+    async function imagenPortadaWeb(input){
+      try { PORTADA.imagen = await comprimirImagen(input.files[0], 2000, 1000000); PORTADA.cambio = true; dibujarPortadaWeb(); }
+      catch (e) { alert(e.message); }
+      input.value = '';
+    }
+    async function guardarPortadaWeb(){
+      const p = { tono: PORTADA.tono, osc: PORTADA.osc, ...(PORTADA.cambio ? { imagen: PORTADA.imagen || '' } : {}) };
+      const { error } = await db.rpc('super_guardar_portada', { p });
+      if (error) return estado('estadoPortada', 'Error: ' + error.message, 'error');
+      PORTADA.cambio = false; estado('estadoPortada', '✓ Guardado. Recarga twoweb.cl para verlo.', 'ok');
+    }
     async function cargarTextosWeb(){
       const el = $('textosWeb'); if (!el) return;
+      cargarPortadaWeb();
       const { data, error } = await db.rpc('sitio_textos');
       if (error){ el.innerHTML = /sitio_textos/.test(error.message || '') ? '<p class="nota">Para editar los textos de la página, instala la Fase 31 en Supabase.</p>' : ''; return; }
       const t = data || {};
