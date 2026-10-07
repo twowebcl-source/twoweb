@@ -1878,9 +1878,9 @@
     async function cargarProductosCobro(r){
       if (!conTienda() || !$('cobroProds')) return;
       const [pr, pe] = await Promise.all([
-        db.from('productos').select('id,nombre,precio,precio_oferta,stock,activo').eq('activo', true).order('nombre'),
+        leerProductos(true),
         db.rpc('pedidos_panel', { p_dias: 3 })]);
-      PRODS_COBRO = (pr.data || []).filter(p => p.stock === null || p.stock > 0);
+      PRODS_COBRO = (pr.data || []).filter(p => !p.agotado).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
       APARTADOS = (pe.data || []).filter(p => p.reserva_id === r.id && ['nuevo', 'confirmado'].includes(p.estado));
       entregarIds = new Set(APARTADOS.map(p => p.id));
       dibujarProductosCobro();
@@ -1893,7 +1893,7 @@
             Pedido #${p.numero}: ${p.items.map(i => i.cantidad + '× ' + esc(i.nombre)).join(', ')} · <b>${clp(p.total)}</b></label>`).join('')}` : ''}
         <div style="display:flex;gap:6px;margin-top:6px;">
           <select id="selProdCobro"><option value="">+ ¿Compró algo en el local? Elige un producto…</option>
-            ${PRODS_COBRO.map(p => `<option value="${p.id}">${esc(p.nombre)} · ${clp(precioProd(p))}${p.stock !== null ? ' · quedan ' + p.stock : ''}</option>`).join('')}</select>
+            ${PRODS_COBRO.map(p => `<option value="${p.id}">${esc(p.nombre)} · ${clp(precioProd(p))}${p.stock != null ? ' · quedan ' + p.stock : ''}</option>`).join('')}</select>
           <button class="boton-linea" onclick="agregarVentaLocal()">Agregar</button></div>
         ${Object.keys(ventaLocal).length ? `<div class="venta-local">${Object.entries(ventaLocal).map(([id, c]) => { const p = PRODS_COBRO.find(x => x.id == id); return p ? `<div>
             <span>${esc(p.nombre)}</span>
@@ -1904,9 +1904,9 @@
     function agregarVentaLocal(){ const id = Number($('selProdCobro').value); if (!id) return; cambiarVentaLocal(id, 1); }
     function cambiarVentaLocal(id, d){
       const p = PRODS_COBRO.find(x => x.id == id); if (!p) return;
-      const max = p.stock === null ? 99 : p.stock, n = Math.max(0, Math.min(max, (ventaLocal[id] || 0) + d));
+      const max = p.stock == null ? 99 : p.stock, n = Math.max(0, Math.min(max, (ventaLocal[id] || 0) + d));
       if (n) ventaLocal[id] = n; else delete ventaLocal[id];
-      if (d > 0 && n === (ventaLocal[id] || 0) && n === max && p.stock !== null) estado('estadoAccion', `De "${p.nombre}" quedan ${p.stock}.`, '');
+      if (d > 0 && n === (ventaLocal[id] || 0) && n === max && p.stock != null) estado('estadoAccion', `De "${p.nombre}" quedan ${p.stock}.`, '');
       dibujarProductosCobro();
     }
     const totalProductosCobro = () => APARTADOS.filter(p => entregarIds.has(p.id)).reduce((a, p) => a + p.total, 0)
@@ -2516,7 +2516,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F32 · 07-10';
+    const VERSION_PANEL = 'F33 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -4458,9 +4458,23 @@
     // ================= PRODUCTOS DE LA TIENDA (Fase 14) =================
     let productos = [], filtroPr = 'todos', prodImgNueva = null;
     const BUCKET = 'productos';
+    // Productos para el panel (Fase 33): el admin lee la tabla; el trabajador usa productos_equipo, que no trae la cantidad en stock
+    async function leerProductos(soloActivos){
+      if (yo.rol === 'admin'){
+        let q = db.from('productos').select('*'); if (soloActivos) q = q.eq('activo', true);
+        const r = await q.order('orden').order('id');
+        return { data: (r.data || []).map(p => ({ ...p, controla_stock: p.stock !== null, agotado: p.stock !== null && p.stock <= 0 })), error: r.error };
+      }
+      const r = await db.rpc('productos_equipo', { p_solo_activos: !!soloActivos });
+      if (r.error && /productos_equipo/.test(r.error.message || '')){        // aún sin Fase 33: lectura antigua, sin mostrar cantidades
+        const v = await db.from('productos').select('*').order('orden').order('id');
+        return { data: (v.data || []).filter(p => !soloActivos || p.activo).map(p => ({ ...p, controla_stock: p.stock !== null, agotado: p.stock !== null && p.stock <= 0, stock: null })), error: v.error };
+      }
+      return { data: r.data || [], error: r.error };
+    }
     async function cargarProductos(silencioso){
       if (!silencioso) $('listaProd').innerHTML = '<p class="nota">Cargando…</p>';
-      const { data, error } = await db.from('productos').select('*').order('orden').order('id');
+      const { data, error } = await leerProductos(false);
       if (error){ $('listaProd').innerHTML = `<p class="error">Error: ${esc(error.message)}${/productos/.test(error.message || '') ? ' — falta instalar la Fase 14.' : ''}</p>`; return; }
       productos = data || [];
       $('linkTiendaProd').href = linkTienda();
@@ -4473,21 +4487,24 @@
     function filtroProd(f){ filtroPr = f; document.querySelectorAll('[data-fpr]').forEach(c => c.classList.toggle('sel', c.dataset.fpr === f)); dibujarProductos(); }
     function dibujarProductos(){
       const adm = yo.rol === 'admin', activos = productos.filter(p => p.activo);
-      const agot = activos.filter(p => p.stock !== null && p.stock <= 0), bajos = activos.filter(p => p.stock !== null && p.stock > 0 && p.stock <= 5);
+      const agot = activos.filter(p => p.agotado), bajos = activos.filter(p => p.stock != null && p.stock > 0 && p.stock <= 5);
+      document.querySelector('[data-fpr="bajo"]')?.classList.toggle('oculto', !adm);
+      if (!adm && filtroPr === 'bajo') filtroPr = 'todos';
       $('kpisProd').innerHTML =
         `<div class="kpi destacado"><b>${activos.length}</b><span>productos a la venta</span></div>` +
-        `<div class="kpi"><b>${bajos.length}</b><span>con stock bajo</span></div>` +
+        (adm ? `<div class="kpi"><b>${bajos.length}</b><span>con stock bajo</span></div>` : '') +
         `<div class="kpi"><b>${agot.length}</b><span>agotados</span></div>` +
         (adm ? `<div class="kpi"><b>${clp(activos.reduce((a, p) => a + (p.stock > 0 ? p.stock * (p.precio_oferta ?? p.precio) : 0), 0))}</b><span>valor del stock (precio de venta)</span></div>` : '');
       const b = ($('buscarProd').value || '').toLowerCase().trim(), cat = $('catProd').value;
-      const lista = productos.filter(p => (filtroPr === 'todos' || (filtroPr === 'bajo' ? p.activo && p.stock !== null && p.stock > 0 && p.stock <= 5
-          : filtroPr === 'agotado' ? p.activo && p.stock !== null && p.stock <= 0 : !p.activo))
+      const lista = productos.filter(p => (filtroPr === 'todos' || (filtroPr === 'bajo' ? p.activo && p.stock != null && p.stock > 0 && p.stock <= 5
+          : filtroPr === 'agotado' ? p.activo && p.agotado : !p.activo))
         && (!cat || p.categoria === cat) && (!b || (p.nombre + ' ' + (p.categoria || '') + ' ' + (p.descripcion || '')).toLowerCase().includes(b)));
       $('notaProd').textContent = adm ? 'Stock vacío = no se controla (siempre disponible). El stock baja solo al confirmar un pedido. Los productos ocultos no aparecen en la tienda.'
         : 'Solo el administrador puede cambiar productos, precios y stock.';
       if (!lista.length){ $('listaProd').innerHTML = `<div class="tarjeta" style="margin-top:0;"><p class="nota">${productos.length ? 'No hay productos en este filtro.' : adm ? 'Aún no tienes productos. Presiona "+ Nuevo producto".' : 'Aún no hay productos.'}</p></div>`; return; }
       $('listaProd').innerHTML = lista.map(p => {
-        const st = p.stock === null ? '<b title="No se controla stock">∞</b>' : `<b class="${p.stock <= 0 ? 'cero' : p.stock <= 5 ? 'bajo' : ''}">${p.stock}</b>`;
+        const st = !adm ? (p.agotado ? '<b class="cero">Agotado</b>' : '<b title="Hay unidades disponibles">Disponible</b>')
+          : p.stock === null ? '<b title="No se controla stock">∞</b>' : `<b class="${p.stock <= 0 ? 'cero' : p.stock <= 5 ? 'bajo' : ''}">${p.stock}</b>`;
         return `<div class="prod-fila ${p.activo ? '' : 'inactivo'}">
           <div class="mini" ${p.imagen_url ? `style="background-image:url('${esc(p.imagen_url)}')"` : ''}>${p.imagen_url ? '' : esc((p.nombre || '?')[0].toUpperCase())}</div>
           <div class="nom"><b>${esc(p.nombre)}${p.destacado ? '<span class="etq ac">Destacado</span>' : ''}${p.activo ? '' : '<span class="etq">Oculto</span>'}</b>
