@@ -304,6 +304,8 @@
     .tabla-horario tr.no-trabaja input[type=time] { opacity:.3; }
     .detalle-horario { margin-top:10px; }
     .detalle-horario summary { cursor:pointer; color:var(--voltaje); font-size:13px; font-weight:600; }
+    .badge.falta { background:color-mix(in srgb, #ef4444 22%, transparent); color:#fca5a5; border:1px solid color-mix(in srgb, #ef4444 50%, transparent); font-size:10.5px; padding:1px 6px; border-radius:999px; font-weight:700; white-space:nowrap; }
+    .badge.confirmo { background:color-mix(in srgb, #22c55e 20%, transparent); color:#86efac; border:1px solid color-mix(in srgb, #22c55e 45%, transparent); font-size:10.5px; padding:1px 6px; border-radius:999px; font-weight:700; white-space:nowrap; }
     .msj-grid { display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px; align-items:start; }
     @media (max-width:860px){ .msj-grid { grid-template-columns:1fr; } }
     .msj-fila { margin-top:12px; }
@@ -1159,6 +1161,14 @@
     let entroConCodigo = false;
     let bloqueosTodos = [], serviciosActivos = [], notificaciones = [], ultimoNoLeidas = -1;
     let trabajadores = [], horarios = [], servicios = [], reservasTodas = [];
+    let FALTAS = {};                         // reserva_id → { faltas, cancelaciones, confirmo } (Fase 28)
+    // Marcas del cliente en sus horas: faltas sin aviso y si confirmó desde el recordatorio
+    function marcasCliente(r, corto){
+      const f = FALTAS[r.id]; if (!f) return '';
+      const est = r.estado || 'confirmada', futura = est === 'confirmada' || est === 'en_atencion';
+      return (f.faltas && futura ? ` <span class="badge falta" title="No llegó ${f.faltas} vez/veces sin avisar">⚠️ ${f.faltas}${corto ? '' : ' falta' + (f.faltas === 1 ? '' : 's')}</span>` : '') +
+             (f.confirmo && est === 'confirmada' ? ` <span class="badge confirmo" title="Confirmó desde el recordatorio">✓${corto ? '' : ' confirmó'}</span>` : '');
+    }
     let locales = [], asignados = {};        // asignados[tid] = [ids de servicios que hace]
     let LOCAL_PANEL = 0;                     // 0 = todos los locales (solo admin)
     try { LOCAL_PANEL = Number(localStorage.getItem('twoweb-local-panel')) || 0; } catch(e) {}
@@ -1296,15 +1306,17 @@
 
     // Trabajadores, horarios y reservas (RLS decide qué ve cada uno)
     async function cargarBase(){
-      const [t, h, r, b, c, loc] = await Promise.all([
+      const [t, h, r, b, c, loc, fal] = await Promise.all([
         db.from('trabajadores').select('*').order('orden').order('id'),
         db.from('horarios').select('*'),
         yo.rol === 'admin' ? db.from('reservas').select('*').order('fecha').order('hora') : db.rpc('mis_citas', {}),
         db.from('bloqueos').select('*').order('inicio'),
         db.rpc('agenda_config'),
         db.from('locales').select('*').order('orden').order('id'),
+        db.rpc('faltas_reservas', {}).then(r => r, () => ({})),
       ]);
       trabajadores = t.data || []; horarios = h.data || []; reservasTodas = r.data || [];
+      FALTAS = Object.fromEntries(((fal && fal.data) || []).map(x => [x.reserva_id, x]));
       bloqueosTodos = b.data || []; serviciosActivos = (c.data && c.data.servicios) || [];
       asignados = Object.fromEntries(((c.data && c.data.trabajadores) || []).map(x => [x.id, x.servicios || []]));
       locales = (loc.data && loc.data.length ? loc.data : (c.data && c.data.locales)) || [];
@@ -1402,7 +1414,7 @@
           const [ri, rf, antes] = rangoVisible(r), est = r.estado || 'confirmada';
           const enHora = est === 'confirmada' && c.esHoy && ri <= ahoraMin && rf > ahoraMin;
           x += `<div class="ag-res ${est} ${enHora ? 'ahora' : ''}" style="top:${y(ri)+1}px;height:${Math.max((rf-ri)*PX_MIN-2, 18)}px" onclick="event.stopPropagation(); abrirDetalle(${r.id})" title="${esc(r.nombre)}${antes ? ' · terminó ' + antes + ' min antes' : ''}">
-            <b>${aHora(ri)}–${aHora(rf)} ${esc(r.nombre)}</b>${antes ? ` <span class="ag-antes">✓ ${antes} min antes</span>` : ''}${(rf-ri) * PX_MIN >= 34 ? `<br>${esc(r.servicios || r.descripcion || '')}` : ''}</div>`;
+            <b>${aHora(ri)}–${aHora(rf)} ${esc(r.nombre)}</b>${marcasCliente(r, true)}${antes ? ` <span class="ag-antes">✓ ${antes} min antes</span>` : ''}${(rf-ri) * PX_MIN >= 34 ? `<br>${esc(r.servicios || r.descripcion || '')}` : ''}</div>`;
         });
         // Agendados terminados: se marca la hora real de término (antes = franja verde libre; después = franja amarilla)
         c.reservas.forEach(r => {
@@ -1590,7 +1602,7 @@
           const [ri, rf] = rangoDe(r), llegada = r.origen === 'llegada', atrasada = r.estado === 'confirmada' && rf <= ahoraMin;
           return `<div class="proxima atendiendo" onclick="abrirTerminar(${r.id})">
             <span class="etq">${llegada ? `⚡ Orden de llegada · desde las ${aHora(ri)}` : `📅 Agendado · ${aHora(ri)}–${aHora(rf)}${atrasada ? ' · falta cerrar' : ''}`}</span>
-            <div class="p-nombre" style="margin-top:4px;">${esc(r.nombre)}</div>
+            <div class="p-nombre" style="margin-top:4px;">${esc(r.nombre)}${marcasCliente(r)}</div>
             <div class="r-sub">${esc(r.servicios || 'Servicio por definir')}</div>
             <div class="acciones-rapidas">
               <button class="boton" onclick="event.stopPropagation(); abrirTerminar(${r.id})">✓ Terminó · cobrar</button>
@@ -1637,7 +1649,7 @@
       return `<div class="cita ${est}">
         <div class="r-hora">${aHora(ri)}<small>${est === 'en_atencion' ? 'en curso' : 'hasta ' + aHora(rangoVisible(r)[1])}${rangoVisible(r)[2] ? `<br><span class="ag-antes">✓ ${rangoVisible(r)[2]} min antes</span>` : ''}</small></div>
         <div>
-          <div class="r-top"><div class="r-nombre">${esc(r.nombre)}${llegada ? ' <span class="badge grupo">Llegada</span>' : ''}</div>
+          <div class="r-top"><div class="r-nombre">${esc(r.nombre)}${llegada ? ' <span class="badge grupo">Llegada</span>' : ''}${marcasCliente(r)}</div>
             <span class="badge ${est}">${est === 'en_atencion' ? '<i class="pulso"></i> ' : ''}${ESTADOS[est] || est}${r.metodo_pago ? ' · ' + PAGOS[r.metodo_pago] : ''}</span></div>
           ${conTrab ? `<div class="r-pro">👤 ${esc(trabDe(r.trabajador_id)?.nombre || r.trabajador || "")}</div>` : ''}
           <div class="r-sub">${esc(r.servicios || (llegada ? 'Servicio por definir' : ''))}${est === 'completada' && plata(r) ? ` · ${yo.rol === 'admin' ? '' : 'tu parte '}${clp(plata(r))}` : ''}${est === 'completada' && r.propina ? ` <span class="badge grupo">propina ${clp(r.propina)}</span>` : ''}</div>
@@ -1810,7 +1822,7 @@
         const [ri, rf] = rangoDe(r), est = r.estado || 'confirmada', g = tamGrupo(r.grupo);
         html += `<div class="reserva ${est}" onclick="abrirDetalle(${r.id})">
           <div class="r-hora">${aHora(ri)}<small>hasta ${aHora(rf)}</small></div>
-          <div class="r-top"><div class="r-nombre">${esc(r.nombre)}</div>
+          <div class="r-top"><div class="r-nombre">${esc(r.nombre)}${marcasCliente(r)}</div>
             <div style="display:flex;gap:6px;">${g > 1 ? `<span class="badge grupo">Grupo de ${g}</span>` : ''}<span class="badge ${est}">${ESTADOS[est] || est}</span></div></div>
           <div class="r-sub">${esc(r.servicios || r.descripcion || '')}${yo.rol === 'admin' ? (r.total ? ' · ' + clp(r.total) : '') : (est === 'completada' && r.ganancia ? ' · tu parte ' + clp(r.ganancia) : '')}</div>
           ${yo.rol === 'admin' ? `<div class="r-sub">con ${esc(r.trabajador)}</div>` : ''}
@@ -1827,7 +1839,10 @@
       const grupo = r.grupo ? reservasTodas.filter(x => x.grupo === r.grupo && x.id !== r.id) : [];
       const msgWa = encodeURIComponent(`Hola ${r.nombre}, te escribimos de ${NEG.nombre || MARCA} por tu reserva del ${r.fecha} a las ${aHora(ri)}.`);
       $('ventanaDetalle').innerHTML = `
-        <h3 style="font-size:18px;">${esc(r.nombre)}</h3>
+        <h3 style="font-size:18px;">${esc(r.nombre)}${marcasCliente(r)}</h3>
+        ${FALTAS[r.id] && (FALTAS[r.id].faltas || FALTAS[r.id].cancelaciones) ? `<div class="det-fila"><span>Historial</span><span>${FALTAS[r.id].faltas ? `<b style="color:var(--rojo);">${FALTAS[r.id].faltas} vez${FALTAS[r.id].faltas === 1 ? '' : 'es'} no llegó sin avisar</b>` : ''}${FALTAS[r.id].faltas && FALTAS[r.id].cancelaciones ? ' · ' : ''}${FALTAS[r.id].cancelaciones ? `${FALTAS[r.id].cancelaciones} cancelación${FALTAS[r.id].cancelaciones === 1 ? '' : 'es'} online` : ''}</span></div>` : ''}
+        ${r.cancelada_por === 'cliente' && est === 'cancelada' ? '<div class="det-fila"><span>Cancelación</span><span>La canceló el cliente desde su correo / Mis reservas</span></div>' : ''}
+        ${FALTAS[r.id]?.confirmo && est === 'confirmada' ? '<div class="det-fila"><span>Asistencia</span><span style="color:var(--verde);">✓ Confirmó que viene (recordatorio)</span></div>' : ''}
         <div class="det-fila"><span>Fecha</span><span>${esc(r.fecha)} · ${aHora(ri)}–${aHora(rf)}</span></div>
         <div class="det-fila"><span>Profesional</span><span>${esc(r.trabajador)}</span></div>
         ${locales.length > 1 ? `<div class="det-fila"><span>Local</span><span>📍 ${esc(nombreLocal(r.local_id ?? localDe(r.trabajador_id)))}</span></div>` : ''}
@@ -2328,7 +2343,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F27 · 06-10';
+    const VERSION_PANEL = 'F28 · 06-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3163,6 +3178,7 @@
           <p class="nota">Cuando un cliente reserva en tu agenda online, le llega un correo con su hora, el profesional, la dirección y un botón para agregarla a su calendario. Si te responde, el correo te llega a ti.</p>
           <label class="check-linea"><input type="checkbox" id="msjConf" ${data.confirmacion ? 'checked' : ''} onchange="guardarConfMsj(this)"> <span>Enviar confirmación por correo a cada reserva online</span></label>
           <p class="estado" id="estadoConf"></p>
+          <div id="msjPlazos"></div>
         </div>
         <div class="tarjeta">
           <h3 style="margin:0 0 8px;">Mensajes enviados</h3>
@@ -3172,7 +3188,25 @@
               <td class="num">${c.destinatarios}</td><td class="num">${c.canal === 'correo' ? `${c.enviados}${c.errores ? ` <span class="nota">(${c.errores} con error)</span>` : ''}` : '—'}</td></tr>`).join('')}</table></div>`
             : '<p class="nota">Aún no envías mensajes masivos.</p>'}
         </div>`;
-      dibujarFiltroMsj(); vistaMsj();
+      dibujarFiltroMsj(); vistaMsj(); cargarPlazos();
+    }
+    // Plazos (Fase 28): hasta cuándo cancela online el cliente y cuándo le llega el recordatorio
+    async function cargarPlazos(){
+      const { data, error } = await db.rpc('mis_plazos');
+      if (error || !data) { $('msjPlazos').innerHTML = error && /mis_plazos/.test(error.message || '') ? '<p class="nota" style="margin-top:10px;">Para el recordatorio y la cancelación online, instala la Fase 28.</p>' : ''; return; }
+      const op = (l, v, f) => l.map(k => `<option value="${k}" ${k === v ? 'selected' : ''}>${f(k)}</option>`).join('');
+      $('msjPlazos').innerHTML = `<div class="grid-2" style="margin-top:14px;">
+          <div><label>⏰ Recordatorio por correo</label><select id="plRec" onchange="guardarPlazos()">${op([0, 2, 3, 4, 6, 12, 24], data.recordatorio_horas, k => k ? k + ' horas antes de su hora' : 'No enviar recordatorio')}</select>
+            <p class="nota" style="margin-top:4px;">Trae los botones "Confirmo que voy" y "Cancelar mi hora". ${data.recordatorios_mes} enviados este mes.</p></div>
+          <div><label>✕ El cliente puede cancelar online hasta</label><select id="plCan" onchange="guardarPlazos()">${op([0, 1, 2, 3, 4, 6, 12, 24, 48], data.cancelar_horas, k => k ? k + ' hora' + (k === 1 ? '' : 's') + ' antes' : 'Hasta la hora misma')}</select>
+            <p class="nota" style="margin-top:4px;">Después de ese plazo debe avisarte por WhatsApp. Si no avisa y no llega, márcalo "No vino": sus próximas horas mostrarán ⚠️ faltas.</p></div>
+        </div><p class="estado" id="estadoPlazos"></p>`;
+    }
+    async function guardarPlazos(){
+      const can = Number($('plCan').value), rec = Number($('plRec').value);
+      const { error } = await db.rpc('guardar_plazos', { p_cancelar: can, p_recordatorio: rec });
+      if (error) return estado('estadoPlazos', 'Error: ' + error.message, 'error');
+      estado('estadoPlazos', rec && rec <= can ? `✓ Guardado. Ojo: el recordatorio llega ${rec} h antes, pero ya no se puede cancelar online desde ${can} h antes; conviene que el recordatorio llegue antes.` : '✓ Guardado.', rec && rec <= can ? 'error' : 'ok');
     }
     function canalMsj(c){ MSJ.canal = c; document.querySelectorAll('#msjCanal .seg').forEach((b, i) => b.classList.toggle('sel', (i === 0) === (c === 'correo'))); dibujarFiltroMsj(); vistaMsj(); }
     function dibujarFiltroMsj(){

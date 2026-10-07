@@ -207,6 +207,12 @@
     @keyframes pop { 0% { transform:scale(.4); } 80% { transform:scale(1.1); } 100% { transform:scale(1); } }
     .item-res { background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:14px 16px; margin-top:10px; text-align:left; font-size:14px; }
     .item-res b { color:var(--voltaje); }
+    .item-res.cancelada { opacity:.55; }
+    .item-res .est-cancelada { color:#f87171; font-weight:700; }
+    .mis-acc { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin-top:10px; padding-top:10px; border-top:1px dashed var(--borde); }
+    .boton-cancelar { background:transparent; border:2px solid #ef4444; color:#ef4444; border-radius:var(--r); padding:8px 16px; font:inherit; font-weight:700; cursor:pointer; }
+    .boton-cancelar:disabled { opacity:.5; }
+    .aviso-ok { background:rgba(74,222,128,0.1); border:1px solid rgba(74,222,128,0.4); color:var(--verde); border-radius:var(--r); padding:12px 14px; margin:8px 0 14px; font-size:14px; }
     .fid { background:linear-gradient(135deg, var(--voltaje-suave), var(--panel)); border:1px solid var(--voltaje); border-radius:var(--r); padding:16px; margin-top:14px; text-align:left; }
     .fid-cab { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
     .fid-cab b { font-size:16px; }
@@ -374,6 +380,7 @@
     <div id="vistaMis" class="oculto">
       <button class="volver" onclick="volverDeMis()">← Volver</button>
       <h2>Mis reservas</h2>
+      <div id="misAviso"></div>
       <p class="ayuda">Escribe el correo y el teléfono con que reservaste.</p>
       <div class="tarjeta">
         <div class="campo"><label class="lbl">Correo</label><input type="email" id="misCorreo" placeholder="tu@correo.com"></div>
@@ -527,6 +534,7 @@
       history.replaceState({ paso, i: 0 }, '', urlCorta(FIJO ? slugTrab(trab(FIJO)) : 'reservar'));
       dibujar();
       if (promoActiva() && QS.has('inscribete')) verInscripcion();   // link directo: agenda.html?inscribete
+      if (QS.get('mis') || QS.get('confirmar')) abrirDesdeCorreo();   // botones del correo: "Cancelar mi hora" / "Confirmo que voy"
     }
 
     // Llamada a la base con respaldo: si la base aún no tiene la Fase 10, se vuelve a intentar sin el negocio
@@ -1166,10 +1174,46 @@
       const tarjeta = tarjetaFidelidad(tj && !tj.error ? tj.data : null);
       if (!data.length){ cont.innerHTML = '<div class="vacio">No encontramos reservas próximas con esos datos.</div>' + tarjeta; return; }
       const est = { confirmada:'Confirmada', en_atencion:'En atención', completada:'Atendida', cancelada:'Cancelada', no_asistio:'No asistió' };
-      cont.innerHTML = data.map(r => `<div class="item-res"><b>${fechaLinda(r.fecha)} · ${esc(r.desde)} – ${esc(r.hasta)}</b> · ${esc(r.nombre)}<br>
-        ${esc(r.servicios || 'Reserva')} con ${esc(r.trabajador)}${r.total ? ' · ' + clp(r.total) : ''} · ${est[r.estado] || esc(r.estado)}
-        ${r.local ? `<br><span class="nota">📍 ${esc(r.local)} · ${esc(r.direccion || '')}</span>` : ''}</div>`).join('') + tarjeta;
+      MIS_DATOS = { correo, tel };
+      cont.innerHTML = data.map(r => {
+        const wsp = r.whatsapp ? String(r.whatsapp).replace(/\D/g, '') : '';
+        const acciones = r.estado !== 'confirmada' ? ''
+          : r.puede_cancelar === true ? `<div class="mis-acc"><button class="boton-cancelar" onclick="cancelarMiHora(${r.id}, this)">Cancelar hora</button><span class="nota">Puedes cancelar online hasta el ${esc(r.cancelar_hasta || '')}</span></div>`
+          : r.puede_cancelar === false ? `<div class="mis-acc"><span class="nota">Ya no se puede cancelar online.${wsp ? ` <a href="https://wa.me/${wsp}?text=${encodeURIComponent('Hola, no podré llegar a mi hora del ' + fechaLinda(r.fecha) + ' a las ' + r.desde + ' (' + (r.nombre || '') + ').')}" target="_blank" rel="noopener">Avísanos por WhatsApp</a>` : ''}</span></div>` : '';
+        return `<div class="item-res ${r.estado === 'cancelada' ? 'cancelada' : ''}"><b>${fechaLinda(r.fecha)} · ${esc(r.desde)} – ${esc(r.hasta)}</b> · ${esc(r.nombre)}<br>
+          ${esc(r.servicios || 'Reserva')} con ${esc(r.trabajador)}${r.total ? ' · ' + clp(r.total) : ''} · <span class="est-${esc(r.estado)}">${est[r.estado] || esc(r.estado)}</span>${r.confirmo && r.estado === 'confirmada' ? ' · ✓ confirmaste que vienes' : ''}
+          ${r.local ? `<br><span class="nota">📍 ${esc(r.local)} · ${esc(r.direccion || '')}</span>` : ''}${acciones}</div>`;
+      }).join('') + tarjeta;
     }
+    // ---------- Desde el correo: cancelar o confirmar (Fase 28) ----------
+    let MIS_DATOS = null;
+    async function abrirDesdeCorreo(){
+      const tok = QS.get('mis') || QS.get('confirmar');
+      if (!/^[0-9a-f-]{36}$/i.test(tok || '')) return;
+      verMisReservas();
+      const { data } = await db.rpc('contacto_de_token', { p_token: tok });
+      if (data){ $('misCorreo').value = data.correo || ''; $('misTelefono').value = data.telefono || ''; }
+      if (QS.get('confirmar')){
+        const { data: c, error } = await db.rpc('confirmar_mi_reserva', { p_token: tok });
+        $('misAviso').innerHTML = error ? `<p class="aviso">${esc(error.message)}</p>`
+          : c && c.ok ? `<div class="aviso-ok">✓ ¡Gracias${c.nombre ? ', ' + esc(String(c.nombre).split(' ')[0]) : ''}! Confirmaste tu hora del ${fechaLinda(c.fecha)} a las ${esc(c.hora)}. Te esperamos.</div>`
+          : `<p class="aviso">Esta hora ya no está activa (${esc(String(c?.estado || '').replace('_', ' '))}).</p>`;
+        if (data) buscarMisReservas();
+      } else {
+        $('misAviso').innerHTML = data ? `<div class="aviso-ok" style="background:var(--voltaje-suave);border-color:var(--voltaje);color:var(--hueso);">Revisa que tus datos estén bien y toca <b>Ver mis reservas</b> para cancelar tu hora.</div>`
+                                       : '<p class="aviso">El link del correo venció. Escribe tu correo y teléfono para ver tus reservas.</p>';
+      }
+    }
+    async function cancelarMiHora(id, btn){
+      if (!MIS_DATOS) return;
+      if (!confirm('¿Seguro que quieres cancelar esta hora? Quedará libre para otra persona.')) return;
+      btn.disabled = true; btn.textContent = 'Cancelando…';
+      const { error } = await rpcNeg('cancelar_mi_reserva', { p_correo: MIS_DATOS.correo, p_telefono: MIS_DATOS.tel, p_id: id, p_negocio: SLUG || null });
+      if (error){ btn.disabled = false; btn.textContent = 'Cancelar hora'; alert(error.message); return; }
+      $('misAviso').innerHTML = '<div class="aviso-ok">✓ Tu hora quedó cancelada. ¡Gracias por avisar! Cuando quieras, reserva otra.</div>';
+      buscarMisReservas();
+    }
+
     // Tarjeta de fidelidad (Fase 25): sellos por atención terminada; el premio se aplica solo al reservar
     function tarjetaFidelidad(t){
       if (!t || !t.activa || typeof tarjetaFidelidadHTML !== 'function') return '';
