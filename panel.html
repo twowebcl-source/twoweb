@@ -468,6 +468,19 @@
     .pe-prev .pe-bt em { font:600 9px Poppins, sans-serif; font-style:normal; color:#fff; padding:6px 10px; border-radius:3px; white-space:nowrap; }
     .pe-ctrl { display:grid; gap:10px; align-content:start; }
     @media (max-width:760px){ .portada-ed { grid-template-columns:1fr; } }
+    .cobro-cerrado { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:var(--r-pill, 999px); border:1px solid var(--linea); color:var(--gris); font-size:13px; font-weight:600; }
+    .sol-caja { margin-top:12px; padding:12px 14px; border-radius:12px; border:1px solid var(--linea); background:var(--panel2); font-size:13.5px; }
+    .sol-caja.pend { border-color:color-mix(in srgb, var(--voltaje) 55%, transparent); background:color-mix(in srgb, var(--voltaje) 9%, var(--panel2)); }
+    .sol-caja.aprobada { border-color:color-mix(in srgb, var(--verde) 45%, transparent); }
+    .sol-caja.rechazada { border-color:color-mix(in srgb, var(--rojo) 45%, transparent); }
+    .sol-tit { font-weight:700; } .sol-msj { margin-top:4px; font-style:italic; } .sol-prop { margin-top:4px; color:var(--gris); }
+    .sol-caja textarea, .sol-form textarea { width:100%; margin-top:8px; }
+    .sol-acc { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .sol-form { margin-top:10px; padding:12px 14px; border-radius:12px; border:1px dashed var(--linea); display:grid; gap:6px; }
+    .sol-form label { font-size:13px; font-weight:600; margin-top:4px; }
+    .sol-banner { margin-top:14px; padding:12px 14px; border-radius:14px; border:1px solid color-mix(in srgb, var(--voltaje) 55%, transparent); background:color-mix(in srgb, var(--voltaje) 10%, var(--panel)); display:grid; gap:8px; }
+    .sol-item { text-align:left; background:var(--panel2); border:1px solid var(--linea); border-radius:10px; padding:8px 12px; color:var(--hueso); cursor:pointer; font:inherit; display:grid; gap:2px; }
+    .sol-item:hover { border-color:var(--voltaje); } .sol-item small { color:var(--gris); }
     .lim-fila { margin-top:12px; }
     .lim-fila > label { display:block; font-weight:600; font-size:13.5px; margin-bottom:6px; }
     .lim-fila .ideas { align-items:center; }
@@ -959,6 +972,7 @@
 
       <!-- Agenda del día -->
       <div id="tab-dia" class="oculto">
+        <div id="solPend"></div>
         <div class="barra">
           <button class="boton-linea" onclick="moverDia(-1)" aria-label="Día anterior">‹</button>
           <span class="fecha-txt" id="diaTxt"></span>
@@ -1584,6 +1598,7 @@
     });
 
     // Trabajadores, horarios y reservas (RLS decide qué ve cada uno)
+    let SOLIC = [];          // solicitudes de cambio (Fase 38)
     async function cargarBase(){
       const [t, h, r, b, c, loc, fal] = await Promise.all([
         db.from('trabajadores').select('*').order('orden').order('id'),
@@ -1593,7 +1608,8 @@
         db.rpc('agenda_config'),
         db.from('locales').select('*').order('orden').order('id'),
         db.rpc('faltas_reservas', {}).then(r => r, () => ({})),
-      ]);
+        db.rpc('solicitudes_cambio_lista', {}).then(r => r, () => ({})),
+      ]).then(x => { SOLIC = (x[7] && !x[7].error && x[7].data) || []; return x; });
       trabajadores = t.data || []; horarios = h.data || []; reservasTodas = r.data || [];
       FALTAS = Object.fromEntries(((fal && fal.data) || []).map(x => [x.reserva_id, x]));
       bloqueosTodos = b.data || []; serviciosActivos = (c.data && c.data.servicios) || [];
@@ -1720,6 +1736,7 @@
       if (t === 'productos') cargarProductos();
       if (t === 'caja') dibujarCaja();
       if (t === 'midia') dibujarMiDia();
+      if (t === 'dia') pintarSolicitudesPend();
       if (t === 'dia') dibujarDia();
       if (t === 'semana') dibujarSemana();
       if (t === 'lista') dibujarLista();
@@ -2214,16 +2231,17 @@
         <div id="fotoRef"></div>
         ${admin && grupo.length ? `<div class="det-fila"><span>Viene con</span><span>${grupo.map(x => esc(x.nombre) + ' (' + esc(x.trabajador) + ')').join(', ')}</span></div>` : ''}
         <div class="det-fila"><span>Pago</span><span>${r.metodo_pago ? PAGOS[r.metodo_pago] : (est === 'completada' ? 'Sin registrar' : '—')}</span></div>
-        ${est === 'completada' ? `<div class="pagos"><span class="nota">Método de pago:</span>
+        ${est === 'completada' && admin ? `<div class="pagos"><span class="nota">Método de pago:</span>
           ${Object.entries(PAGOS).map(([k, v]) => `<button class="chip ${r.metodo_pago === k ? 'sel' : ''}" onclick="cambiarPago(${r.id}, '${k}')">${v}</button>`).join('')}</div>` : ''}
+        ${est === 'completada' ? cajaSolicitud(r) : ''}
         ${est === 'confirmada' || est === 'en_atencion' ? `<div class="det-acciones">
           ${est === 'confirmada' ? `<button class="boton-linea" onclick="cerrarDetalle(); iniciarAtencion(${r.id})">${esFutura(r) ? '▶ Comenzar ahora (llegó antes)' : '▶ Iniciar atención'}</button>` : ''}
           <button class="boton" onclick="abrirTerminar(${r.id})">✓ Terminó · cobrar</button></div>` : ''}
         <div class="det-acciones">
           ${admin && tel ? `<a class="boton-linea" href="https://wa.me/${tel}?text=${msgWa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
-          <select onchange="cambiarEstado(${r.id}, this.value)">
+          ${!admin && est === 'completada' ? `<span class="cobro-cerrado" title="Una atención cobrada no se edita: pide el cambio al administrador">🔒 Cobrada</span>` : `<select onchange="cambiarEstado(${r.id}, this.value)">
             ${Object.entries(ESTADOS).map(([k,v]) => `<option value="${k}" ${k===est?'selected':''}>${v}</option>`).join('')}
-          </select>
+          </select>`}
           ${yo.rol === 'admin' ? `<button class="boton" onclick="abrirEditar(${r.id})">✎ Editar</button>` : ''}
           ${est === 'confirmada' ? `<button class="boton-linea rojo" onclick="cancelarReserva(${r.id})">Cancelar reserva</button>` : ''}
           ${yo.rol === 'admin' ? `<button class="boton-linea rojo" onclick="borrarReserva(${r.id})">Eliminar</button>` : ''}
@@ -2232,6 +2250,69 @@
         <p class="estado" id="estadoDetalle"></p>`;
       $('fondoDetalle').classList.remove('oculto');
       if (r.origen === 'web') cargarFotoRef(r.id);
+    }
+    // ----- Solicitudes de cambio de una atención cobrada (Fase 38) -----
+    const TIPOS_SOL = { pago: '💳 Método de pago', propina: '💵 Propina', servicio: '✂️ Servicio', otro: '📝 Otro' };
+    const txtPropuesta = s => s.tipo === 'pago' ? `${PAGOS[s.antes?.metodo_pago] || '—'} → <b>${PAGOS[s.propuesta.metodo_pago] || '—'}</b>`
+      : s.tipo === 'propina' ? `${clp(s.antes?.propina || 0)} → <b>${clp(s.propuesta.propina || 0)}</b>` : '';
+    function cajaSolicitud(r){
+      const admin = yo.rol === 'admin', ss = SOLIC.filter(x => x.reserva_id === r.id), pend = ss.find(x => x.estado === 'pendiente'), ult = ss.find(x => x.estado !== 'pendiente');
+      if (pend) return `<div class="sol-caja pend"><div class="sol-tit">📝 Solicitud de cambio ${admin ? `de <b>${esc(pend.trabajador || 'equipo')}</b>` : 'enviada'} · ${TIPOS_SOL[pend.tipo]}</div>
+          <div class="sol-msj">"${esc(pend.mensaje)}"</div>${txtPropuesta(pend) ? `<div class="sol-prop">${txtPropuesta(pend)}</div>` : ''}
+          ${admin ? `<textarea id="solResp" rows="2" maxlength="300" placeholder="Respuesta para ${esc(pend.trabajador || 'el profesional')} (opcional)"></textarea>
+            <div class="sol-acc"><button class="boton" onclick="resolverSolicitud(${pend.id}, true)">✓ Aprobar${['pago', 'propina'].includes(pend.tipo) ? ' y aplicar' : ''}</button>
+            <button class="boton-linea rojo" onclick="resolverSolicitud(${pend.id}, false)">✕ Rechazar</button></div>
+            ${['servicio', 'otro'].includes(pend.tipo) ? '<p class="nota" style="margin:6px 0 0;">Corrige la atención con "✎ Editar" y después presiona Aprobar.</p>' : ''}`
+          : '<p class="nota" style="margin:6px 0 0;">⏳ Esperando la respuesta del administrador.</p>'}</div>`;
+      return `${ult ? `<div class="sol-caja ${ult.estado}"><div class="sol-tit">${ult.estado === 'aprobada' ? '✓ Cambio aprobado' : '✕ Cambio rechazado'} · ${TIPOS_SOL[ult.tipo]}</div>
+          <div class="sol-msj">"${esc(ult.mensaje)}"</div>${ult.respuesta ? `<div class="sol-prop">Respuesta: ${esc(ult.respuesta)}</div>` : ''}</div>` : ''}
+        ${admin ? '' : `<div class="det-acciones"><button class="boton-linea" onclick="formSolicitud(${r.id})">✉️ Solicitar un cambio</button>
+          <span class="nota">¿Te equivocaste en el pago, el servicio o la propina? Pídeselo al administrador.</span></div><div id="formSol"></div>`}`;
+    }
+    let SOL_TIPO = 'propina';
+    function formSolicitud(id, tipo){
+      const r = reservasTodas.find(x => x.id === id); if (!r) return; if (tipo) SOL_TIPO = tipo;
+      $('formSol').innerHTML = `<div class="sol-form">
+          <label>¿Qué quieres corregir?</label>
+          <div class="ideas">${Object.entries(TIPOS_SOL).map(([k, v]) => `<button class="chip ${SOL_TIPO === k ? 'sel' : ''}" onclick="formSolicitud(${id}, '${k}')">${v}</button>`).join('')}</div>
+          ${SOL_TIPO === 'pago' ? `<label>¿Cómo pagó realmente?</label><select id="solPago">${Object.entries(PAGOS).filter(([k]) => k !== r.metodo_pago).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>` : ''}
+          ${SOL_TIPO === 'propina' ? `<label>Propina correcta (hoy dice ${clp(r.propina || 0)})</label><input id="solPropina" type="number" min="0" step="100" inputmode="numeric" placeholder="Ej: 2000">` : ''}
+          <label>Mensaje para el administrador</label>
+          <textarea id="solMsj" rows="3" maxlength="500" placeholder="${SOL_TIPO === 'propina' ? 'Ej: se me olvidó agregar la propina de $2.000' : SOL_TIPO === 'servicio' ? 'Ej: me equivoqué de servicio, fue corte + barba' : SOL_TIPO === 'pago' ? 'Ej: presioné efectivo pero pagó con débito' : 'Cuéntale qué pasó'}"></textarea>
+          <div class="sol-acc"><button class="boton" onclick="enviarSolicitud(${id})">Enviar solicitud</button><button class="boton-linea" onclick="$('formSol').innerHTML=''">Cancelar</button></div></div>`;
+      $('solMsj')?.focus();
+    }
+    async function enviarSolicitud(id){
+      const p = { tipo: SOL_TIPO, mensaje: $('solMsj').value.trim() };
+      if (SOL_TIPO === 'pago') p.metodo_pago = $('solPago').value;
+      if (SOL_TIPO === 'propina') p.propina = String(Math.round(Number($('solPropina').value || '')) || '');
+      if (SOL_TIPO === 'propina' && $('solPropina').value === '') return estado('estadoDetalle', 'Escribe la propina correcta.', 'error');
+      if (p.mensaje.length < 3) return estado('estadoDetalle', 'Escribe qué pasó.', 'error');
+      const { error } = await db.rpc('solicitar_cambio', { p_reserva: id, p });
+      if (error) return estado('estadoDetalle', /solicitar_cambio/.test(error.message || '') ? 'Falta instalar la Fase 38 en Supabase.' : error.message, 'error');
+      await cargarBase(); abrirDetalle(id); estado('estadoDetalle', '✓ Solicitud enviada. Te avisaremos cuando el administrador responda.', 'ok');
+    }
+    async function resolverSolicitud(sid, aprobar){
+      const s = SOLIC.find(x => x.id === sid); if (!s) return;
+      if (!aprobar && !confirm('¿Rechazar esta solicitud? Al profesional le llegará el aviso.')) return;
+      const { data, error } = await db.rpc('resolver_solicitud', { p_id: sid, p_aprobar: aprobar, p_respuesta: $('solResp')?.value || null });
+      if (error) return estado('estadoDetalle', error.message, 'error');
+      await cargarBase(); refrescarVista(); if (reservasTodas.some(r => r.id === s.reserva_id)) abrirDetalle(s.reserva_id); else cerrarDetalle();
+      estado('estadoDetalle', aprobar ? (data.aplicado ? '✓ Aprobada y aplicada. Ya se ve en la caja.' : '✓ Aprobada.') : '✓ Rechazada.', 'ok');
+      pintarSolicitudesPend();
+    }
+    // Tarjeta para el admin con las solicitudes pendientes (arriba de la agenda del día)
+    function pintarSolicitudesPend(){
+      const el = $('solPend'); if (!el) return;
+      const pend = yo.rol === 'admin' ? SOLIC.filter(x => x.estado === 'pendiente') : [];
+      el.innerHTML = pend.length ? `<div class="sol-banner"><b>📝 ${pend.length} solicitud${pend.length === 1 ? '' : 'es'} de cambio por revisar</b>
+          ${pend.map(x => `<button class="sol-item" onclick="abrirSolicitud(${x.id})"><span>${esc(x.trabajador || 'Equipo')} · ${esc(x.cliente)} · ${esc(x.fecha)} ${esc(x.hora)}</span>
+            <small>${TIPOS_SOL[x.tipo]} · "${esc(x.mensaje)}"</small></button>`).join('')}</div>` : '';
+    }
+    function abrirSolicitud(sid){
+      const s = SOLIC.find(x => x.id === sid); if (!s) return;
+      if (reservasTodas.some(r => r.id === s.reserva_id)) return abrirDetalle(s.reserva_id);
+      diaVista = s.fecha; verTab('dia'); setTimeout(() => abrirDetalle(s.reserva_id), 400);
     }
     // Foto de referencia que subió el cliente (se pide aparte para que la agenda cargue rápido)
     async function cargarFotoRef(id){
@@ -2251,7 +2332,7 @@
     function cerrarDetalle(sinFondo){ $('fondoDetalle').classList.add('oculto'); if (yo) { aplicarTemaActual(); if (sinFondo !== true) aplicarFondoActual(); } }
     function refrescarVista(){
       const t = document.querySelector('.tab.sel')?.dataset.tab;
-      if (t === 'dia') dibujarDia(); if (t === 'lista') dibujarLista();
+      if (t === 'dia') { dibujarDia(); pintarSolicitudesPend(); } if (t === 'lista') dibujarLista();
       if (t === 'semana') dibujarSemana(); if (t === 'midia') dibujarMiDia();
       if (t === 'caja') dibujarCaja();
     }
@@ -2259,7 +2340,8 @@
     // Cambia estado y/o método de pago en el servidor (valida permisos: el profesional solo las suyas)
     async function marcar(id, nuevoEstado, pago){
       const { error } = await db.rpc('marcar_cita', { p_id: id, p_estado: nuevoEstado ?? null, p_pago: pago ?? null });
-      if (error) return (error.message || '').includes('HORA_OCUPADA') ? 'No se puede reactivar: esa hora ya la tomó otra persona.' : error.message;
+      if (error) return (error.message || '').includes('HORA_OCUPADA') ? 'No se puede reactivar: esa hora ya la tomó otra persona.'
+        : (error.message || '').includes('COBRO_CERRADO') ? 'Esta atención ya está cobrada. Usa "✉️ Solicitar un cambio".' : error.message;
       const r = reservasTodas.find(x => x.id === id);
       if (r){ if (nuevoEstado) r.estado = nuevoEstado; if (pago !== undefined) r.metodo_pago = pago || null; if (r.estado !== 'completada') r.metodo_pago = null; }
       return null;
@@ -2492,7 +2574,7 @@
       await cambiarEstado(id, 'cancelada'); abrirDetalle(id);
     }
     async function recargarTodo(){
-      await cargarBase(); refrescarVista();
+      await cargarBase(); refrescarVista(); pintarSolicitudesPend();
       if (conTienda()) { const t = document.querySelector('.tab.sel')?.dataset.tab; await cargarPedidos(t !== 'pedidos'); if (t === 'productos') cargarProductos(); }
     }
 
@@ -2698,7 +2780,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F37 · 07-10 b';
+    const VERSION_PANEL = 'F38 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3413,7 +3495,7 @@
       ultimoNoLeidas = n;
       dibujarNotif();
     }
-    const ICONOS = { pedido:'🛒', nueva:'＋', cancelada:'✕', eliminada:'🗑', modificada:'✎', bloqueo:'🔒', desbloqueo:'🔓', llegada:'⚡', completada:'✓', no_asistio:'!' };
+    const ICONOS = { solicitud:'📝', pedido:'🛒', nueva:'＋', cancelada:'✕', eliminada:'🗑', modificada:'✎', bloqueo:'🔒', desbloqueo:'🔓', llegada:'⚡', completada:'✓', no_asistio:'!' };
     function haceCuanto(iso){
       const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
       if (m < 1) return 'recién'; if (m < 60) return `hace ${m} min`;
