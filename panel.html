@@ -2407,6 +2407,7 @@
         ${FALTAS[r.id]?.confirmo && est === 'confirmada' ? '<div class="det-fila"><span>Asistencia</span><span style="color:var(--verde);">✓ Confirmó que viene (recordatorio)</span></div>' : ''}
         <div class="det-fila"><span>Fecha</span><span>${esc(r.fecha)} · ${aHora(ri)}–${aHora(rf)}</span></div>
         <div class="det-fila"><span>Profesional</span><span>${esc(r.trabajador)}</span></div>
+        ${r.trabajador_id && fueraDeHorario(r.trabajador_id, r.fecha, ri, rf) ? '<div class="det-fila"><span>Horario</span><span style="color:var(--amarillo, #f59e0b);">⏰ Atención fuera de horario</span></div>' : ''}
         ${locales.length > 1 ? `<div class="det-fila"><span>Local</span><span>📍 ${esc(nombreLocal(r.local_id ?? localDe(r.trabajador_id)))}</span></div>` : ''}
         ${r.creado_por ? `<div class="det-fila"><span>Agendada por</span><span>${esc(r.creado_por)}${r.origen === 'panel' ? ' (panel)' : ''}</span></div>` : ''}
         <div class="det-fila"><span>Servicios</span><span>${esc(r.servicios || '—')}</span></div>
@@ -2632,7 +2633,8 @@
           <div><label>Correo</label><input id="fCorreo" type="email" placeholder="opcional"></div>`
           : `<div class="full"><p class="nota">🔒 Los datos de contacto (WhatsApp y correo) los ingresa el cliente cuando reserva online. Desde aquí solo se anota su nombre.</p></div>`}
           <div class="full"><label>Nota</label><input id="fMsg" placeholder="opcional"></div>
-          <div class="full"><label class="check-linea"><input type="checkbox" id="fForzar"> Permitir fuera de horario o en colación</label></div>
+          <div class="full"><label class="check-linea"><input type="checkbox" id="fForzar"> Permitir fuera de horario o en colación</label>
+            <p class="nota oculto" id="notaFuera" style="margin:4px 0 0;">⏰ Esa hora está fuera del horario de atención: se agendará igual como <b>atención fuera de horario</b>.</p></div>
         </div>
         <p class="resumen-form" id="resumenForm"></p>
         <div class="det-acciones"><button class="boton" onclick="guardarAgendar()">Agendar</button>
@@ -2649,7 +2651,7 @@
           <button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>`;
       }
       $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">Nuevo en la agenda</h3>${tabs}${cuerpo}<p class="estado" id="estadoAccion"></p>`;
-      if (a.modo === 'agendar') resumenForm();
+      if (a.modo === 'agendar'){ resumenForm(); $('fForzar').onchange = function(){ this.dataset.manual = '1'; }; $('fFecha').addEventListener('change', resumenForm); }
     }
     function elegirMotivo(btn, m){
       $('fMotivo').value = m;
@@ -2670,11 +2672,27 @@
       mostrarToast({ id: 0, tipo: 'llegada', titulo: 'Orden de llegada registrada', detalle: `${nombre || 'Cliente'} con ${data.trabajador} · en atención desde las ${data.desde}` });
     }
     function servSeleccionados(){ return [...document.querySelectorAll('.f-serv:checked')].map(x => Number(x.value)); }
+    // ¿La hora elegida cae fuera del horario o en colación? → se marca sola la casilla "Permitir fuera de horario"
+    function fueraDeHorario(tid, fecha, ini, fin){
+      const h = horarios.find(x => x.trabajador_id === tid && x.dia === deTexto(fecha).getDay());
+      if (!h) return true;
+      if (ini < aMin(h.inicio) || fin > aMin(h.fin)) return true;
+      if (h.almuerzo_inicio && ini < aMin(h.almuerzo_fin) && fin > aMin(h.almuerzo_inicio)) return true;
+      return false;
+    }
+    function revisarFuera(dur){
+      const f = $('fForzar'); if (!f || !$('fTid') || !$('fFecha') || !$('fHora')) return;
+      const ini = aMin($('fHora').value || '00:00'), fuera = fueraDeHorario(Number($('fTid').value), $('fFecha').value, ini, ini + Math.max(dur || 0, 15));
+      if (fuera && !f.dataset.manual) f.checked = true;
+      if (!fuera && !f.dataset.manual) f.checked = false;
+      $('notaFuera')?.classList.toggle('oculto', !fuera);
+    }
     function resumenForm(){
       const e = $('resumenForm'); if (!e) return;
       const ids = servSeleccionados(), ss = serviciosActivos.filter(s => ids.includes(s.id));
       const dur = ss.reduce((a, s) => a + s.duracion, 0), tot = ss.reduce((a, s) => a + s.precio, 0), ini = aMin($('fHora').value || '00:00');
       e.textContent = ids.length ? `${aHora(ini)}–${aHora(ini + dur)} · ${dur} min · ${clp(tot)}` : 'Elige al menos un servicio.';
+      revisarFuera(dur);
     }
     function mensajeError(error){ const m = error.message || ''; return m.includes('HORA_OCUPADA') ? 'Ese horario ya tiene otra reserva.' : m; }
 
@@ -2833,7 +2851,7 @@
         $('cajaLista').innerHTML = hechas.length ? `<div style="overflow-x:auto;"><table class="tabla-caja">
           <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicios</th><th>Pago</th><th class="num">Propina</th><th class="num">Tu parte</th></tr>
           ${hechas.map(r => `<tr style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><td>${deTexto(r.fecha).toLocaleDateString('es-CL', { day:'numeric', month:'short' })}</td>
-            <td>${aHora(rangoDe(r)[0])}</td><td>${esc(r.nombre)}${r.origen === 'llegada' ? ' ⚡' : ''}</td><td>${esc(r.servicios || '')}</td>
+            <td>${aHora(rangoDe(r)[0])}${r.trabajador_id && fueraDeHorario(r.trabajador_id, r.fecha, ...rangoDe(r)) ? ' <span title="Atención fuera de horario">⏰</span>' : ''}</td><td>${esc(r.nombre)}${r.origen === 'llegada' ? ' ⚡' : ''}</td><td>${esc(r.servicios || '')}</td>
             <td>${r.metodo_pago ? PAGOS[r.metodo_pago] : '—'}</td><td class="num">${r.propina ? clp(r.propina) : '—'}</td><td class="num">${clp(parteDe(r))}</td></tr>`).join('')}
           </table></div>` : '<p class="vacio">Aún no hay atenciones en este período.</p>';
         return;
@@ -2881,7 +2899,7 @@
 
       $('cajaLista').innerHTML = hechas.length ? `<div style="overflow-x:auto;"><table class="tabla-caja">
         <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicios</th><th>Profesional</th><th>Pago</th><th class="num">Servicio</th><th class="num">Propina</th><th class="num">Profesional</th></tr>
-        ${hechas.map(r => `<tr style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><td>${deTexto(r.fecha).toLocaleDateString('es-CL', { day:'numeric', month:'short' })}</td><td>${aHora(rangoDe(r)[0])}</td>
+        ${hechas.map(r => `<tr style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><td>${deTexto(r.fecha).toLocaleDateString('es-CL', { day:'numeric', month:'short' })}</td><td>${aHora(rangoDe(r)[0])}${r.trabajador_id && fueraDeHorario(r.trabajador_id, r.fecha, ...rangoDe(r)) ? ' <span title="Atención fuera de horario">⏰</span>' : ''}</td>
           <td>${esc(r.nombre)}${r.origen === 'llegada' ? ' ⚡' : ''}</td><td>${esc(r.servicios || '')}</td><td>${esc(r.trabajador)}</td>
           <td>${r.metodo_pago ? PAGOS[r.metodo_pago] : '<span class="error">Registrar</span>'}</td><td class="num">${clp(r.total)}</td><td class="num">${r.propina ? clp(r.propina) : '—'}</td><td class="num">${clp(parteDe(r))}</td></tr>`).join('')}
         </table></div>` : '<p class="vacio">No hay atenciones completadas en este período.</p>';
@@ -2937,7 +2955,7 @@
           <h3 style="margin-top:18px;">Detalle de atenciones</h3>
           ${hechas.length ? `<div style="overflow-x:auto;"><table class="tabla-caja">
             <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicios</th><th>Pago</th>${admin ? '<th class="num">Valor</th>' : ''}<th class="num">${admin ? 'Comisión' : 'Tu parte'}</th><th class="num">Propina</th><th class="num">Total</th></tr>
-            ${hechas.map(r => `<tr style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><td>${deTexto(r.fecha).toLocaleDateString('es-CL', { day:'numeric', month:'short' })}</td><td>${aHora(rangoDe(r)[0])}</td>
+            ${hechas.map(r => `<tr style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><td>${deTexto(r.fecha).toLocaleDateString('es-CL', { day:'numeric', month:'short' })}</td><td>${aHora(rangoDe(r)[0])}${r.trabajador_id && fueraDeHorario(r.trabajador_id, r.fecha, ...rangoDe(r)) ? ' <span title="Atención fuera de horario">⏰</span>' : ''}</td>
               <td>${esc(r.nombre)}${r.origen === 'llegada' ? ' ⚡' : ''}</td><td>${esc(r.servicios || '')}</td><td>${r.metodo_pago ? PAGOS[r.metodo_pago] : '—'}</td>
               ${admin ? `<td class="num">${clp(r.total)}</td>` : ''}<td class="num">${clp(parte(r))}</td><td class="num">${r.propina ? clp(r.propina) : '—'}</td><td class="num"><b>${clp(parte(r) + (r.propina || 0))}</b></td></tr>`).join('')}
           </table></div>` : '<p class="vacio">No hay atenciones terminadas en este período.</p>'}
@@ -2970,7 +2988,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F45 · 07-10 b';
+    const VERSION_PANEL = 'F45 · 07-10 c';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
