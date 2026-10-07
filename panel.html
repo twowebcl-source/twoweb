@@ -67,6 +67,9 @@
     .login-pro.con-estilo .lp-luz { display:none; }
     html.fuente-propia .login-pro { font-family:var(--fuente); }
     html.fuente-propia .login-pro h1.marca-neg, html.fuente-propia .login-pro .lp-entrar { font-family:var(--fuente-tit); }
+    .login-pro.logo-esquina .lp-logo { position:fixed; top:22px; left:24px; width:58px; height:58px; margin:0; border-radius:16px; z-index:2; }
+    .login-pro.sin-logo .lp-logo { display:none; }
+    @media (max-width:600px){ .login-pro.logo-esquina .lp-logo { top:14px; left:14px; width:46px; height:46px; border-radius:12px; } .login-pro.logo-esquina .lp-caja { margin-top:56px; } }
     .lp-aviso { background:color-mix(in srgb, var(--lp-acento) 18%, rgba(10,14,28,.7)); border:1px solid color-mix(in srgb, var(--lp-acento) 50%, transparent); color:#fff;
                 border-radius:14px; padding:10px 14px; font-size:13.5px; text-align:center; margin:0 0 14px; backdrop-filter:blur(10px); }
     .lp-prev { position:fixed; top:0; left:0; right:0; z-index:5; background:#fbbf24; color:#1a1300; text-align:center; font:600 13px Inter, sans-serif; padding:6px; }
@@ -1381,7 +1384,8 @@
       v.style.setProperty('--lp-osc', ((c.oscurecer ?? 35) / 100).toFixed(2));
       v.querySelector('h1.marca-neg span').textContent = c.titulo || 'twoweb';
       v.querySelector('.sub').textContent = c.subtitulo || 'Ingresa a tu panel de agenda y ventas';
-      const logo = v.querySelector('.lp-logo'); if (logo && c.logo) logo.src = c.logo;
+      const logo = v.querySelector('.lp-logo'); if (logo) logo.src = c.logo || 'imagenes/logo-twoweb.png';
+      v.classList.toggle('logo-esquina', c.logo_pos === 'esquina'); v.classList.toggle('sin-logo', c.logo_pos === 'oculto');
       $('lpAviso').classList.toggle('oculto', !c.aviso); $('lpAviso').textContent = c.aviso || '';
       const e = c.estilo;
       if (e && e.sel && e.fondo){ v.classList.add('con-estilo'); FondoAnim.poner(e.sel, { ...e.fondo, capaItem: e.capa || null }); }
@@ -2470,7 +2474,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F29 · 07-10';
+    const VERSION_PANEL = 'F30 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -2775,7 +2779,7 @@
       if (error) return alert(/ingreso_config/.test(error.message || '') ? 'Falta instalar la Fase 29 en Supabase.' : error.message);
       const c = data || {}, e = c.estilo || {};
       ED = { titulo: c.titulo || '', subtitulo: c.subtitulo || '', aviso: c.aviso || '', acento: c.acento || '#3b82f6', oscurecer: c.oscurecer ?? 35,
-             logo: c.logo || '', logoCambio: false, sel: e.sel ? { ...e.sel } : null, fuente: e.fuente || 'defecto',
+             logo: c.logo || '', logoCambio: false, logoPos: c.logo_pos || 'centro', logoArchivo: null, sel: e.sel ? { ...e.sel } : null, fuente: e.fuente || 'defecto',
              imagen: e.fondo && e.fondo.propia ? e.fondo.imagen : null, imagenCambio: false, listo: false };
       cerrarDetalle(true);
       $('edIngreso').classList.remove('oculto'); document.body.classList.add('hoja-abierta');
@@ -2798,7 +2802,7 @@
     }
     function enviarBorrador(){
       if (!ED || !ED.listo) return;
-      const c = { titulo: ED.titulo, subtitulo: ED.subtitulo, aviso: ED.aviso, acento: ED.acento, oscurecer: ED.oscurecer, logo: ED.logo || null, estilo: estiloBorrador() };
+      const c = { titulo: ED.titulo, subtitulo: ED.subtitulo, aviso: ED.aviso, acento: ED.acento, oscurecer: ED.oscurecer, logo: ED.logo || null, logo_pos: ED.logoPos, estilo: estiloBorrador() };
       try { $('edIngFrame').contentWindow.postMessage({ tipo: 'twoweb-ingreso', c }, location.origin); } catch (e) {}
     }
     function dibujarEdIng(){
@@ -2828,7 +2832,11 @@
         <label>Logo</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
           <img class="ing-logo" src="${esc(ED.logo || 'imagenes/logo-twoweb.png')}" onerror="this.src='imagenes/app-192.png'">
           <label class="boton-linea" style="cursor:pointer;margin:0;">📷 Subir logo<input type="file" accept="image/*" class="oculto" onchange="logoEdIng(this)"></label>
-          ${ED.logo ? `<button class="link" style="margin:0;" onclick="ED.logo=''; ED.logoCambio=true; dibujarEdIng(); enviarBorrador()">Quitar</button>` : ''}</div>
+          ${ED.logo ? `<button class="link" style="margin:0;" onclick="ED.logo=''; ED.logoCambio=true; ED.logoArchivo=null; dibujarEdIng(); enviarBorrador()">Quitar</button>` : ''}</div>
+        <label>Dónde va el logo</label><div class="ed-chips">${[['centro', 'Arriba al centro'], ['esquina', 'En la esquina'], ['oculto', 'Sin logo']].map(([k, t]) =>
+          `<button class="chip ${ED.logoPos === k ? 'sel' : ''}" onclick="ED.logoPos='${k}'; dibujarEdIng(); enviarBorrador()">${t}</button>`).join('')}</div>
+        ${ED.logo ? `<button class="boton-linea" style="margin-top:10px;" onclick="logoComoPortada()">🖼 Usar esta imagen como portada (fondo completo)</button>
+          <p class="nota" style="margin-top:4px;">El fondo queda con esta imagen y el logo pasa a la esquina. Después sube ahí el logo original de twoweb.</p>` : ''}
         <h4>Volver atrás</h4>
         <button class="boton-linea" onclick="restablecerEdIng()">↺ Diseño original de TwoWeb</button>
         <p class="estado" id="estadoEdIng"></p>`;
@@ -2845,7 +2853,7 @@
       input.value = '';
     }
     async function logoEdIng(input){
-      try { ED.logo = await logoPNG(input.files[0]); ED.logoCambio = true; dibujarEdIng(); enviarBorrador(); } catch (e) { alert(e.message); }
+      try { const f = input.files[0]; ED.logo = await logoPNG(f); ED.logoArchivo = f; ED.logoCambio = true; dibujarEdIng(); enviarBorrador(); } catch (e) { alert(e.message); }
       input.value = '';
     }
     function logoPNG(archivo){
@@ -2859,13 +2867,25 @@
         img.src = u;
       });
     }
+    // La imagen del logo pasa a ser la portada (fondo completo) y el logo se va a la esquina
+    async function logoComoPortada(){
+      try {
+        ED.imagen = ED.logoArchivo ? await comprimirImagen(ED.logoArchivo, 1600, 650000) : ED.logo;   // si se subió ahora, se usa en alta calidad
+        ED.imagenCambio = true; ED.logoPos = 'esquina';
+        ED.sel = { codigo: 'propio', intensidad: ED.sel?.intensidad || 2, velocidad: 1, vidrio: true, efecto: ED.sel?.efecto || '' };
+        if (ED.oscurecer < 30) ED.oscurecer = 35;
+        dibujarEdIng(); enviarBorrador();
+        estado('estadoEdIng', ED.logoArchivo ? '✓ Ahora es la portada. Sube el logo original de twoweb para la esquina y guarda.'
+                                             : '✓ Ahora es la portada. Para mejor calidad, sube la imagen de nuevo en "Tu imagen". Luego pon el logo de twoweb.', 'ok');
+      } catch (e) { alert(e.message); }
+    }
     function restablecerEdIng(){
-      Object.assign(ED, { titulo: '', subtitulo: '', aviso: '', acento: '#3b82f6', oscurecer: 35, sel: null, fuente: 'defecto', logo: '', logoCambio: true });
+      Object.assign(ED, { titulo: '', subtitulo: '', aviso: '', acento: '#3b82f6', oscurecer: 35, sel: null, fuente: 'defecto', logo: '', logoCambio: true, logoPos: 'centro', logoArchivo: null });
       dibujarEdIng(); enviarBorrador(); estado('estadoEdIng', 'Así se ve el diseño original. Presiona Guardar para dejarlo.', '');
     }
     async function guardarEditorIngreso(){
       const p = { titulo: ED.titulo.trim(), subtitulo: ED.subtitulo.trim(), aviso: ED.aviso.trim(), acento: ED.acento, oscurecer: ED.oscurecer,
-                  estilo: ED.sel || { codigo: 'ninguno' }, fuente: ED.fuente };
+                  estilo: ED.sel || { codigo: 'ninguno' }, fuente: ED.fuente, logo_pos: ED.logoPos };
       if (ED.imagenCambio) p.imagen = ED.imagen || '';
       if (ED.logoCambio) p.logo = ED.logo || '';
       const b = $('edIngGuardar'); b.disabled = true; b.textContent = 'Guardando…';
