@@ -143,6 +143,19 @@
     .dia.sel .dia-top, .dia.sel .dia-mes { opacity:1; }
     .otra { display:flex; align-items:center; gap:10px; margin:6px 0 18px; flex-wrap:wrap; }
     .otra button { background:none; border:1px dashed color-mix(in srgb, var(--hueso) 25%, transparent); color:var(--hueso); padding:8px 14px; border-radius:var(--r-s); cursor:pointer; font-size:13px; }
+    .cal { background:var(--panel); border:1px solid var(--borde); border-radius:var(--r); padding:12px; margin:0 0 16px; max-width:380px; }
+    .cal-cab { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .cal-cab b { text-transform:capitalize; }
+    .cal-cab button { width:34px; height:34px; border-radius:50%; border:1px solid var(--borde); background:var(--panel2); color:var(--hueso); font-size:18px; cursor:pointer; }
+    .cal-cab button:disabled { opacity:.3; cursor:default; }
+    .cal-sem, .cal-dias { display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; text-align:center; }
+    .cal-sem span { font-size:11px; color:var(--gris); padding:4px 0; }
+    .cd { aspect-ratio:1; border-radius:var(--r-s); border:1px solid transparent; background:var(--panel2); color:var(--hueso); font:600 14px inherit; cursor:pointer; font-family:inherit; }
+    .cd:hover { border-color:var(--voltaje); }
+    .cd.hoy { border-color:color-mix(in srgb, var(--voltaje) 50%, transparent); }
+    .cd.sel { background:var(--voltaje); color:var(--sobre, #111); border-color:var(--voltaje); }
+    .cd.off { background:none; color:color-mix(in srgb, var(--hueso) 25%, transparent); cursor:default; text-decoration:line-through; text-decoration-color:color-mix(in srgb, var(--hueso) 15%, transparent); }
+    .otra .nota { font-size:12px; color:var(--gris); }
     .otra input { background:var(--panel2); border:1px solid var(--borde); color:var(--hueso); border-radius:var(--r-s); padding:8px 10px; font-family:inherit; color-scheme:var(--esquema); }
     .tabs { display:flex; gap:6px; margin-bottom:12px; }
     .tab { flex:1; background:var(--panel); border:1px solid var(--borde); color:var(--gris); padding:10px; border-radius:var(--r-s); cursor:pointer; font-size:14px; font-weight:600; }
@@ -496,9 +509,13 @@
     const etiqueta = i => n === 1 ? '' : (i === 0 ? 'Persona 1 (tú)' : `Persona ${i+1}`);
 
     // ---------- CARGA ----------
-    let CUMPLE = null;   // tarjeta de cumpleaños activa del negocio (Fase 39)
+    let CUMPLE = null;
+    let DIAS_LIMITE = DIAS_ADELANTE;   // hasta cuántos días adelante se puede reservar (lo elige el admin, Fase 45)
+    let calMes = null, calAbierto = false;
+    const MESES_L = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];   // tarjeta de cumpleaños activa del negocio (Fase 39)
     async function iniciar(){
       rpcNeg('cumple_config', { p_negocio: SLUG || null }).then(r => { if (r && !r.error) CUMPLE = r.data; }, () => {});
+      db.rpc('agenda_limite', { p_negocio: SLUG || null }).then(r => { if (r && !r.error && r.data > 0) DIAS_LIMITE = r.data; }, () => {});   // Fase 45
       const { data, error } = await rpcNeg('agenda_config', { p_negocio: SLUG || null });
       if (error){
         $('vista').innerHTML = (error.message || '').includes('NEGOCIO_NO_EXISTE')
@@ -537,7 +554,8 @@
       history.replaceState({ paso, i: 0 }, '', urlCorta(FIJO ? slugTrab(trab(FIJO)) : 'reservar'));
       dibujar();
       if (promoActiva() && QS.has('inscribete')) verInscripcion();   // link directo: agenda.html?inscribete
-      if (QS.get('mis') || QS.get('confirmar')) abrirDesdeCorreo();   // botones del correo: "Cancelar mi hora" / "Confirmo que voy"
+      if (QS.get('mis') || QS.get('confirmar')) abrirDesdeCorreo();
+      else if (QS.has('mis_reservas')) verMisReservas();                // link "Mis reservas" de la tienda y de la página del negocio   // botones del correo: "Cancelar mi hora" / "Confirmo que voy"
     }
 
     // Llamada a la base con respaldo: si la base aún no tiene la Fase 10, se vuelve a intentar sin el negocio
@@ -835,9 +853,9 @@
     // ---------- 4) FECHA Y HORA ----------
     function capaFecha(){
       const hoy = deTexto(hoyTxt());
-      const limite = new Date(hoy); limite.setDate(limite.getDate() + DIAS_ADELANTE);
+      const limite = new Date(hoy); limite.setDate(limite.getDate() + DIAS_LIMITE);
       const dias = [];
-      for (let i = 0; i < DIAS_TIRA; i++){ const f = new Date(hoy); f.setDate(f.getDate() + i); dias.push(f); }
+      for (let i = 0; i < Math.min(DIAS_TIRA, DIAS_LIMITE + 1); i++){ const f = new Date(hoy); f.setDate(f.getDate() + i); dias.push(f); }
       if (draft.fecha && !dias.some(f => fechaTexto(f) === draft.fecha)) dias.push(deTexto(draft.fecha));
       if (!draft.fecha){ const primero = dias.find(f => trabaja(f.getDay())); if (primero) draft.fecha = fechaTexto(primero); }
       const top = (f, i) => i === 0 && fechaTexto(f) === hoyTxt() ? 'Hoy' : i === 1 ? 'Mañana' : f.toLocaleDateString('es-CL', { weekday:'short' }).replace('.', '');
@@ -847,14 +865,50 @@
           const ft = fechaTexto(f), abre = trabaja(f.getDay());
           return `<button class="dia ${ft === draft.fecha ? 'sel' : ''} ${abre ? '' : 'off'}" ${abre ? `onclick="elegirDia('${ft}')"` : 'title="Cerrado"'}>
             <div class="dia-top">${top(f, i)}</div><div class="dia-num">${f.getDate()}</div><div class="dia-mes">${abre ? MESES[f.getMonth()] : 'cerrado'}</div></button>`; }).join('')}</div>
-        <div class="otra"><button onclick="$('otraFecha').classList.toggle('oculto'); $('otraFecha').showPicker?.()">📅 ¿Otra fecha?</button>
-          <input type="date" id="otraFecha" class="oculto" min="${hoyTxt()}" max="${fechaTexto(limite)}" onchange="otraFecha(this.value)"></div>
+        <div class="otra"><button onclick="toggleCal()">📅 ${calAbierto ? 'Cerrar calendario' : 'Elegir otro día'}</button>
+          <span class="nota">Puedes reservar hasta el ${limite.getDate()} de ${MESES_L[limite.getMonth()]}</span></div>
+        <div id="calCaja">${calAbierto ? calHTML() : ''}</div>
         <div id="horas"></div>`;
       const sel = $('dias').querySelector('.sel'); if (sel) sel.scrollIntoView({ block:'nearest', inline:'center' });
-      if (draft.fecha) cargarHoras(); else $('horas').innerHTML = '<div class="vacio">No hay días con atención en las próximas semanas. Prueba "¿Otra fecha?".</div>';
+      if (draft.fecha) return cargarHoras(); else $('horas').innerHTML = '<div class="vacio">No hay días con atención en las próximas semanas. Prueba "Elegir otro día".</div>';
     }
-    function elegirDia(ft){ draft.fecha = ft; draft.t = null; draft.tid = null; capaFecha(); }
-    function otraFecha(v){
+    function elegirDia(ft){ draft.fecha = ft; draft.t = null; draft.tid = null; calAbierto = false; return capaFecha(); }
+    // ----- Calendario del mes (Fase 45): todos los días que el negocio permite reservar -----
+    function toggleCal(){ calAbierto = !calAbierto; if (calAbierto) calMes = null; $('calCaja').innerHTML = calAbierto ? calHTML() : '';
+      document.querySelector('.otra button').textContent = calAbierto ? '📅 Cerrar calendario' : '📅 Elegir otro día';
+      if (calAbierto) $('calCaja').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+    function moverCal(d){ const m = calMes || mesDe(draft.fecha); calMes = new Date(m.getFullYear(), m.getMonth() + d, 1); $('calCaja').innerHTML = calHTML(); }
+    const mesDe = ft => { const f = ft ? deTexto(ft) : deTexto(hoyTxt()); return new Date(f.getFullYear(), f.getMonth(), 1); };
+    function calHTML(){
+      const hoy = deTexto(hoyTxt()), lim = new Date(hoy); lim.setDate(lim.getDate() + DIAS_LIMITE);
+      const m = calMes || mesDe(draft.fecha), y = m.getFullYear(), mm = m.getMonth();
+      const off = (new Date(y, mm, 1).getDay() + 6) % 7, nd = new Date(y, mm + 1, 0).getDate();
+      const ant = new Date(y, mm, 1) > new Date(hoy.getFullYear(), hoy.getMonth(), 1), sig = new Date(y, mm + 1, 1) <= lim;
+      let celdas = '';
+      for (let i = 0; i < off; i++) celdas += '<span></span>';
+      for (let d = 1; d <= nd; d++){
+        const f = new Date(y, mm, d), ft = fechaTexto(f), fuera = f < hoy || f > lim, cerrado = !trabaja(f.getDay());
+        celdas += fuera || cerrado ? `<button class="cd off" disabled title="${cerrado && !fuera ? 'Cerrado' : 'No disponible'}">${d}</button>`
+          : `<button class="cd ${ft === draft.fecha ? 'sel' : ''} ${ft === hoyTxt() ? 'hoy' : ''}" onclick="elegirDia('${ft}')">${d}</button>`;
+      }
+      return `<div class="cal"><div class="cal-cab"><button onclick="moverCal(-1)" ${ant ? '' : 'disabled'} aria-label="Mes anterior">‹</button>
+          <b>${MESES_L[mm][0].toUpperCase() + MESES_L[mm].slice(1)} ${y}</b><button onclick="moverCal(1)" ${sig ? '' : 'disabled'} aria-label="Mes siguiente">›</button></div>
+        <div class="cal-sem"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+        <div class="cal-dias">${celdas}</div></div>`;
+    }
+    // Si un día está lleno: buscar el próximo día con horas libres
+    async function proximoDia(){
+      const hoy = deTexto(hoyTxt()), lim = new Date(hoy); lim.setDate(lim.getDate() + DIAS_LIMITE);
+      const f = deTexto(draft.fecha || hoyTxt());
+      for (let i = 0; i < 31; i++){
+        f.setDate(f.getDate() + 1); if (f > lim) break;
+        if (!trabaja(f.getDay())) continue;
+        await elegirDia(fechaTexto(f));
+        if (libres.length) return;
+      }
+      alertaHoras('No encontramos horas libres en los próximos días. Prueba con otro ' + pro() + ' o escríbenos.');
+    }
+    function otraFecha(v){   // (se mantiene por compatibilidad)
       if (!v) return;
       if (!trabaja(deTexto(v).getDay())){ alertaHoras('Ese día no atendemos. Elige otro.'); return; }
       elegirDia(v);
@@ -885,7 +939,9 @@
       dibujarHoras();
     }
     function dibujarHoras(){
-      if (!libres.length){ alertaHoras('No quedan horas este día. Prueba otro día.'); return; }
+      if (!libres.length){ $('horas').innerHTML = `<div class="vacio">No quedan horas este día.
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;"><button class="boton" style="width:auto;" onclick="proximoDia()">Ver el próximo día con horas →</button>
+          <button style="width:auto;background:none;border:1px dashed color-mix(in srgb, var(--hueso) 30%, transparent);color:var(--hueso);padding:10px 16px;border-radius:var(--r-s);cursor:pointer;font:inherit;" onclick="if(!calAbierto) toggleCal()">📅 Elegir otro día</button></div></div>`; return; }
       const man = libres.filter(x => x.t < 13*60), tar = libres.filter(x => x.t >= 13*60);
       if (franja === 'man' && !man.length) franja = 'tar';
       if (franja === 'tar' && !tar.length) franja = 'man';

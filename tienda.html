@@ -188,7 +188,7 @@
   <header>
     <div class="caja cab">
       <a class="marca" id="marca" href="#inicio"><span>&nbsp;</span></a>
-      <nav id="menu"><a href="#productos">Productos</a><a href="#info" id="navInfo">Cómo comprar</a><a href="#contacto" id="navContacto">Contacto</a><a href="#" id="navAgenda" class="oculto">Reservar hora</a></nav>
+      <nav id="menu"><a href="#productos">Productos</a><a href="#info" id="navInfo">Cómo comprar</a><a href="#contacto" id="navContacto">Contacto</a><a href="#" id="navAgenda" class="oculto">Reservar hora</a><a href="#" id="navMis" class="oculto">Mis reservas</a></nav>
       <button class="btn-carro oculto" id="btnCarro" onclick="abrirCarro()">🛒 <span class="n" id="nCarro">0</span></button>
     </div>
   </header>
@@ -311,11 +311,12 @@
             ${n.correo ? `<a href="mailto:${esc(n.correo)}"><span class="ic">✉️</span><span>Correo<small>${esc(n.correo)}</small></span></a>` : ''}
           </div></section>` : ''}
 
-        <footer class="caja">© ${new Date().getFullYear()} ${esc(n.nombre)}${n.mod_agenda ? ` · <a href="${agendaUrl()}">Reservar hora</a>` : ''} · <a href="panel.html?n=${encodeURIComponent(n.slug || '')}">Acceso equipo</a><br>
+        <footer class="caja">© ${new Date().getFullYear()} ${esc(n.nombre)}${n.mod_agenda ? ` · <a href="${agendaUrl()}">Reservar hora</a> · <a href="${agendaUrl() + (agendaUrl().includes('?') ? '&' : '?') + 'mis_reservas'}">Mis reservas</a>` : ''} · <a href="panel.html?n=${encodeURIComponent(n.slug || '')}">Acceso equipo</a><br>
           <span style="opacity:.75;">Tienda online con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener">${esc(CONF.MARCA || 'TwoWeb')}</a></span> · <a href="privacidad.html">Privacidad</a></footer>`;
       $('navInfo').classList.toggle('oculto', !n.tienda_info);
       $('navContacto').classList.toggle('oculto', !(wsp || insta || n.correo));
-      if (n.mod_agenda){ $('navAgenda').href = agendaUrl(); $('navAgenda').classList.remove('oculto'); }
+      if (n.mod_agenda){ $('navAgenda').href = agendaUrl(); $('navAgenda').classList.remove('oculto');
+        $('navMis').href = agendaUrl() + (agendaUrl().includes('?') ? '&' : '?') + 'mis_reservas'; $('navMis').classList.remove('oculto'); }
       if (wsp){ $('flotante').href = 'https://wa.me/' + wsp; $('flotante').classList.remove('oculto'); }
       $('btnCarro').classList.remove('oculto');
       dibujarGrilla(); pintarContador();

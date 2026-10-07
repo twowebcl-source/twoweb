@@ -2961,7 +2961,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F44 · 07-10';
+    const VERSION_PANEL = 'F45 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3070,9 +3070,21 @@
           <div class="ap-ic falso"></div><div class="ap-ic falso"></div><div class="ap-ic falso"></div></div>
         <p class="nota" style="margin:6px 0 0;">📱 Así se verá la app del panel en el teléfono de tu equipo al "Agregar a inicio"${logo ? '' : ' (sube tu logo para que salga tu marca)'}.</p>`;
     }
+    // Fase 45: cuántos días adelante se puede reservar online
+    async function cargarDiasReserva(){
+      const el = $('fDiasReserva'); if (!el) return;
+      const { data, error } = await db.rpc('mi_dias_reserva');
+      if (error){ $('diasReservaCaja').innerHTML = /mi_dias_reserva/.test(error.message || '') ? '<p class="nota">📅 Días para reservar: falta instalar la Fase 45.</p>' : ''; return; }
+      const v = data || 60; if (![...el.options].some(o => +o.value === v)) el.insertAdjacentHTML('beforeend', `<option value="${v}">Hasta ${v} días</option>`);
+      el.value = String(v);
+    }
+    async function guardarDiasReserva(v){
+      const { error } = await db.rpc('guardar_dias_reserva', { p: +v });
+      estado('estadoDias', error ? 'Error: ' + error.message : '✓ Guardado. Tu agenda ya muestra hasta ' + v + ' días.', error ? 'error' : 'ok');
+    }
     function dibujarMarca(){
       if (yo.rol !== 'admin') return;
-      imgNegNueva = {}; temaNegNuevo = ''; setTimeout(pintarAppPrev, 0);
+      imgNegNueva = {}; temaNegNuevo = ''; setTimeout(pintarAppPrev, 0); setTimeout(cargarDiasReserva, 0);
       $('marcaCont').innerHTML = `<div class="tarjeta">
           <h2 style="margin:0 0 4px;">🎨 Mi página</h2>
           <p class="nota" style="margin-bottom:10px;">Así te ven tus clientes: tu nombre, logo, portada, colores y la agenda${conTienda() ? ' y tienda' : ''}. Solo el administrador puede cambiarlo.</p>
@@ -3097,6 +3109,12 @@
           </div>
           <p class="nota">Las imágenes se achican solas para que tu agenda cargue rápido.</p>
           <p class="nota" style="margin-top:6px;">🎁 Descuento 10% primera visita para clientes nuevos: <b>${NEG.promo_10 ? 'activo en tu agenda' : 'apagado'}</b>${yo.super ? '' : ' · para activarlo o apagarlo, escríbele a ' + esc(MARCA)}.</p>
+          <div class="fid-adm" style="margin-top:14px;" id="diasReservaCaja">
+            <h3 style="margin:0 0 4px;">📅 ¿Hasta cuándo pueden reservar tus clientes?</h3>
+            <p class="nota">Tu agenda online muestra un calendario con estos días hacia adelante. Tú y tu equipo pueden agendar más lejos desde el panel.</p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+              <select id="fDiasReserva" style="width:auto;" onchange="guardarDiasReserva(this.value)">${[7, 14, 21, 30, 45, 60, 90, 120, 180].map(d => `<option value="${d}">Hasta ${d} días (${d < 30 ? d / 7 + ' semana' + (d > 7 ? 's' : '') : d === 30 ? '1 mes' : Math.round(d / 30) + ' meses'})</option>`).join('')}</select>
+              <span class="estado" id="estadoDias"></span></div></div>
           <div id="fidAdmin"></div>
           <div id="tarjetasAdmin"></div>
           

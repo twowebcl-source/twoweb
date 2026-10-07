@@ -288,6 +288,7 @@
             <p>${esc(n.bienvenida || (locales.length ? 'Estamos en ' + locales.map(l => l.nombre).join(' y ') + '. Reserva tu hora online en segundos.' : 'Reserva tu hora online en segundos.'))}</p>
             <div class="acciones">
               <a class="boton" href="${agendaUrl()}">📅 Reservar hora</a>
+              <a class="boton sec" href="${agendaUrl('mis_reservas')}">🗓 Mis reservas</a>
               ${n.mod_tienda ? `<a class="boton sec" href="${tiendaUrl()}">🛍 Tienda online</a>` : ''}
               ${wsp ? `<a class="boton sec" href="https://wa.me/${wsp}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
             </div>
@@ -340,6 +341,7 @@
           <span style="opacity:.75;">Página y agenda online con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener">${esc(CONF.MARCA || 'TwoWeb')}</a></span> · <a href="privacidad.html">Privacidad</a></footer>`;
       if (n.mod_tienda) cargarVitrina();
       if (n.mod_tienda && !document.getElementById('navTienda')) $('menu').insertAdjacentHTML('afterbegin', `<a id="navTienda" href="${tiendaUrl()}">Tienda</a>`);
+      if (!document.getElementById('navMis')) $('menu').insertAdjacentHTML('beforeend', `<a id="navMis" href="${agendaUrl('mis_reservas')}">Mis reservas</a>`);
       if (!trabs.length) document.querySelector('#menu a[href="#equipo"]').classList.add('oculto');
       if (!locales.length) document.querySelector('#menu a[href="#ubicacion"]').classList.add('oculto');
       if (!(wsp || insta || n.correo)) document.querySelector('#menu a[href="#contacto"]').classList.add('oculto');
