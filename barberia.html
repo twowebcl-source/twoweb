@@ -6,6 +6,7 @@
   <meta name="google" content="notranslate">
   <title>Reserva tu hora</title>
   <meta name="description" content="Reserva tu hora online.">
+  <link rel="icon" href="data:,">
   <script src="config.js"></script>
   <script src="fondos.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -260,7 +261,7 @@
       document.title = nombre + (n.bienvenida ? ' — ' + n.bienvenida : ' — Reserva tu hora online');
       document.querySelector('meta[name="description"]').content = n.bienvenida || `Reserva tu hora en ${nombre}.`;
       $('marca').innerHTML = (n.logo_url ? `<img src="${esc(n.logo_url)}" alt="">` : '') + `<span>${esc(nombre)}</span>`;
-      if (n.logo_url){ let f = document.querySelector('link[rel="icon"]'); if (!f){ f = document.createElement('link'); f.rel = 'icon'; document.head.appendChild(f); } f.href = n.logo_url; }
+      if (typeof iconoNegocioPublico === 'function') iconoNegocioPublico(n);          // pestaña: logo del local (o su inicial)
       $('btnCab').href = $('btnMovil').href = agendaUrl();
     }
 
@@ -336,7 +337,7 @@
 
         <section class="cierre"><div class="caja"><h2>Tu próxima hora está a un clic</h2><a class="boton" href="${agendaUrl()}">📅 Reservar hora</a></div></section>
         <footer class="caja">© ${new Date().getFullYear()} ${esc(n.nombre)} · <a href="${agendaUrl()}">Reservar</a>${n.mod_tienda ? ` · <a href="${tiendaUrl()}">Tienda</a>` : ''} · <a href="panel.html?n=${encodeURIComponent(n.slug || '')}">Acceso equipo</a><br>
-          <span style="opacity:.75;">Página y agenda online con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener">${esc(CONF.MARCA || 'TwoWeb')}</a></span></footer>`;
+          <span style="opacity:.75;">Página y agenda online con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener">${esc(CONF.MARCA || 'TwoWeb')}</a></span> · <a href="privacidad.html">Privacidad</a></footer>`;
       if (n.mod_tienda) cargarVitrina();
       if (n.mod_tienda && !document.getElementById('navTienda')) $('menu').insertAdjacentHTML('afterbegin', `<a id="navTienda" href="${tiendaUrl()}">Tienda</a>`);
       if (!trabs.length) document.querySelector('#menu a[href="#equipo"]').classList.add('oculto');

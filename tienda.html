@@ -6,6 +6,7 @@
   <meta name="google" content="notranslate">
   <title>Tienda</title>
   <meta name="description" content="Compra online y retira o recibe en tu casa.">
+  <link rel="icon" href="data:,">
   <script src="config.js"></script>
   <script src="fondos.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -271,7 +272,7 @@
       document.title = nombre + ' — Tienda online';
       document.querySelector('meta[name="description"]').content = n.bienvenida || `Compra online en ${nombre}.`;
       $('marca').innerHTML = (n.logo_url ? `<img src="${esc(n.logo_url)}" alt="">` : '') + `<span>${esc(nombre)}</span>`;
-      if (n.logo_url){ let f = document.querySelector('link[rel="icon"]'); if (!f){ f = document.createElement('link'); f.rel = 'icon'; document.head.appendChild(f); } f.href = n.logo_url; }
+      if (typeof iconoNegocioPublico === 'function') iconoNegocioPublico(n);          // pestaña: logo del local (o su inicial)
     }
 
     function dibujar(){
@@ -311,7 +312,7 @@
           </div></section>` : ''}
 
         <footer class="caja">© ${new Date().getFullYear()} ${esc(n.nombre)}${n.mod_agenda ? ` · <a href="${agendaUrl()}">Reservar hora</a>` : ''} · <a href="panel.html?n=${encodeURIComponent(n.slug || '')}">Acceso equipo</a><br>
-          <span style="opacity:.75;">Tienda online con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener">${esc(CONF.MARCA || 'TwoWeb')}</a></span></footer>`;
+          <span style="opacity:.75;">Tienda online con <a href="${esc(CONF.SITIO || '#')}" target="_blank" rel="noopener">${esc(CONF.MARCA || 'TwoWeb')}</a></span> · <a href="privacidad.html">Privacidad</a></footer>`;
       $('navInfo').classList.toggle('oculto', !n.tienda_info);
       $('navContacto').classList.toggle('oculto', !(wsp || insta || n.correo));
       if (n.mod_agenda){ $('navAgenda').href = agendaUrl(); $('navAgenda').classList.remove('oculto'); }

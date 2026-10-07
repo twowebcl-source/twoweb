@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="google" content="notranslate">
   <title>Reserva tu hora</title>
+  <link rel="icon" href="data:,">
   <script src="config.js"></script>
   <script src="fondos.js"></script>
   <script src="fidelidad.js"></script>
@@ -408,7 +409,7 @@
       </div>
     </div>
 
-    <footer>Agenda online <span id="creditos"></span> · <a id="accesoEquipo" href="panel.html">Acceso equipo</a></footer>
+    <footer>Agenda online <span id="creditos"></span> · <a href="privacidad.html">Privacidad</a> · <a id="accesoEquipo" href="panel.html">Acceso equipo</a></footer>
   </main>
 
   <div class="barra" id="barra"><div class="caja"><div class="barra-txt" id="barraTxt"></div><button class="boton" id="barraBtn">Continuar</button></div></div>
@@ -553,11 +554,9 @@
       const nombre = n.nombre || CONF.MARCA || 'TwoWeb';
       document.title = 'Reserva tu hora — ' + nombre;
       const m = $('marca');
+      if (typeof iconoNegocioPublico === 'function') iconoNegocioPublico(n);          // pestaña: logo del local (o su inicial)
       if (n.logo_url) {
         m.innerHTML = `<img src="${esc(n.logo_url)}" alt="" style="height:36px;width:36px;object-fit:contain;border-radius:9px;vertical-align:middle;margin-right:8px;">${esc(nombre)}`;
-        let fav = document.querySelector('link[rel="icon"]');
-        if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); }
-        fav.href = n.logo_url;
       }
       else if (nombre === 'TwoWeb') m.innerHTML = 'Two<span>Web</span>';
       else m.textContent = nombre;
@@ -959,7 +958,8 @@
         <div class="total"><div><small>Total a pagar</small><strong>${clp(total + tp)}</strong></div><div style="text-align:right;"><small>Se paga en el local</small><small>Efectivo, débito o transferencia</small></div></div>
         <button class="boton" id="btnReservar" onclick="reservar()">Confirmar reserva</button>
         <p class="estado" id="estado"></p>
-        <p class="nota" style="text-align:center; margin-top:6px;">Al confirmar, tu hora queda reservada al instante. Si no puedes venir, avísanos.</p>`;
+        <p class="nota" style="text-align:center; margin-top:6px;">Al confirmar, tu hora queda reservada al instante. Si no puedes venir, avísanos.</p>
+        <p class="nota" style="text-align:center; margin-top:4px; font-size:12px;">Tus datos se usan solo para gestionar tu reserva · <a href="privacidad.html" target="_blank" rel="noopener" style="color:inherit;">Política de privacidad</a></p>`;
       revisarEmail(); formatoTel();
     }
     function cajaFoto(){

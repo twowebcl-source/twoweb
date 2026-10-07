@@ -257,3 +257,23 @@ function aplicarEstiloPublico(n){
   if (e.fuente) aplicarFuente(e.fuente);
   if (e.fondo && e.sel) FondoAnim.poner(e.sel, { ...e.fondo, capaItem: e.capa || null });
 }
+
+// Ícono de la pestaña (y de "Agregar a inicio") en las páginas públicas del negocio: su logo,
+// o si no tiene, la inicial de su nombre sobre su color. Lo usan agenda, tienda y página del negocio.
+function iconoNegocioPublico(n){
+  if (!n) return;
+  const poner = (rel, href) => { let l = document.querySelector(`link[rel="${rel}"]`);
+    if (!l){ l = document.createElement('link'); l.rel = rel; document.head.appendChild(l); } l.removeAttribute('type'); l.href = href; };
+  let src = n.logo_url || '';
+  if (!src) try {
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+    const col = /^#[0-9a-f]{6}$/i.test(n.color || '') ? n.color : '#342d2d';
+    x.fillStyle = col; x.beginPath(); x.roundRect ? x.roundRect(0, 0, 64, 64, 14) : x.rect(0, 0, 64, 64); x.fill();
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(col.slice(i, i + 2), 16));
+    x.fillStyle = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6 ? '#1a1a1a' : '#ffffff';
+    x.font = '800 40px system-ui, -apple-system, Segoe UI, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText((String(n.nombre || '?').trim()[0] || '?').toUpperCase(), 32, 35);
+    src = c.toDataURL('image/png');
+  } catch (e) { return; }
+  poner('icon', src); poner('apple-touch-icon', src);
+}
