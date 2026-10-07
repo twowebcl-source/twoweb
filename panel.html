@@ -1680,7 +1680,7 @@
       NEG = data.negocio || {};
       pintarNegocio();
       aplicarFondoActual(); cargarFondos().then(() => aplicarFondoActual());
-      $('yoAvatar').textContent = (yo.nombre || '?')[0].toUpperCase();
+      $('yoAvatar').textContent = (yo.nombre || '?')[0].toUpperCase(); $('yoAvatar').style.cssText = '';
       $('yoNombre').textContent = yo.nombre || yo.correo;
       $('yoRol').textContent = yo.super ? 'super admin' : yo.rol; $('yoRol').className = 'rol ' + yo.rol;
       $('yoPestana').classList.toggle('oculto', !MODO_PESTANA);
@@ -1717,6 +1717,7 @@
         db.rpc('solicitudes_cambio_lista', {}).then(r => r, () => ({})),
       ]).then(x => { SOLIC = (x[7] && !x[7].error && x[7].data) || []; return x; });
       trabajadores = t.data || []; horarios = h.data || []; reservasTodas = r.data || [];
+      pintarMiAvatar();
       FALTAS = Object.fromEntries(((fal && fal.data) || []).map(x => [x.reserva_id, x]));
       bloqueosTodos = b.data || []; serviciosActivos = (c.data && c.data.servicios) || [];
       asignados = Object.fromEntries(((c.data && c.data.trabajadores) || []).map(x => [x.id, x.servicios || []]));
@@ -1920,7 +1921,7 @@
       const ahora = new Date(), ahoraMin = ahora.getHours()*60 + ahora.getMinutes();
 
       let html = `<div class="ag-cab" style="border-left:none;"></div>` + columnas.map(c =>
-        `<div class="ag-cab ${c.esHoy ? 'hoy' : ''}"><div class="avatar mini">${esc(c.avatar)}</div><div>${esc(c.titulo)}<small>${c.sub}</small></div></div>`).join('');
+        `<div class="ag-cab ${c.esHoy ? 'hoy' : ''}"><div class="avatar mini" ${estiloFoto(c.foto)}>${esc(c.avatar)}</div><div>${esc(c.titulo)}<small>${c.sub}</small></div></div>`).join('');
       html += `<div class="ag-horas" style="height:${alto}px">${marcas}</div>`;
       html += columnas.map(c => {
         const h = c.horario;
@@ -2049,7 +2050,7 @@
         const h = horarios.find(x => x.trabajador_id === t.id && x.dia === dow);
         const res = delDia.filter(r => r.trabajador_id === t.id);
         const n = res.filter(activa).length;
-        return { titulo: t.nombre + (!LOCAL_PANEL && locales.length > 1 ? ' · ' + nombreLocal(t.local_id) : ''), avatar: t.nombre[0], horario: h, reservas: res, esHoy: diaVista === hoyTxt(),
+        return { titulo: t.nombre + (!LOCAL_PANEL && locales.length > 1 ? ' · ' + nombreLocal(t.local_id) : ''), avatar: t.nombre[0], foto: t.foto_url, horario: h, reservas: res, esHoy: diaVista === hoyTxt(),
                  tid: t.id, fecha: diaVista, bloqueos: bloqueosDe(t.id, diaVista),
                  sub: h ? `${h.inicio.slice(0,5)}–${h.fin.slice(0,5)} · ${n} reserva${n===1?'':'s'}` : 'No trabaja' };
       }));
@@ -2072,6 +2073,20 @@
         h += `<div class="kpi destacado"><b>${clp(parte)}</b><span>ganancia de ${esc(t.nombre)} (${pct}% + propinas)</span></div>`;
       }
       $('kpis').innerHTML = h;
+    }
+
+    // Foto del profesional (la sube el admin en Equipo y horarios): en su avatar de arriba y en la agenda
+    const estiloFoto = f => f && /^(https:\/\/|data:image\/)/.test(f) ? `style="background:url('${esc(f)}') center/cover;color:transparent;"` : '';
+    function miFoto(){
+      if (!yo) return null;
+      const t = trabajadores.find(x => x.id === yo.trabajador_id) || trabajadores.find(x => x.correo && yo.correo && x.correo.toLowerCase() === yo.correo.toLowerCase());
+      return t?.foto_url || null;
+    }
+    function pintarMiAvatar(){
+      const a = $('yoAvatar'); if (!a) return; const f = miFoto();
+      a.textContent = (yo?.nombre || '?')[0].toUpperCase();
+      a.style.cssText = f ? `background:url('${f.replace(/'/g, '%27')}') center/cover;color:transparent;` : '';
+      a.title = f ? yo.nombre : '';
     }
 
     // ================= SEMANA (una columna por día, de un profesional) =================
@@ -2159,7 +2174,7 @@
       $('agendaMiDiaCaja').classList.toggle('oculto', enLista); $('listaMiDia').classList.toggle('oculto', !enLista);
       $('cajaCitasHoy').classList.toggle('oculto', enLista); $('tituloMiAgenda').textContent = enLista ? 'Tu día en orden' : 'Agenda de hoy';
       if (enLista) listaDelDia($('listaMiDia'), { fecha: hoy, reservas: deHoy, tid: yo.trabajador_id });
-      grillaAgenda($('agendaMiDia'), [{ titulo: 'Hoy', avatar: (yo.nombre || '?')[0], tid: yo.trabajador_id, fecha: hoy, esHoy: true,
+      grillaAgenda($('agendaMiDia'), [{ titulo: 'Hoy', avatar: (yo.nombre || '?')[0], foto: miFoto(), tid: yo.trabajador_id, fecha: hoy, esHoy: true,
         horario: horarios.find(h => h.trabajador_id === yo.trabajador_id && h.dia === ahora.getDay()), reservas: deHoy,
         bloqueos: bloqueosDe(yo.trabajador_id, hoy), sub: `${deHoy.filter(activa).length} cliente${deHoy.filter(activa).length === 1 ? '' : 's'}` }]);
 
@@ -2943,7 +2958,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F43 · 07-10 d';
+    const VERSION_PANEL = 'F43 · 07-10 e';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
