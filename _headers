@@ -5,10 +5,12 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
 
-# El panel: no aparece en Google y no se puede incrustar en otra página (evita engaños tipo "clickjacking")
+# El panel: no aparece en Google y solo se puede incrustar dentro del mismo sitio
+# (lo usa la vista previa del editor de ingreso; otras páginas no pueden, así se evita el "clickjacking")
 /panel*
   X-Robots-Tag: noindex, nofollow
-  X-Frame-Options: DENY
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self'
   Cache-Control: no-cache
 
 # La configuración siempre fresca (si cambias config.js, se aplica al tiro)
