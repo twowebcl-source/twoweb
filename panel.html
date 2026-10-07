@@ -71,6 +71,27 @@
                 border-radius:14px; padding:10px 14px; font-size:13.5px; text-align:center; margin:0 0 14px; backdrop-filter:blur(10px); }
     .lp-prev { position:fixed; top:0; left:0; right:0; z-index:5; background:#fbbf24; color:#1a1300; text-align:center; font:600 13px Inter, sans-serif; padding:6px; }
     .lp-prev a { color:#1a1300; }
+    .ed-ing { position:fixed; inset:0; z-index:60; background:#0b0f1a; color:#e8ecf6; display:flex; flex-direction:column; font-family:Inter, system-ui, sans-serif; }
+    .ed-cab { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 18px; border-bottom:1px solid rgba(255,255,255,.08); background:#0f1424; }
+    .ed-cab .nota { color:#8a94ad; }
+    .ed-acc { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .ed-cuerpo { flex:1; display:grid; grid-template-columns:380px 1fr; min-height:0; }
+    .ed-panel { overflow-y:auto; padding:16px 18px 40px; border-right:1px solid rgba(255,255,255,.08); background:#0f1424; }
+    .ed-panel h4 { margin:18px 0 8px; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:#8a94ad; }
+    .ed-panel h4:first-child { margin-top:0; }
+    .ed-panel label { display:block; font-size:12.5px; color:#aeb8d0; margin:10px 0 4px; }
+    .ed-fondos { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+    .ed-fondo { border:2px solid transparent; border-radius:12px; padding:0; background:none; cursor:pointer; color:#cfd6e6; font:600 10.5px Inter, sans-serif; text-align:center; }
+    .ed-fondo span { display:flex; align-items:center; justify-content:center; aspect-ratio:3/4; border-radius:10px; font-size:18px; margin-bottom:3px; overflow:hidden; }
+    .ed-fondo.sel { border-color:#3b82f6; }
+    .ed-chips { display:flex; flex-wrap:wrap; gap:6px; }
+    .ed-chips .chip { padding:4px 10px; font-size:12px; }
+    .ed-vista { display:flex; align-items:center; justify-content:center; padding:20px; background:repeating-conic-gradient(#121829 0 25%, #0e1322 0 50%) 0 0/24px 24px; min-height:0; overflow:auto; }
+    .ed-marco { position:relative; width:100%; height:100%; max-width:1280px; border-radius:14px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6); border:1px solid rgba(255,255,255,.1); transition:max-width .25s; }
+    .ed-marco.cel { max-width:390px; max-height:820px; border-radius:30px; border:8px solid #1d2335; }
+    .ed-marco iframe { width:100%; height:100%; border:0; display:block; background:#0a0f1f; }
+    .ed-tapa { position:absolute; inset:0; }
+    @media (max-width:900px){ .ed-cuerpo { grid-template-columns:1fr; grid-template-rows:auto 60vh; } .ed-panel { border-right:none; max-height:none; order:2; } .ed-vista { order:1; height:60vh; } }
     .ing-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; }
     .ing-grid .full { grid-column:1 / -1; }
     @media (max-width:700px){ .ing-grid { grid-template-columns:1fr; } }
@@ -1067,8 +1088,6 @@
           <p class="nota">Los estilos que todos (paneles y páginas de los negocios) pueden elegir en "Personalizar". Sube imágenes o crea animaciones con colores, formas y emojis.</p></div>
           <span class="barra-der"><label class="boton-linea" style="cursor:pointer;">📷 Subir imagen como estilo<input type="file" accept="image/*" class="oculto" onchange="subirEstiloImagen(this)"></label>
             <button class="boton" onclick="editarFondo('')">+ Nuevo estilo animado</button></span></div>
-        <div id="ingresoSuper"></div>
-        <h3 style="margin:18px 0 8px;">Catálogo de estilos</h3>
         <div id="listaFondos" class="pz-estilos super"><p class="nota">Cargando…</p></div>
       </div>
 
@@ -1082,6 +1101,15 @@
 
   <!-- Ventana de detalle -->
   <div id="avisosApp" class="avisos-app oculto" role="region" aria-label="Recomendaciones"></div>
+  <div id="edIngreso" class="ed-ing oculto">
+    <div class="ed-cab"><div><b>🔐 Pantalla de ingreso</b><span class="nota"> · Vista previa en vivo: nada cambia hasta que presionas Guardar</span></div>
+      <div class="ed-acc"><div class="segmentado"><button class="seg sel" data-d="pc" onclick="dispEdIng('pc', this)">🖥 Computador</button><button class="seg" data-d="cel" onclick="dispEdIng('cel', this)">📱 Celular</button></div>
+        <button class="boton-linea" onclick="cerrarEditorIngreso()">Cancelar</button><button class="boton" id="edIngGuardar" onclick="guardarEditorIngreso()">Guardar</button></div></div>
+    <div class="ed-cuerpo">
+      <div class="ed-panel" id="edIngPanel"></div>
+      <div class="ed-vista"><div class="ed-marco" id="edIngMarco"><iframe id="edIngFrame" title="Vista previa del ingreso"></iframe><div class="ed-tapa"></div></div></div>
+    </div>
+  </div>
   <div id="hojaPz" class="hoja-pz oculto" onclick="if(event.target===this)cerrarPz()">
     <div class="hoja">
       <div class="hoja-asa"></div>
@@ -1363,7 +1391,10 @@
     async function cargarSesion(session){
       if (modoRecuperacion){ mostrar('vistaNuevaClave'); return; }
       if (new URLSearchParams(location.search).get('vista') === 'ingreso'){     // vista previa para el super admin
-        mostrar('vistaLogin'); $('lpPrev').classList.remove('oculto'); ING = null; marcaLogin(true); return;
+        const embed = new URLSearchParams(location.search).has('embed');
+        mostrar('vistaLogin'); $('lpPrev').classList.toggle('oculto', embed); ING = null; marcaLogin(true);
+        if (embed) addEventListener('message', ev => { if (ev.origin === location.origin && ev.data && ev.data.tipo === 'twoweb-ingreso') pintarIngreso(ev.data.c); });
+        return;
       }
       if (!session){
         yo = null; mostrar('vistaLogin'); marcaLogin();
@@ -2439,7 +2470,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F29 · 06-10';
+    const VERSION_PANEL = 'F29 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -2455,6 +2486,9 @@
         <h3 style="margin-top:18px;">Otra cuenta al mismo tiempo</h3>
         <p class="nota">Abre una pestaña con sesión propia para entrar, por ejemplo, como profesional sin cerrar esta cuenta.</p>
         <button class="boton-linea" style="margin-top:8px;" onclick="abrirOtraCuenta()">Abrir otra cuenta en una pestaña nueva</button>
+        ${yo.super ? `<h3 style="margin-top:18px;">🔐 Pantalla de ingreso a las cuentas</h3>
+        <p class="nota">Solo tú (super admin) puedes cambiarla. Es la pantalla donde todos entran a su cuenta: la ves en vivo y la guardas solo si te gusta.</p>
+        <button class="boton-linea" style="margin-top:8px;" onclick="abrirEditorIngreso()">✏️ Editar pantalla de ingreso</button>` : ''}
         <h3 style="margin-top:18px;">Avisos del navegador</h3>
         <p class="nota">Te avisa cuando te agendan, cancelan o modifican una hora, aunque estés en otra pestaña.</p>
         <button class="boton-linea" style="margin-top:8px;" onclick="activarAvisosNavegador()">${permiso === 'granted' ? '✓ Activados' : permiso === 'denied' ? 'Bloqueados en el navegador' : 'Activar avisos'}</button>
@@ -2617,12 +2651,11 @@
     let PZ = null;     // { para:'yo'|'negocio', tab, sel, fuente, imagen, imagenNueva }
     async function abrirPersonalizar(para){
       await cargarFondos();
-      const neg = para === 'negocio', ing = para === 'ingreso';
-      PZ = { para, tab: 'estilo', sel: ing ? (ING_ED?.estilo?.sel ? { ...ING_ED.estilo.sel } : null) : neg ? (NEG.estilo ? { ...NEG.estilo } : null) : (fondoGuardado() ? { ...fondoGuardado() } : null),
-             fuente: (ing ? ING_ED?.estilo?.fuente : neg ? NEG.fuente : yo.mi_fuente) || 'defecto', imagen: ing ? (ING_ED?.estilo?.fondo?.propia ? ING_ED.estilo.fondo.imagen : null) : null, imagenNueva: undefined };
+      const neg = para === 'negocio';
+      PZ = { para, tab: 'estilo', sel: neg ? (NEG.estilo ? { ...NEG.estilo } : null) : (fondoGuardado() ? { ...fondoGuardado() } : null),
+             fuente: (neg ? NEG.fuente : yo.mi_fuente) || 'defecto', imagen: null, imagenNueva: undefined };
       if (PZ.sel && PZ.sel.tipo && !PZ.sel.codigo) PZ.sel.codigo = PZ.sel.tipo;
-      if (ing) {}
-      else if (!neg) PZ.imagen = await imagenPropia();
+      if (!neg) PZ.imagen = await imagenPropia();
       else if (NEG.tiene_imagen_fondo) {
         try { const { data } = await db.rpc('agenda_config', { p_negocio: NEG.slug }); PZ.imagen = data?.negocio?.estilo?.fondo?.imagen || null; } catch(e) {}
       }
@@ -2648,10 +2681,9 @@
     const tarjetaMini = f => f.imagen ? `background-image:url('${f.imagen}');background-size:cover;background-position:center;`
       : `background:linear-gradient(160deg, ${f.params?.c1 || '#444'}, ${f.params?.c2 || '#222'} 70%, ${f.params?.c3 || f.params?.c1 || '#444'});`;
     function dibujarPz(){
-      const s = PZ.sel, img = PZ.imagenNueva !== undefined ? PZ.imagenNueva : PZ.imagen, neg = PZ.para !== 'yo';
-      $('pzTitulo').textContent = PZ.para === 'ingreso' ? 'Pantalla de ingreso' : neg ? 'Personalizar mi página' : 'Personalizar mi panel';
-      $('pzSub').textContent = PZ.para === 'ingreso' ? 'Fondo y fuente de la pantalla donde todos entran a su cuenta. Mientras eliges, se ve aquí detrás.'
-        : neg ? 'Lo verán tus clientes en tu agenda, tienda y página. Mientras eliges, se ve aquí detrás.' : 'Solo cambia tu panel. Mientras eliges, se ve aquí detrás.';
+      const s = PZ.sel, img = PZ.imagenNueva !== undefined ? PZ.imagenNueva : PZ.imagen, neg = PZ.para === 'negocio';
+      $('pzTitulo').textContent = neg ? 'Personalizar mi página' : 'Personalizar mi panel';
+      $('pzSub').textContent = neg ? 'Lo verán tus clientes en tu agenda, tienda y página. Mientras eliges, se ve aquí detrás.' : 'Solo cambia tu panel. Mientras eliges, se ve aquí detrás.';
       document.querySelectorAll('#hojaPz .pz-tab').forEach(b => b.classList.toggle('sel', b.dataset.t === PZ.tab));
       if (PZ.tab === 'fuente'){
         $('pzCuerpo').innerHTML = `<div class="pz-fuentes">${Object.entries(FUENTES_ESTILO).map(([k, f]) => `<button class="pz-fuente ${PZ.fuente === k ? 'sel' : ''}" onclick="PZ.fuente='${k}'; dibujarPz(); previewPz()"
@@ -2712,9 +2744,7 @@
       const b = $('pzAplicar'); b.disabled = true; b.textContent = 'Guardando…';
       const fondo = PZ.sel ? { ...PZ.sel } : { codigo: 'ninguno' };
       let r;
-      if (PZ.para === 'ingreso'){
-        r = await db.rpc('super_guardar_ingreso', { p: { estilo: fondo, fuente: PZ.fuente, ...(PZ.imagenNueva !== undefined ? { imagen: PZ.imagenNueva || '' } : {}) } });
-      } else if (PZ.para === 'negocio'){
+      if (PZ.para === 'negocio'){
         r = await db.rpc('guardar_mi_negocio', { p: { estilo: fondo, fuente: PZ.fuente, ...(PZ.imagenNueva !== undefined ? { imagen_fondo: PZ.imagenNueva || '' } : {}) } });
         if (!r.error){ const { data } = await db.rpc('mi_sesion'); if (data?.negocio) NEG = data.negocio; }
       } else {
@@ -2726,7 +2756,6 @@
       }
       b.disabled = false; b.textContent = 'Aplicar';
       if (r.error) return alert(/guardar_mi_estilo|estilo|fuente/.test(r.error.message || '') && /function|schema/i.test(r.error.message || '') ? 'Falta instalar la Fase 22 en la base de datos.' : r.error.message);
-      if (PZ.para === 'ingreso'){ cerrarPz(); mostrarToast({ id: 0, tipo: 'completada', titulo: 'Pantalla de ingreso actualizada', detalle: 'Ábrela con "Ver cómo queda".' }); cargarIngresoSuper(); return; }
       const neg = PZ.para === 'negocio'; cerrarPz();
       mostrarToast({ id: 0, tipo: 'completada', titulo: neg ? 'Tu página quedó con su nuevo estilo' : 'Listo, tu panel quedó personalizado',
         detalle: neg ? 'Ábrela con "Ver cómo quedó" en Mi página.' : 'Se ve igual en todos tus dispositivos.' });
@@ -2736,36 +2765,89 @@
 
     // ================= SUPER ADMIN: CATÁLOGO DE ESTILOS =================
     let FONDO_ED = null, PROBANDO = false;
-    // ----- Pantalla de ingreso (Fase 29) -----
-    let ING_ED = null;
-    async function cargarIngresoSuper(){
-      const el = $('ingresoSuper'); if (!el) return;
+    // ================= EDITOR DE LA PANTALLA DE INGRESO (solo super admin, Fase 29) =================
+    // La vista previa vive en un iframe aparte: el panel del super admin no cambia mientras edita.
+    let ED = null;
+    async function abrirEditorIngreso(){
+      if (!yo.super) return;
+      await cargarFondos();
       const { data, error } = await db.rpc('ingreso_config');
-      if (error){ el.innerHTML = /ingreso_config/.test(error.message || '') ? '<div class="tarjeta"><p class="nota">🔐 Pantalla de ingreso: falta instalar la Fase 29.</p></div>' : ''; return; }
-      ING_ED = data || {}; ING = ING_ED;
-      const c = ING_ED, e = c.estilo || {};
-      el.innerHTML = `<div class="tarjeta">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-            <div><h3 style="margin:0 0 4px;">🔐 Pantalla de ingreso al panel</h3>
-              <p class="nota">Es lo primero que ven todos al entrar a su cuenta (tú, los admins y sus equipos). Los links con la marca de un negocio (?n=) usan la de ese negocio.</p></div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="boton" onclick="abrirPersonalizar('ingreso')">🎨 Fondo y fuente</button>
-              <a class="boton-linea" href="panel.html?vista=ingreso" target="_blank" rel="noopener">👁 Ver cómo queda</a></div></div>
-          <p class="nota" style="margin:8px 0 12px;">Fondo actual: <b>${esc(resumenEstilo(e.sel || null, e.fuente))}</b></p>
-          <div class="ing-grid">
-            <div><label>Título</label><input id="ingTitulo" maxlength="40" value="${esc(c.titulo || '')}" placeholder="twoweb"></div>
-            <div><label>Subtítulo</label><input id="ingSub" maxlength="100" value="${esc(c.subtitulo || '')}" placeholder="Ingresa a tu panel de agenda y ventas"></div>
-            <div class="full"><label>Aviso sobre el formulario (opcional)</label><input id="ingAviso" maxlength="200" value="${esc(c.aviso || '')}" placeholder="Ej: ✨ Nuevo: mensajes masivos a tus clientes"></div>
-            <div><label>Color del botón</label><input type="color" id="ingAcento" value="${esc(c.acento || '#3b82f6')}" style="height:42px;padding:2px;"></div>
-            <div><label>Oscurecer el fondo · <span id="ingOscTxt">${c.oscurecer ?? 35}%</span></label><input type="range" id="ingOsc" min="0" max="85" step="5" value="${c.oscurecer ?? 35}" oninput="$('ingOscTxt').textContent=this.value+'%'"></div>
-            <div class="full"><label>Logo</label><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-              <img class="ing-logo" id="ingLogoPrev" src="${esc(c.logo || 'imagenes/logo-twoweb.png')}" onerror="this.src='imagenes/app-192.png'">
-              <label class="boton-linea" style="cursor:pointer;">📷 Subir logo (PNG transparente)<input type="file" accept="image/*" class="oculto" onchange="subirLogoIngreso(this)"></label>
-              ${c.logo ? '<button class="link" style="margin:0;" onclick="quitarLogoIngreso()">Quitar logo</button>' : ''}</div></div>
-          </div>
-          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;"><button class="boton" onclick="guardarIngreso()">Guardar textos y colores</button><span class="estado" id="estadoIng"></span></div>
-        </div>`;
+      if (error) return alert(/ingreso_config/.test(error.message || '') ? 'Falta instalar la Fase 29 en Supabase.' : error.message);
+      const c = data || {}, e = c.estilo || {};
+      ED = { titulo: c.titulo || '', subtitulo: c.subtitulo || '', aviso: c.aviso || '', acento: c.acento || '#3b82f6', oscurecer: c.oscurecer ?? 35,
+             logo: c.logo || '', logoCambio: false, sel: e.sel ? { ...e.sel } : null, fuente: e.fuente || 'defecto',
+             imagen: e.fondo && e.fondo.propia ? e.fondo.imagen : null, imagenCambio: false, listo: false };
+      cerrarDetalle(true);
+      $('edIngreso').classList.remove('oculto'); document.body.classList.add('hoja-abierta');
+      const fr = $('edIngFrame');
+      fr.onload = () => { ED && (ED.listo = true); enviarBorrador(); };
+      fr.src = 'panel.html?vista=ingreso&embed=1';
+      dibujarEdIng();
     }
-    let logoIngNuevo;
+    function cerrarEditorIngreso(){ $('edIngreso').classList.add('oculto'); document.body.classList.remove('hoja-abierta'); $('edIngFrame').src = 'about:blank'; ED = null; }
+    function dispEdIng(d, b){ b.parentNode.querySelectorAll('.seg').forEach(x => x.classList.toggle('sel', x === b)); $('edIngMarco').classList.toggle('cel', d === 'cel'); }
+    function estiloBorrador(){
+      const s = ED.sel, fuente = ED.fuente === 'defecto' ? null : ED.fuente;
+      if (!s) return fuente ? { sel: null, fuente } : null;
+      let fondo = null, capa = null;
+      if (s.codigo === 'propio') fondo = { motor: 'imagen', propia: true, imagen: ED.imagen, params: { tinte: 'degradado', tinte_alpha: 0.12, c1: '#000000', c2: '#000000' } };
+      else { const f = fondoDe(s.codigo); if (f) fondo = { motor: f.motor, params: f.params, imagen: f.imagen }; }
+      const efc = s.efecto || (s.codigo !== 'propio' ? fondoDe(s.codigo)?.params?.capa : null);
+      if (efc){ const x = fondoDe(efc); if (x && x.motor !== 'imagen') capa = { motor: x.motor, params: x.params }; }
+      return { sel: s, fuente, fondo, capa };
+    }
+    function enviarBorrador(){
+      if (!ED || !ED.listo) return;
+      const c = { titulo: ED.titulo, subtitulo: ED.subtitulo, aviso: ED.aviso, acento: ED.acento, oscurecer: ED.oscurecer, logo: ED.logo || null, estilo: estiloBorrador() };
+      try { $('edIngFrame').contentWindow.postMessage({ tipo: 'twoweb-ingreso', c }, location.origin); } catch (e) {}
+    }
+    function dibujarEdIng(){
+      const s = ED.sel, cat = FONDOS_CAT.filter(x => x.activo !== false);
+      const chip = (k, v, t) => `<button class="chip ${String(s?.[k] ?? '') === String(v) ? 'sel' : ''}" onclick="ajusteEdIng('${k}', ${typeof v === 'number' ? v : `'${v}'`})">${t}</button>`;
+      const efectos = cat.filter(x => x.motor !== 'imagen');
+      $('edIngPanel').innerHTML = `
+        <h4>Fondo</h4>
+        <div class="ed-fondos">
+          <button class="ed-fondo ${!s ? 'sel' : ''}" onclick="fondoEdIng('')"><span style="background:linear-gradient(160deg,#1b2a55,#0a0f1f);">✦</span>Original</button>
+          <button class="ed-fondo ${s?.codigo === 'propio' ? 'sel' : ''}" onclick="fondoEdIng('propio')"><span style="${ED.imagen ? `background-image:url('${ED.imagen}');background-size:cover;background-position:center;` : 'background:#1a2033;'}">${ED.imagen ? '' : '📷'}</span>Tu imagen</button>
+          ${cat.map(f => `<button class="ed-fondo ${s?.codigo === f.codigo ? 'sel' : ''}" onclick="fondoEdIng('${f.codigo}')"><span style="${tarjetaMini(f)}">${f.imagen ? '' : esc(f.icono || '✨')}</span>${esc(f.nombre)}</button>`).join('')}
+        </div>
+        <input type="file" id="edIngArchivo" accept="image/*" class="oculto" onchange="imagenEdIng(this)">
+        ${s ? `${s.codigo === 'propio' ? `<label>Imagen</label><button class="boton-linea" onclick="$('edIngArchivo').click()">📷 Cambiar imagen</button>
+          <label>Efecto encima</label><div class="ed-chips">${chip('efecto', '', 'Ninguno')}${efectos.map(x => chip('efecto', x.codigo, (x.icono || '') + ' ' + esc(x.nombre))).join('')}</div>` : ''}
+          <label>Intensidad</label><div class="ed-chips">${chip('intensidad', 1, 'Suave')}${chip('intensidad', 2, 'Media')}${chip('intensidad', 3, 'Fuerte')}${chip('intensidad', 4, 'Máxima')}</div>
+          <label>Velocidad</label><div class="ed-chips">${chip('velocidad', 1, 'Lenta')}${chip('velocidad', 2, 'Normal')}${chip('velocidad', 3, 'Rápida')}</div>
+          <label>Oscurecer el fondo · <span id="edOscTxt">${ED.oscurecer}%</span></label><input type="range" min="0" max="85" step="5" value="${ED.oscurecer}" oninput="ED.oscurecer=+this.value; $('edOscTxt').textContent=this.value+'%'; enviarBorrador()">` : ''}
+        <h4>Textos</h4>
+        <label>Título</label><input maxlength="40" value="${esc(ED.titulo)}" placeholder="twoweb" oninput="ED.titulo=this.value; enviarBorrador()">
+        <label>Subtítulo</label><input maxlength="100" value="${esc(ED.subtitulo)}" placeholder="Ingresa a tu panel de agenda y ventas" oninput="ED.subtitulo=this.value; enviarBorrador()">
+        <label>Aviso sobre el formulario (opcional)</label><input maxlength="200" value="${esc(ED.aviso)}" placeholder="Ej: ✨ Nuevo: mensajes masivos" oninput="ED.aviso=this.value; enviarBorrador()">
+        <h4>Marca</h4>
+        <label>Fuente</label><select onchange="ED.fuente=this.value; enviarBorrador()">${Object.entries(FUENTES_ESTILO).map(([k, f]) => `<option value="${k}" ${ED.fuente === k ? 'selected' : ''}>${f.n}</option>`).join('')}</select>
+        <label>Color del botón</label><input type="color" value="${esc(ED.acento)}" style="height:40px;padding:2px;" oninput="ED.acento=this.value; enviarBorrador()">
+        <label>Logo</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <img class="ing-logo" src="${esc(ED.logo || 'imagenes/logo-twoweb.png')}" onerror="this.src='imagenes/app-192.png'">
+          <label class="boton-linea" style="cursor:pointer;margin:0;">📷 Subir logo<input type="file" accept="image/*" class="oculto" onchange="logoEdIng(this)"></label>
+          ${ED.logo ? `<button class="link" style="margin:0;" onclick="ED.logo=''; ED.logoCambio=true; dibujarEdIng(); enviarBorrador()">Quitar</button>` : ''}</div>
+        <h4>Volver atrás</h4>
+        <button class="boton-linea" onclick="restablecerEdIng()">↺ Diseño original de TwoWeb</button>
+        <p class="estado" id="estadoEdIng"></p>`;
+    }
+    function fondoEdIng(cod){
+      if (cod === 'propio' && !ED.imagen){ $('edIngArchivo').click(); return; }
+      ED.sel = cod ? { codigo: cod, intensidad: ED.sel?.intensidad || 3, velocidad: ED.sel?.velocidad || 2, vidrio: true, ...(cod === 'propio' ? { efecto: ED.sel?.efecto || '' } : {}) } : null;
+      dibujarEdIng(); enviarBorrador();
+    }
+    function ajusteEdIng(k, v){ if (!ED.sel) return; ED.sel[k] = v; dibujarEdIng(); enviarBorrador(); }
+    async function imagenEdIng(input){
+      try { ED.imagen = await comprimirImagen(input.files[0], 1600, 650000); ED.imagenCambio = true; fondoEdIng('propio'); }
+      catch (e) { alert(e.message); }
+      input.value = '';
+    }
+    async function logoEdIng(input){
+      try { ED.logo = await logoPNG(input.files[0]); ED.logoCambio = true; dibujarEdIng(); enviarBorrador(); } catch (e) { alert(e.message); }
+      input.value = '';
+    }
     function logoPNG(archivo){
       return new Promise((ok, mal) => {
         if (!archivo || !/^image\//.test(archivo.type)) return mal(new Error('Elige una imagen (PNG, JPG o WEBP).'));
@@ -2777,22 +2859,25 @@
         img.src = u;
       });
     }
-    async function subirLogoIngreso(input){
-      try { logoIngNuevo = await logoPNG(input.files[0]); $('ingLogoPrev').src = logoIngNuevo; estado('estadoIng', 'Logo listo · falta Guardar', ''); }
-      catch (e) { estado('estadoIng', e.message, 'error'); }
-      input.value = '';
+    function restablecerEdIng(){
+      Object.assign(ED, { titulo: '', subtitulo: '', aviso: '', acento: '#3b82f6', oscurecer: 35, sel: null, fuente: 'defecto', logo: '', logoCambio: true });
+      dibujarEdIng(); enviarBorrador(); estado('estadoEdIng', 'Así se ve el diseño original. Presiona Guardar para dejarlo.', '');
     }
-    function quitarLogoIngreso(){ logoIngNuevo = ''; $('ingLogoPrev').src = 'imagenes/logo-twoweb.png'; estado('estadoIng', 'Se quitará al guardar', ''); }
-    async function guardarIngreso(){
-      const p = { titulo: $('ingTitulo').value.trim(), subtitulo: $('ingSub').value.trim(), aviso: $('ingAviso').value.trim(), acento: $('ingAcento').value, oscurecer: Number($('ingOsc').value) };
-      if (logoIngNuevo !== undefined) p.logo = logoIngNuevo;
+    async function guardarEditorIngreso(){
+      const p = { titulo: ED.titulo.trim(), subtitulo: ED.subtitulo.trim(), aviso: ED.aviso.trim(), acento: ED.acento, oscurecer: ED.oscurecer,
+                  estilo: ED.sel || { codigo: 'ninguno' }, fuente: ED.fuente };
+      if (ED.imagenCambio) p.imagen = ED.imagen || '';
+      if (ED.logoCambio) p.logo = ED.logo || '';
+      const b = $('edIngGuardar'); b.disabled = true; b.textContent = 'Guardando…';
       const { error } = await db.rpc('super_guardar_ingreso', { p });
-      if (error) return estado('estadoIng', 'Error: ' + error.message, 'error');
-      logoIngNuevo = undefined; await cargarIngresoSuper();
-      estado('estadoIng', '✓ Guardado. Revisa con "Ver cómo queda".', 'ok');
+      b.disabled = false; b.textContent = 'Guardar';
+      if (error) return estado('estadoEdIng', 'Error: ' + error.message, 'error');
+      ING = null; cerrarEditorIngreso();
+      mostrarToast({ id: 0, tipo: 'completada', titulo: 'Pantalla de ingreso guardada', detalle: 'Así la verán todos al entrar a su cuenta.' });
     }
+
     async function cargarFondosSuper(){
-      await cargarFondos(); cargarIngresoSuper();
+      await cargarFondos();
       $('listaFondos').innerHTML = FONDOS_CAT.map(f => `<div class="pz-est super ${f.activo === false ? 'off' : ''}">
           <span class="pz-img" style="${tarjetaMini(f)}" onclick="probarFondoCat('${f.codigo}')">${f.imagen ? '' : esc(f.icono || '✨')}</span>
           <b>${esc(f.nombre)}</b><small>${esc(f.descripcion || (MOTORES[f.motor]?.n || f.motor).split(' (')[0])}${f.usan != null ? ` · ${f.usan} 👤` : ''}${f.activo === false ? ' · apagado' : ''}</small>
