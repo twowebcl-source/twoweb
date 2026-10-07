@@ -481,6 +481,11 @@
     .sol-banner { margin-top:14px; padding:12px 14px; border-radius:14px; border:1px solid color-mix(in srgb, var(--voltaje) 55%, transparent); background:color-mix(in srgb, var(--voltaje) 10%, var(--panel)); display:grid; gap:8px; }
     .sol-item { text-align:left; background:var(--panel2); border:1px solid var(--linea); border-radius:10px; padding:8px 12px; color:var(--hueso); cursor:pointer; font:inherit; display:grid; gap:2px; }
     .sol-item:hover { border-color:var(--voltaje); } .sol-item small { color:var(--gris); }
+    .tj-lista { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:12px; margin:12px 0; }
+    .tj-item { display:grid; grid-template-columns:150px 1fr; gap:12px; align-items:start; padding:10px; border:1px solid var(--linea); border-radius:14px; background:var(--panel2); }
+    .tj-item.off { opacity:.55; }
+    .tj-mini { width:150px; } .tj-mini .tf { transform:scale(.62); transform-origin:top left; width:242px; margin-bottom:-70px; }
+    .tj-info { display:grid; gap:2px; font-size:13.5px; }
     .lim-fila { margin-top:12px; }
     .lim-fila > label { display:block; font-weight:600; font-size:13.5px; margin-bottom:6px; }
     .lim-fila .ideas { align-items:center; }
@@ -1076,12 +1081,14 @@
           <button class="chip" data-fc="beneficio" onclick="filtroCli('beneficio')">🎁 10% sin usar</button>
           <button class="chip" data-fc="promos" onclick="filtroCli('promos')">Aceptan promociones</button>
           <button class="chip" data-fc="perdidos" onclick="filtroCli('perdidos')">No vuelven hace +45 días</button>
+          <button class="chip" data-fc="cumple" onclick="filtroCli('cumple')">🎂 Cumplen este mes</button>
           <input id="buscarCli" placeholder="Buscar nombre, correo o WhatsApp" style="max-width:260px;" oninput="dibujarClientes()">
         </div>
         <div class="barra" style="margin-top:4px;">
           <span class="nota" id="resumenCli"></span>
           <span class="barra-der" style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="boton-linea" onclick="descargarClientes()">⬇ Descargar Excel</button>
+            <button class="boton-linea" onclick="abrirImportar()">⬆ Importar Excel</button>
             <button class="boton-linea" onclick="abrirEnvio('whatsapp')">💬 WhatsApp</button>
             <button class="boton" onclick="abrirEnvio('correo')">✉ Correo</button>
           </span>
@@ -2221,7 +2228,7 @@
         ${r.creado_por ? `<div class="det-fila"><span>Agendada por</span><span>${esc(r.creado_por)}${r.origen === 'panel' ? ' (panel)' : ''}</span></div>` : ''}
         <div class="det-fila"><span>Servicios</span><span>${esc(r.servicios || '—')}</span></div>
         ${atencionReal(r)}
-        ${r.descuento_pct ? `<div class="det-fila"><span>Descuento</span><span>${r.fid_canje ? `🎟 ${r.descuento_pct}% premio tarjeta de fidelidad` : r.fid_canje === false ? `🎁 ${r.descuento_pct}% primera visita (inscrito)` : `🎁 ${r.descuento_pct}% de descuento`}</span></div>` : ''}
+        ${r.descuento_pct ? `<div class="det-fila"><span>Descuento</span><span>${r.cumple_canje ? `🎂 ${r.descuento_pct}% regalo de cumpleaños` : r.fid_canje ? `🎟 ${r.descuento_pct}% premio tarjeta de fidelidad` : r.fid_canje === false ? `🎁 ${r.descuento_pct}% primera visita (inscrito)` : `🎁 ${r.descuento_pct}% de descuento`}</span></div>` : ''}
         <div class="det-fila"><span>${admin ? 'Total' : 'Valor del servicio'}</span><span>${r.total ? clp(r.total) : '—'}</span></div>
         ${est === 'completada' && r.propina ? `<div class="det-fila"><span>Propina</span><span>${clp(r.propina)}</span></div>` : ''}
         ${!admin && est === 'completada' ? `<div class="det-fila"><span>Tu parte</span><span><b>${clp(r.ganancia || 0)}</b></span></div>` : ''}
@@ -2780,7 +2787,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F38 · 07-10';
+    const VERSION_PANEL = 'F39 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -2900,6 +2907,7 @@
           <p class="nota">Las imágenes se achican solas para que tu agenda cargue rápido.</p>
           <p class="nota" style="margin-top:6px;">🎁 Descuento 10% primera visita para clientes nuevos: <b>${NEG.promo_10 ? 'activo en tu agenda' : 'apagado'}</b>${yo.super ? '' : ' · para activarlo o apagarlo, escríbele a ' + esc(MARCA)}.</p>
           <div id="fidAdmin"></div>
+          <div id="tarjetasAdmin"></div>
           
           <h3 style="margin-top:22px;">✨ Estilo de tu página</h3>
           <p class="nota">Fondo con movimiento o una imagen tuya (con efecto encima) y la fuente de tu agenda${conTienda() ? ', tienda' : ''} y página web. Tus clientes lo verán así.</p>
@@ -4240,7 +4248,7 @@
       const { data: f, error } = await db.rpc('mi_fidelidad');
       if (error){ el.innerHTML = (error.message || '').includes('mi_fidelidad') ? '<p class="nota" style="margin-top:14px;">🎟 Tarjeta de fidelidad: falta instalar las Fases 25 y 26.</p>' : ''; return; }
       if (!f) return;
-      FID = f; fidImg = undefined;
+      FID = f; fidImg = undefined; setTimeout(cargarTarjetasAdmin, 0);
       if (!f.permitido){ el.innerHTML = `<div class="fid-adm bloqueada"><h3 style="margin:0 0 4px;">🎟 Tarjeta de fidelidad</h3><p class="nota">Premia a tus clientes frecuentes: cada atención suma un sello y al completar la tarjeta su siguiente reserva trae el descuento solo. <b>Tu plan (${esc(f.plan || '')}) no la incluye</b>: pídela a ${esc(MARCA)} para activarla.</p></div>`; return; }
       el.innerHTML = `<div class="fid-adm">
           <h3 style="margin:0 0 4px;">🎟 Tarjeta de fidelidad</h3>
@@ -4261,6 +4269,93 @@
           <button class="boton" style="margin-top:10px;" onclick="guardarFidelidad()">Guardar tarjeta</button> <span class="estado" id="estadoFid"></span>
         </div>`;
       vistaFid();
+    }
+    // ----- Tarjetas extra: cumpleaños y beneficios (Fase 39) -----
+    let TJ = null, TJE = null;
+    async function cargarTarjetasAdmin(){
+      const el = $('tarjetasAdmin'); if (!el) return;
+      const { data, error } = await db.rpc('tarjetas_admin');
+      if (error){ el.innerHTML = /tarjetas_admin/.test(error.message || '') ? '<p class="nota" style="margin-top:12px;">🎂 Tarjetas de cumpleaños y beneficios: falta instalar la Fase 39.</p>' : ''; return; }
+      TJ = data; dibujarTarjetasAdmin();
+    }
+    function dibujarTarjetasAdmin(){
+      const el = $('tarjetasAdmin'); if (!el || !TJ) return;
+      if (!TJ.permitido){ el.innerHTML = ''; return; }
+      const base = { negocio: NEG.nombre, logo: NEG.logo_url }, colNeg = /^#[0-9a-f]{6}$/i.test(NEG.color || '') ? NEG.color : null;
+      el.innerHTML = `<div class="fid-adm" style="margin-top:14px;">
+          <h3 style="margin:0 0 4px;">🎴 Más tarjetas para tus clientes</h3>
+          <p class="nota">Crea varias: <b>🎂 Cumpleaños</b> (descuento automático en su fecha, 1 vez al año) o <b>🎁 Beneficio</b> (informativa, ej: "10% estudiantes"). Cada una puede estar
+            activa y visible en "Mis reservas", o guardada sin mostrarse. ${TJ.con_cumple} cliente${TJ.con_cumple === 1 ? '' : 's'} con cumpleaños registrado · ${TJ.cumples_mes} cumplen este mes.</p>
+          ${FID ? `<label class="check-linea" style="margin-top:8px;"><input type="checkbox" ${FID.visible !== false ? 'checked' : ''} onchange="visibleSellos(this)"> <span>Mostrar la tarjeta de sellos en "Mis reservas" (si la ocultas, el premio igual se aplica)</span></label>` : ''}
+          <div class="tj-lista">${TJ.tarjetas.map(t => `<div class="tj-item ${t.activa ? '' : 'off'}">
+              <div class="tj-mini">${tarjetaExtraHTML({ ...base, ...t, color: t.color || colNeg, nacimiento: '03-14' })}</div>
+              <div class="tj-info"><b>${t.tipo === 'cumpleanos' ? '🎂' : '🎁'} ${esc(t.titulo)}</b>
+                <span class="nota">${t.tipo === 'cumpleanos' ? `${t.pct}% en ${textoVentanaCumple(t.ventana)}` : esc(t.texto || '')}</span>
+                <label class="check-linea" style="margin:4px 0 0;"><input type="checkbox" ${t.activa ? 'checked' : ''} onchange="cambiarTj(${t.id}, 'activa', this.checked)"> Activa</label>
+                <label class="check-linea" style="margin:0;"><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="cambiarTj(${t.id}, 'visible', this.checked)"> Visible en "Mis reservas"</label>
+                <div style="display:flex;gap:6px;margin-top:6px;"><button class="boton-linea" onclick="editarTj(${t.id})">✎ Editar</button><button class="boton-linea rojo" onclick="borrarTj(${t.id})">✕</button></div></div></div>`).join('')
+            || '<p class="nota" style="margin:10px 0;">Aún no creas tarjetas extra.</p>'}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="boton" onclick="editarTj(0, 'cumpleanos')">+ 🎂 Tarjeta de cumpleaños</button><button class="boton-linea" onclick="editarTj(0, 'beneficio')">+ 🎁 Tarjeta de beneficio</button></div>
+          <p class="estado" id="estadoTj"></p></div>`;
+    }
+    async function visibleSellos(el){
+      const { error } = await db.rpc('guardar_fid_visible', { p_on: el.checked });
+      if (error){ el.checked = !el.checked; return estado('estadoTj', 'Error: ' + error.message, 'error'); }
+      FID.visible = el.checked; estado('estadoTj', el.checked ? '✓ La tarjeta de sellos se ve en "Mis reservas".' : '✓ Oculta en "Mis reservas" (el premio sigue funcionando).', 'ok');
+    }
+    async function cambiarTj(id, k, v){
+      const t = TJ.tarjetas.find(x => x.id === id); if (!t) return;
+      const { data, error } = await db.rpc('guardar_tarjeta', { p: { ...t, [k]: v, imagen: undefined } });
+      if (error){ estado('estadoTj', error.message, 'error'); return dibujarTarjetasAdmin(); }
+      TJ = data; dibujarTarjetasAdmin(); estado('estadoTj', '✓ Guardado', 'ok');
+    }
+    async function borrarTj(id){
+      if (!confirm('¿Eliminar esta tarjeta?')) return;
+      const { data, error } = await db.rpc('eliminar_tarjeta', { p_id: id });
+      if (error) return estado('estadoTj', error.message, 'error');
+      TJ = data; dibujarTarjetasAdmin();
+    }
+    function editarTj(id, tipo){
+      const t = id ? { ...TJ.tarjetas.find(x => x.id === id) } : { id: null, tipo, titulo: tipo === 'cumpleanos' ? '¡Feliz cumpleaños!' : 'Beneficio', texto: '', pct: tipo === 'cumpleanos' ? 20 : null,
+        ventana: 'semana', color: /^#[0-9a-f]{6}$/i.test(NEG.color || '') ? NEG.color : '#7c5cff', tono: 'claro', activa: true, visible: true };
+      TJE = { t, img: undefined };
+      const cu = t.tipo === 'cumpleanos';
+      $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;margin:0 0 8px;">${cu ? '🎂 Tarjeta de cumpleaños' : '🎁 Tarjeta de beneficio'}</h3>
+        <div id="tjVista" style="margin-bottom:10px;"></div>
+        <label>Título</label><input id="tjTit" maxlength="40" value="${esc(t.titulo || '')}" oninput="vistaTj()">
+        <label>${cu ? 'Texto (opcional)' : 'Beneficio'}</label><input id="tjTxt" maxlength="120" value="${esc(t.texto || '')}" placeholder="${cu ? 'Ej: Te esperamos para celebrarte' : 'Ej: 10% mostrando tu credencial de estudiante'}" oninput="vistaTj()">
+        ${cu ? `<div class="grid-2"><div><label>Regalo</label><select id="tjPct" onchange="vistaTj()">${[5, 10, 15, 20, 25, 30, 40, 50, 100].map(k => `<option value="${k}" ${k === t.pct ? 'selected' : ''}>${k === 100 ? 'Servicio gratis' : k + '% de descuento'}</option>`).join('')}</select></div>
+          <div><label>Válido en</label><select id="tjVen" onchange="vistaTj()">${[['dia', 'Solo el día'], ['semana', 'Su semana (±3 días)'], ['mes', 'Todo su mes']].map(([k, v]) => `<option value="${k}" ${k === t.ventana ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>
+          <p class="nota">Se aplica solo al reservar online (si no tiene otro descuento), 1 vez al año, a clientes con su cumpleaños registrado.</p>` : ''}
+        <div class="grid-2"><div><label>Color</label><input type="color" id="tjColor" value="${esc(t.color || '#7c5cff')}" oninput="vistaTj()" style="height:40px;padding:2px;"></div>
+          <div><label>Letra</label><select id="tjTono" onchange="vistaTj()"><option value="claro" ${t.tono !== 'oscuro' ? 'selected' : ''}>Blanca</option><option value="oscuro" ${t.tono === 'oscuro' ? 'selected' : ''}>Negra</option></select></div></div>
+        <label>Imagen de fondo (opcional)</label><input type="file" accept="image/*" onchange="imgTj(this)">
+        ${t.imagen ? '<button class="link" style="margin:4px 0 0;" onclick="TJE.img = \'\'; vistaTj()">Quitar imagen</button>' : ''}
+        <label class="check-linea" style="margin-top:10px;"><input type="checkbox" id="tjAct" ${t.activa ? 'checked' : ''}> Activa</label>
+        <label class="check-linea" style="margin:0;"><input type="checkbox" id="tjVis" ${t.visible ? 'checked' : ''}> Visible en "Mis reservas" de mis clientes</label>
+        <div class="det-acciones"><button class="boton" onclick="guardarTj()">Guardar tarjeta</button><button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle(); cargarTarjetasAdmin()">Cerrar</button></div>
+        <p class="estado" id="estadoTjE"></p>`;
+      $('fondoDetalle').classList.remove('oculto'); vistaTj();
+    }
+    function datosTj(){
+      const t = TJE.t, cu = t.tipo === 'cumpleanos';
+      return { id: t.id, tipo: t.tipo, titulo: $('tjTit').value.trim(), texto: $('tjTxt').value.trim(), pct: cu ? Number($('tjPct').value) : null, ventana: cu ? $('tjVen').value : 'semana',
+               color: $('tjColor').value, tono: $('tjTono').value, activa: $('tjAct').checked, visible: $('tjVis').checked };
+    }
+    function vistaTj(){
+      const d = datosTj(), img = TJE.img !== undefined ? TJE.img : TJE.t.imagen;
+      $('tjVista').innerHTML = tarjetaExtraHTML({ ...d, imagen: img, negocio: NEG.nombre, logo: NEG.logo_url, nacimiento: '03-14' });
+    }
+    async function imgTj(input){
+      try { TJE.img = await comprimirImagen(input.files[0], 1000, 330000); vistaTj(); } catch (e) { estado('estadoTjE', e.message, 'error'); }
+      input.value = '';
+    }
+    async function guardarTj(){
+      const p = datosTj(); if (p.titulo.length < 2) return estado('estadoTjE', 'Escribe el título.', 'error');
+      if (TJE.img !== undefined) p.imagen = TJE.img;
+      const { data, error } = await db.rpc('guardar_tarjeta', { p });
+      if (error) return estado('estadoTjE', error.message, 'error');
+      TJ = data; cerrarDetalle(); dibujarTarjetasAdmin(); estado('estadoTj', '✓ Tarjeta guardada.', 'ok');
     }
     function tonoFid(b){ b.parentNode.querySelectorAll('.seg').forEach(x => x.classList.toggle('sel', x === b)); vistaFid(); }
     function datosFid(){
@@ -4476,6 +4571,7 @@
         if (filtroC === 'beneficio' && !(c.beneficio === 'disponible' || c.beneficio === 'reservado')) return false;
         if (filtroC === 'promos' && !c.acepta_promos) return false;
         if (filtroC === 'perdidos' && !(c.ultima_visita && c.ultima_visita < hace45 && !c.proxima)) return false;
+        if (filtroC === 'cumple' && !(c.fecha_nacimiento && c.fecha_nacimiento.slice(5, 7) === mes.slice(5, 7))) return false;
         if (q && !(`${c.nombre} ${c.apellido || ''} ${c.correo || ''}`.toLowerCase().includes(q) || (qd.length >= 3 && (c.telefono || '').replace(/\D/g, '').includes(qd)))) return false;
         return true;
       });
@@ -4492,7 +4588,7 @@
         ${lista.map(c => `<tr>
           <td><input type="checkbox" ${selCli.has(c.id) ? 'checked' : ''} onchange="selUno(${c.id}, this.checked)"></td>
           <td><a href="#" class="link" style="margin:0;" onclick="event.preventDefault(); fichaCliente(${c.id})"><b>${esc(c.nombre)} ${esc(c.apellido || '')}</b></a>
-            ${c.origen === 'inscripcion' ? ' <span class="badge grupo">inscrito</span>' : ''}${c.acepta_promos ? '' : ' <span class="nota" title="No aceptó promociones">· sin promos</span>'}</td>
+            ${c.origen === 'inscripcion' ? ' <span class="badge grupo">inscrito</span>' : c.origen === 'importado' ? ' <span class="badge grupo">importado</span>' : ''}${cumpleTxt(c) ? ` <span class="nota" title="Cumpleaños">· 🎂 ${cumpleTxt(c)}</span>` : ''}${c.acepta_promos ? '' : ' <span class="nota" title="No aceptó promociones">· sin promos</span>'}</td>
           <td>${esc(c.telefono || '—')}</td><td>${esc(c.correo || '—')}</td>
           <td class="num">${c.atendidas}${c.no_asistio ? ` <span class="error" title="No asistió">· ${c.no_asistio} ✕</span>` : ''}</td>
           <td>${c.ultima_visita ? fechaCorta(c.ultima_visita) : '—'}</td><td>${c.proxima ? fechaCorta(c.proxima) : '—'}</td>
@@ -4508,7 +4604,8 @@
     // Excel: CSV con ; y BOM (Excel en español lo abre directo con tildes)
     function descargarClientes(){
       const l = destinatarios();
-      const cols = [['Nombre','nombre'],['Apellido','apellido'],['WhatsApp','telefono'],['Correo','correo'],['Acepta promociones', c => c.acepta_promos ? 'sí' : 'no'],
+      const cols = [['Nombre','nombre'],['Apellido','apellido'],['WhatsApp','telefono'],['Correo','correo'],
+        ['Fecha de nacimiento', c => c.fecha_nacimiento ? c.fecha_nacimiento.split('-').reverse().join('-') : ''],['Acepta promociones', c => c.acepta_promos ? 'sí' : 'no'],
         ['Avisos WhatsApp', c => c.whatsapp ? 'sí' : 'no'],['Origen','origen'],['Beneficio 10%','beneficio'],['Registrado', c => (c.creado || '').slice(0, 10)],
         ['Reservas','reservas'],['Atendidas','atendidas'],['No asistió','no_asistio'],['Canceladas','canceladas'],['Gastado','gastado'],
         ['Primera visita','primera_visita'],['Última visita','ultima_visita'],['Próxima reserva','proxima'],['Local','local'],['Profesional habitual','profesional']];
@@ -4518,6 +4615,108 @@
       a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
       a.download = `clientes-${NEG.slug || 'twoweb'}-${hoyTxt()}.csv`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
+
+    const MESES_C = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const cumpleTxt = c => c.fecha_nacimiento ? `${+c.fecha_nacimiento.slice(8, 10)} ${MESES_C[+c.fecha_nacimiento.slice(5, 7) - 1]}` : '';
+
+    // ----- Importar clientes desde Excel o CSV (Fase 39) -----
+    // Obligatorio: WhatsApp/teléfono y correo. Opcional: nombre, apellido, fecha de nacimiento, acepta promociones.
+    const COLS_IMP = { nombre: /^(nombre|nombres|name|cliente)$/, apellido: /^(apellido|apellidos|last ?name)$/,
+      telefono: /(whats|tel[eé]fono|celular|fono|m[oó]vil|phone|n[uú]mero)/, correo: /(correo|e-?mail|mail)/,
+      nacimiento: /(nacimiento|cumplea|birth|f\.? ?nac)/, acepta_promos: /(promo|acepta)/ };
+    let IMP = null;
+    function abrirImportar(){
+      IMP = null;
+      $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;margin:0 0 6px;">⬆ Importar clientes</h3>
+        <p class="nota">Sube un Excel (.xlsx) o CSV. Cada cliente necesita <b>sí o sí</b> su <b>WhatsApp</b> y su <b>correo</b>. Puedes agregar <b>nombre</b>, <b>apellido</b>,
+          <b>fecha de nacimiento</b> (para su regalo de cumpleaños) y si <b>acepta promociones</b> (sí/no).
+          Si un cliente ya existe (mismo WhatsApp o correo) no se duplica: se completan los datos que falten.</p>
+        <p class="nota" style="margin-top:6px;">Tip: el mismo Excel que descargas con "⬇ Descargar Excel" sirve para volver a importar.</p>
+        <div class="det-acciones" style="margin-top:10px;"><button class="boton-linea" onclick="plantillaImportar()">📄 Descargar plantilla</button>
+          <label class="boton" style="cursor:pointer;">📂 Elegir archivo<input type="file" accept=".xlsx,.xls,.csv,text/csv" class="oculto" onchange="leerImportar(this)"></label></div>
+        <div id="impVista"></div>
+        <div class="det-acciones"><button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
+        <p class="estado" id="estadoImp"></p>`;
+      $('fondoDetalle').classList.remove('oculto');
+    }
+    function plantillaImportar(){
+      const csv = '\ufeffNombre;Apellido;WhatsApp;Correo;Fecha de nacimiento;Acepta promociones\nCamila;Rojas;+56 9 1234 5678;camila@gmail.com;14-03-1995;sí\nDiego;Soto;912345678;diego@hotmail.com;;no\n';
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = 'plantilla-clientes.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
+    const cargarScript = src => new Promise((ok, mal) => { if (document.querySelector(`script[src="${src}"]`)) return ok(); const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => mal(new Error('No se pudo cargar el lector de Excel. Revisa tu internet o guarda el archivo como CSV.')); document.head.appendChild(s); });
+    function filasCSV(txt){
+      txt = txt.replace(/^\ufeff/, ''); const sep = (txt.split('\n')[0].match(/;/g) || []).length >= (txt.split('\n')[0].match(/,/g) || []).length ? ';' : ',';
+      const filas = []; let f = [], c = '', q = false;
+      for (let i = 0; i < txt.length; i++){
+        const ch = txt[i];
+        if (q){ if (ch === '"' && txt[i + 1] === '"'){ c += '"'; i++; } else if (ch === '"') q = false; else c += ch; }
+        else if (ch === '"') q = true; else if (ch === sep){ f.push(c); c = ''; }
+        else if (ch === '\n' || ch === '\r'){ if (ch === '\r' && txt[i + 1] === '\n') i++; f.push(c); filas.push(f); f = []; c = ''; }
+        else c += ch;
+      }
+      if (c !== '' || f.length){ f.push(c); filas.push(f); }
+      return filas.filter(r => r.some(x => String(x).trim() !== ''));
+    }
+    // Fecha en cualquier formato común → AAAA-MM-DD (o '' si no se entiende)
+    function fechaImp(v){
+      if (v == null || v === '') return '';
+      if (typeof v === 'number' && v > 1000 && v < 80000){ const d = new Date(Math.round((v - 25569) * 86400000)); return d.toISOString().slice(0, 10); }   // número de fecha de Excel
+      if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0, 10);
+      const t = String(v).trim(); let m;
+      if ((m = t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+      if ((m = t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/))){ let y = +m[3]; if (y < 100) y += y > (new Date().getFullYear() % 100) ? 1900 : 2000;
+        return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
+      return '';
+    }
+    async function leerImportar(input){
+      const f = input.files[0]; input.value = ''; if (!f) return;
+      estado('estadoImp', 'Leyendo archivo…');
+      try {
+        let filas;
+        if (/\.(xlsx|xls)$/i.test(f.name)){
+          await cargarScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+          const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: false });
+          filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+        } else filas = filasCSV(await f.text());
+        filas = filas.filter(r => r.some(x => String(x).trim() !== ''));
+        if (filas.length < 2) throw new Error('El archivo no tiene clientes (necesita una fila de títulos y al menos un cliente).');
+        const tit = filas[0].map(x => String(x).trim().toLowerCase()), mapa = {};
+        for (const [k, re] of Object.entries(COLS_IMP)){ const i = tit.findIndex((t, j) => re.test(t) && !Object.values(mapa).includes(j)); if (i >= 0) mapa[k] = i; }
+        if (mapa.telefono == null || mapa.correo == null) throw new Error('No encontramos las columnas de WhatsApp/teléfono y correo. Usa la plantilla.');
+        const si = v => /^(s[ií]|si|yes|y|x|1|true|verdadero)$/i.test(String(v).trim());
+        IMP = filas.slice(1).map((r, i) => ({ fila: i + 2, nombre: mapa.nombre != null ? String(r[mapa.nombre]).trim() : '', apellido: mapa.apellido != null ? String(r[mapa.apellido]).trim() : '',
+          telefono: String(r[mapa.telefono] ?? '').trim(), correo: String(r[mapa.correo] ?? '').trim().toLowerCase(),
+          nacimiento: mapa.nacimiento != null ? fechaImp(r[mapa.nacimiento]) : '', acepta_promos: mapa.acepta_promos != null ? si(r[mapa.acepta_promos]) : false }));
+        const okTel = x => x.telefono.replace(/\D/g, '').length >= 8, okMail = x => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(x.correo);
+        const buenos = IMP.filter(x => okTel(x) && okMail(x)), malos = IMP.length - buenos.length;
+        $('impVista').innerHTML = `<div class="imp-res">
+            <div class="kpis" style="margin:10px 0;"><div class="kpi destacado"><b>${buenos.length}</b><span>clientes listos</span></div>
+              <div class="kpi"><b>${malos}</b><span>sin WhatsApp o correo (se omiten)</span></div>
+              <div class="kpi"><b>${buenos.filter(x => x.nacimiento).length}</b><span>con cumpleaños</span></div></div>
+            <div style="max-height:220px;overflow:auto;font-size:.78rem;"><table class="tabla-caja" style="min-width:100%;"><tr><th>Fila</th><th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>🎂</th><th></th></tr>
+              ${IMP.slice(0, 50).map(x => `<tr><td>${x.fila}</td><td>${esc(x.nombre)} ${esc(x.apellido)}</td><td>${esc(x.telefono)}</td><td>${esc(x.correo)}</td><td>${x.nacimiento ? x.nacimiento.split('-').reverse().join('-') : ''}</td>
+                <td>${okTel(x) && okMail(x) ? '✓' : `<span class="error">${okTel(x) ? 'falta correo' : 'falta WhatsApp'}</span>`}</td></tr>`).join('')}</table></div>
+            ${IMP.length > 50 ? `<p class="nota">Mostrando 50 de ${IMP.length} filas.</p>` : ''}
+            <label class="check-linea" style="margin-top:8px;"><input type="checkbox" id="impPromosTodos"> <span>Todos aceptaron recibir promociones (solo si te dieron su permiso)</span></label>
+            <button class="boton" style="margin-top:8px;" onclick="enviarImportar()" ${buenos.length ? '' : 'disabled'}>⬆ Importar ${buenos.length} cliente${buenos.length === 1 ? '' : 's'}</button></div>`;
+        estado('estadoImp', '');
+      } catch (e) { estado('estadoImp', e.message, 'error'); }
+    }
+    async function enviarImportar(){
+      if (!IMP) return;
+      const todos = $('impPromosTodos').checked, lista = IMP.map(x => ({ ...x, acepta_promos: todos || x.acepta_promos }));
+      let nuevos = 0, act = 0, omit = [];
+      estado('estadoImp', 'Importando…');
+      for (let i = 0; i < lista.length; i += 1000){
+        const { data, error } = await db.rpc('importar_clientes', { p: lista.slice(i, i + 1000) });
+        if (error) return estado('estadoImp', /importar_clientes/.test(error.message || '') ? 'Falta instalar la Fase 39 en Supabase.' : 'Error: ' + error.message, 'error');
+        nuevos += data.nuevos; act += data.actualizados; omit = omit.concat(data.omitidos || []);
+      }
+      $('impVista').innerHTML = `<div class="sol-caja aprobada"><div class="sol-tit">✓ Listo: ${nuevos} cliente${nuevos === 1 ? '' : 's'} nuevo${nuevos === 1 ? '' : 's'} y ${act} actualizado${act === 1 ? '' : 's'}.</div>
+        ${omit.length ? `<div class="sol-prop">Se omitieron ${omit.length}: ${omit.slice(0, 15).map(o => `fila ${o.fila} (${esc(o.motivo)})`).join(' · ')}${omit.length > 15 ? '…' : ''}</div>` : ''}</div>`;
+      estado('estadoImp', ''); IMP = null; cargarClientes();
     }
 
     // Ficha: historial del cliente
@@ -4533,6 +4732,7 @@
         <div class="det-fila"><span>Correo</span><span>${esc(c.correo || '—')}</span></div>
         <div class="det-fila"><span>Registrado</span><span>${(c.creado || '').slice(0, 10)} · ${c.origen === 'inscripcion' ? 'se inscribió en la web' : c.origen === 'panel' ? 'desde el panel' : 'al reservar online'}</span></div>
         <div class="det-fila"><span>Visitas</span><span>${c.atendidas} atendidas · ${c.no_asistio} no asistió · ${c.canceladas} canceladas · ${clp(c.gastado)}</span></div>
+        <div class="det-fila"><span>🎂 Cumpleaños</span><span><input type="date" id="fNacCli" value="${esc(c.fecha_nacimiento || '')}" max="${hoyTxt()}" style="width:auto;padding:4px 8px;"></span></div>
         <label class="check-linea" style="margin-top:10px;"><input type="checkbox" id="fPromos" ${c.acepta_promos ? 'checked' : ''}> Acepta recibir promociones</label>
         <h3 style="margin-top:14px;">Historial</h3>
         <div style="max-height:260px;overflow:auto;">${(hist || []).map(r => `<div class="det-fila" style="cursor:pointer;" onclick="abrirDetalle(${r.id})"><span>${fechaCorta(r.fecha)} ${aHora(rangoDe(r)[0])} · ${esc(r.servicios || '')} · ${esc(r.trabajador || '')}${r.descuento_pct ? (r.fid_canje ? ' · 🎟' : ' · 🎁') + r.descuento_pct + '%' : ''}</span><span>${ESTADOS[r.estado] || r.estado}${r.total ? ' · ' + clp(r.total) : ''}</span></div>`).join('') || '<p class="nota">Sin reservas aún.</p>'}</div>
@@ -4546,6 +4746,11 @@
     async function guardarFichaCliente(id){
       const { error } = await db.from('clientes').update({ acepta_promos: $('fPromos').checked, actualizado: new Date().toISOString() }).eq('id', id);
       if (error) return estado('estadoAccion', 'Error: ' + error.message, 'error');
+      const c = clientes.find(x => x.id === id), nac = $('fNacCli')?.value || null;
+      if (c && 'fecha_nacimiento' in c && (c.fecha_nacimiento || null) !== nac){
+        const r = await db.rpc('guardar_cumple_cliente', { p_id: id, p_fecha: nac });
+        if (r.error) return estado('estadoAccion', 'Error: ' + r.error.message, 'error');
+      }
       estado('estadoAccion', '✓ Guardado', 'ok'); cargarClientes();
     }
 

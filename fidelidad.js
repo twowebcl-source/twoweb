@@ -34,6 +34,28 @@
   }
   const e = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const colorOk = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#7c5cff';
+  // Tarjetas extra (Fase 39): cumpleaños y beneficio. t = { tipo, titulo, texto, pct, ventana, imagen, color, tono, negocio, logo, nacimiento, usado }
+  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  window.textoVentanaCumple = v => v === 'dia' ? 'el día de tu cumpleaños' : v === 'mes' ? 'tu mes de cumpleaños' : 'tu semana de cumpleaños';
+  window.tarjetaExtraHTML = function (t) {
+    poner();
+    const c = colorOk(t.color), oscuro = t.tono === 'oscuro', cumple = t.tipo === 'cumpleanos';
+    const img = /^data:image\/(jpeg|png|webp);base64,/.test(t.imagen || '') ? t.imagen : '';
+    const fondo = img ? `url("${img}")` : `linear-gradient(135deg, ${c}, color-mix(in srgb, ${c} 45%, #000))`;
+    const velo = oscuro ? 'linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.75))'
+                        : (img ? 'linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.6))' : 'radial-gradient(circle at 85% 0%, rgba(255,255,255,.25), transparent 55%)');
+    const nac = /^\d{2}-\d{2}$/.test(t.nacimiento || '') ? `${+t.nacimiento.slice(3)} de ${MESES[+t.nacimiento.slice(0, 2) - 1]}` : '';
+    const premio = cumple ? (t.pct >= 100 ? 'Tu servicio gratis' : `${t.pct || 0}% de descuento`) : (t.texto || '');
+    const pie = cumple ? (nac ? `🎂 ${nac}${t.usado ? ' · ya usado este año' : ''}` : `En ${textoVentanaCumple(t.ventana)}`) : '';
+    return `<div class="tf ${oscuro ? 'oscuro' : ''}" style="--tf-fondo:${e(fondo)};--tf-velo:${velo};--tf-acento:${c};min-height:170px;">
+      <div class="tf-cab">${t.logo ? `<img class="tf-logo" src="${e(t.logo)}" alt="">` : ''}
+        <div><div class="tf-neg">${e(t.negocio || '')}</div><div class="tf-tit">${e(t.titulo || (cumple ? 'Tu cumpleaños' : 'Beneficio'))}</div></div>
+        <span class="tf-cont" style="font-size:22px;padding:2px 10px;">${cumple ? '🎂' : '🎁'}</span></div>
+      ${cumple && t.texto ? `<div style="font-size:14px;opacity:.9;">${e(t.texto)}</div>` : ''}
+      <div class="tf-pie"><div class="tf-premio"><small>${cumple ? 'Tu regalo' : 'Beneficio'}</small><b>${e(premio)}</b></div>
+        ${pie ? `<div class="tf-sello-txt">${e(pie)}</div>` : ''}</div>
+    </div>`;
+  };
   window.premioFidelidad = t => t.texto || (t.pct >= 100 ? 'Tu próxima atención gratis' : `${t.pct}% de descuento en tu próxima atención`);
   window.tarjetaFidelidadHTML = function (t) {
     poner();

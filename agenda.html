@@ -495,7 +495,9 @@
     const etiqueta = i => n === 1 ? '' : (i === 0 ? 'Persona 1 (tú)' : `Persona ${i+1}`);
 
     // ---------- CARGA ----------
+    let CUMPLE = null;   // tarjeta de cumpleaños activa del negocio (Fase 39)
     async function iniciar(){
+      rpcNeg('cumple_config', { p_negocio: SLUG || null }).then(r => { if (r && !r.error) CUMPLE = r.data; }, () => {});
       const { data, error } = await rpcNeg('agenda_config', { p_negocio: SLUG || null });
       if (error){
         $('vista').innerHTML = (error.message || '').includes('NEGOCIO_NO_EXISTE')
@@ -946,6 +948,8 @@
               <input id="fTel" type="tel" inputmode="tel" autocomplete="tel-national" value="${esc(d.tel ?? (cod === '+56' ? '9 ' : ''))}" placeholder="${cod === '+56' ? '9 1234 5678' : 'Número'}" oninput="formatoTel()"></div></div>
           <label class="check"><input type="checkbox" id="fWsp" ${d.wsp === false ? '' : 'checked'}><span>Quiero recibir la confirmación y recordatorios por <b>WhatsApp</b></span></label>
           <label class="check"><input type="checkbox" id="fPromos" ${d.promos === false ? '' : 'checked'}><span>Quiero recibir promociones y descuentos</span></label>
+          ${CUMPLE && CUMPLE.activa ? `<div class="campo"><label class="lbl" for="fNac">🎂 Fecha de cumpleaños (opcional)</label><input id="fNac" type="date" max="${new Date().toISOString().slice(0, 10)}" value="${esc(d.nac || '')}">
+            <p class="nota" style="margin-top:4px;">Te regalamos <b>${CUMPLE.pct >= 100 ? 'tu servicio gratis' : CUMPLE.pct + '% de descuento'}</b> en ${textoVentanaCumple(CUMPLE.ventana)}.</p></div>` : ''}
           ${promoActiva() && leerLocal(K_INSCRITO) ? '<p class="nota" style="margin:-6px 0 12px;">🎁 Si es tu primera visita, tu 10% se aplica al confirmar.</p>' : ''}
           <div class="campo"><label class="lbl" for="fObs">Observaciones (opcional)</label><textarea id="fObs" placeholder="${esBarberia() ? 'Ej: degradado bajo, dejar largo arriba…' : 'Ej: algo que debamos saber antes de tu hora…'}">${esc(d.obs || '')}</textarea></div>
           <label class="lbl">Foto de referencia (opcional)</label>
@@ -1019,7 +1023,7 @@
     }
     function leerFormulario(){
       datosCliente = { nombre: $('fNombre').value.trim(), apellido: $('fApellido').value.trim(), email: $('fEmail').value.trim(),
-        dominio: $('fDominio').value, cod: $('fCod').value, tel: $('fTel').value, wsp: $('fWsp').checked, promos: $('fPromos').checked, obs: $('fObs').value.trim(),
+        dominio: $('fDominio').value, cod: $('fCod').value, tel: $('fTel').value, wsp: $('fWsp').checked, promos: $('fPromos').checked, obs: $('fObs').value.trim(), nac: $('fNac')?.value || '',
         acomp: [...document.querySelectorAll('.acomp')].map(x => x.value.trim()) };
       return datosCliente;
     }
@@ -1045,6 +1049,7 @@
       const payload = { nombre, nombre_pila: d.nombre, apellido: d.apellido, correo, telefono: tel.texto, mensaje: d.obs, whatsapp: d.wsp, promos: d.promos, foto,
         personas: citas.map((c, i) => ({ nombre: i === 0 ? nombre : d.acomp[i-1], servicios: c.servicios, trabajador_id: c.tid, fecha: c.fecha, hora: aHora(c.t) })) };
       payload.negocio = SLUG || null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d.nac || '')) payload.nacimiento = d.nac;
       const { data, error } = await db.rpc('reservar_grupo', { p: payload });
       $('btnReservar').disabled = false; est.style.color = '';
       if (error){
@@ -1133,7 +1138,7 @@
       $('vistaListo').classList.remove('oculto');
       $('vistaListo').innerHTML = `<div class="listo"><div class="ok">✓</div><h2>¡Reserva confirmada!</h2>
         <p class="ayuda" style="margin-bottom:6px;">Te esperamos en <b style="color:var(--hueso)">${esc(l.nombre)}</b> · ${esc(l.direccion || '')}${l.referencia ? ' · ' + esc(l.referencia) : ''}</p></div>
-        ${data.map(r => `<div class="item-res"><b>${fechaLinda(r.fecha)} · ${esc(r.desde)} – ${esc(r.hasta)}</b> · ${esc(r.nombre)}<br>${esc(r.servicios)} con ${esc(r.trabajador)} · ${clp(r.total)}${r.descuento ? ` <span class="descuento">🎁 ${r.fidelidad ? (r.descuento >= 100 ? 'Premio de tu tarjeta de fidelidad: ¡gratis!' : r.descuento + '% premio de tu tarjeta de fidelidad') : r.descuento + '% primera visita'} aplicado</span>` : ''}</div>`).join('')}
+        ${data.map(r => `<div class="item-res"><b>${fechaLinda(r.fecha)} · ${esc(r.desde)} – ${esc(r.hasta)}</b> · ${esc(r.nombre)}<br>${esc(r.servicios)} con ${esc(r.trabajador)} · ${clp(r.total)}${r.descuento ? ` <span class="descuento">${r.cumple ? `🎂 ${r.descuento >= 100 ? '¡Regalo de cumpleaños: gratis!' : r.descuento + '% regalo de cumpleaños'}` : `🎁 ${r.fidelidad ? (r.descuento >= 100 ? 'Premio de tu tarjeta de fidelidad: ¡gratis!' : r.descuento + '% premio de tu tarjeta de fidelidad') : r.descuento + '% primera visita'}`} aplicado</span>` : ''}</div>`).join('')}
         <div class="total" style="margin-top:14px;"><div><small>Total${PEDIDO ? ' (hora + productos)' : ''}</small><strong>${clp(data.reduce((a,r)=>a+r.total,0) + (PEDIDO ? PEDIDO.total : 0))}</strong></div><div style="text-align:right;"><small>Se paga en el local</small></div></div>
         ${resultadoProductos()}
         <div class="acciones">
@@ -1169,9 +1174,11 @@
       cont.innerHTML = '<p class="nota">Buscando…</p>';
       const [{ data, error }, tj] = await Promise.all([
         rpcNeg('mis_reservas', { p_correo: correo, p_telefono: tel, p_negocio: SLUG || null }),
-        rpcNeg('mi_tarjeta', { p_correo: correo, p_telefono: tel, p_negocio: SLUG || null }).catch(() => ({}))]);
+        rpcNeg('mi_tarjeta', { p_correo: correo, p_telefono: tel, p_negocio: SLUG || null }).catch(() => ({})),
+        rpcNeg('mis_tarjetas', { p_correo: correo, p_telefono: tel, p_negocio: SLUG || null }).catch(() => ({}))]).then(([a, b, c]) => { EXTRAS = (c && !c.error && c.data) || []; return [a, b]; });
       if (error){ cont.innerHTML = `<p class="aviso">Error: ${esc(error.message)}</p>`; return; }
-      const tarjeta = tarjetaFidelidad(tj && !tj.error ? tj.data : null);
+      MIS_DATOS = { correo, tel };
+      const tarjeta = tarjetaFidelidad(tj && !tj.error ? tj.data : null) + tarjetasExtra();
       if (!data.length){ cont.innerHTML = '<div class="vacio">No encontramos reservas próximas con esos datos.</div>' + tarjeta; return; }
       const est = { confirmada:'Confirmada', en_atencion:'En atención', completada:'Atendida', cancelada:'Cancelada', no_asistio:'No asistió' };
       MIS_DATOS = { correo, tel };
@@ -1214,9 +1221,27 @@
       buscarMisReservas();
     }
 
+    // Tarjetas extra (Fase 39): cumpleaños y beneficios que el negocio deja visibles
+    let EXTRAS = [];
+    function tarjetasExtra(){
+      if (!EXTRAS.length || typeof tarjetaExtraHTML !== 'function') return '';
+      return EXTRAS.map(t => `<div style="margin-top:16px;">${tarjetaExtraHTML(t)}</div>${t.tipo === 'cumpleanos'
+        ? (t.cliente && !t.nacimiento ? `<div class="campo" style="margin-top:8px;"><label class="lbl" for="misNac">🎂 Registra tu cumpleaños para recibir tu regalo</label>
+              <div class="junto"><input id="misNac" type="date" max="${new Date().toISOString().slice(0, 10)}"><button class="boton" style="width:auto;padding:0 18px;" onclick="guardarMiCumple(this)">Guardar</button></div>
+              <p class="nota" style="margin-top:4px;">Solo se puede registrar una vez. El regalo se aplica solo al reservar en ${textoVentanaCumple(t.ventana)}.</p></div>`
+          : t.nacimiento ? `<p class="fid-msg">${t.usado ? 'Ya usaste tu regalo este año. ¡Nos vemos en tu próximo cumpleaños!' : `El regalo se aplica solo cuando reserves en ${textoVentanaCumple(t.ventana)}.`}</p>` : '') : ''}`).join('');
+    }
+    async function guardarMiCumple(btn){
+      const f = $('misNac').value; if (!f || !MIS_DATOS) return;
+      btn.disabled = true;
+      const { error } = await rpcNeg('guardar_mi_cumple', { p_correo: MIS_DATOS.correo, p_telefono: MIS_DATOS.tel, p_fecha: f, p_negocio: SLUG || null });
+      btn.disabled = false;
+      if (error) return alert(error.message);
+      buscarMisReservas();
+    }
     // Tarjeta de fidelidad (Fase 25): sellos por atención terminada; el premio se aplica solo al reservar
     function tarjetaFidelidad(t){
-      if (!t || !t.activa || typeof tarjetaFidelidadHTML !== 'function') return '';
+      if (!t || !t.activa || t.visible === false || typeof tarjetaFidelidadHTML !== 'function') return '';
       const meta = t.meta || 10, n = Math.min(t.sellos || 0, meta), faltan = meta - n;
       const msg = t.pendiente ? `<p class="fid-msg listo">🎁 Tu premio ya está aplicado en tu próxima hora.</p>`
                 : t.listo ? `<p class="fid-msg listo">🎉 ¡Completaste tu tarjeta! El premio se aplica solo en tu próxima reserva.</p>`
