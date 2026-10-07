@@ -56,16 +56,14 @@
     h1 { font-size:24px; }
     /* ===== Ingreso (login): diseño "Bienvenidos a" (Fase 30) ===== */
     .login-pro { --lp-fondo:#332e2e; --lp-boton:#262222; position:fixed; inset:0; z-index:40; overflow-y:auto; display:flex; flex-direction:column;
-                 background:var(--lp-fondo); color:#f6f1ea; font-family:'Jost', 'Futura', system-ui, sans-serif; }
+                 background:var(--lp-bg, var(--lp-fondo)); color:#f6f1ea; font-family:var(--lp-f-texto, 'Jost'), 'Futura', system-ui, sans-serif; }
     .login-pro.oculto { display:none; }
     .login-pro.con-estilo { background:transparent; }
     .login-pro.con-estilo::before { content:""; position:fixed; inset:0; background:rgba(20,16,16,var(--lp-osc, .35)); pointer-events:none; }
-    html.fuente-propia .login-pro { font-family:var(--fuente); }
-    html.fuente-propia .login-pro .lp-marca-txt { font-family:var(--fuente-tit); }
     .lp-wrap { position:relative; flex:1; width:100%; max-width:1280px; margin:0 auto; display:grid; grid-template-columns:1.1fr 1fr; align-items:center; gap:48px; padding:64px 56px 24px; }
     .lp-izq { padding-left:3vw; }
     .lp-saludo { margin:0 0 26px; font-weight:600; font-size:clamp(14px, 1.45vw, 19px); letter-spacing:.42em; text-transform:uppercase; color:#fbf7f2; }
-    .lp-marca-txt { margin:0; font-family:'Archivo Black', 'Jost', sans-serif; font-weight:900; font-size:clamp(72px, 11vw, 176px); line-height:.92; letter-spacing:-.045em; color:#fbf7f2; word-break:break-word; }
+    .lp-marca-txt { margin:0; font-family:var(--lp-f-marca, 'Archivo Black'), 'Jost', sans-serif; font-weight:900; font-size:clamp(72px, 11vw, 176px); line-height:.92; letter-spacing:-.045em; color:#fbf7f2; word-break:break-word; }
     .lp-marca-img { display:block; max-width:min(460px, 90%); max-height:230px; object-fit:contain; }
     .lp-sub { margin:20px 0 0; max-width:440px; color:#d9d2ca; font-size:17px; line-height:1.5; }
     .lp-der { width:100%; max-width:490px; justify-self:center; }
@@ -73,7 +71,7 @@
     .lp-card { background:color-mix(in srgb, var(--lp-fondo) 80%, #ffffff); border-radius:14px; padding:26px 22px 18px; }
     .lp-card label { display:block; margin:0 0 6px 10px; font-size:14px; font-weight:500; color:#efe9e3; }
     .lp-campo { position:relative; margin-bottom:16px; }
-    .lp-campo input { width:100%; border:none; border-radius:12px; padding:13px 16px; font:15px inherit; font-family:inherit; color:#fff;
+    .lp-campo input { width:100%; border:none; border-radius:12px; padding:13px 16px; font-size:15px; font-family:inherit; color:#fff;
                       background:color-mix(in srgb, var(--lp-fondo) 58%, #ffffff); transition:box-shadow .15s; }
     .lp-campo input::placeholder { color:rgba(255,255,255,.55); }
     .lp-campo input:focus { outline:none; box-shadow:0 0 0 3px rgba(255,255,255,.25); }
@@ -99,7 +97,7 @@
       .lp-wrap { grid-template-columns:1fr; align-content:center; gap:30px; padding:48px 20px 20px; }
       .lp-izq { padding-left:0; text-align:center; }
       .lp-saludo { margin-bottom:14px; letter-spacing:.32em; }
-      .lp-marca-img { margin:0 auto; max-height:150px; }
+      .lp-marca-img { margin:0 auto; max-height:110px; }
       .lp-sub { margin-left:auto; margin-right:auto; }
       .lp-redes { justify-content:center; padding:0 20px 26px; }
     }
@@ -116,6 +114,12 @@
     .ed-fondo { border:2px solid transparent; border-radius:12px; padding:0; background:none; cursor:pointer; color:#cfd6e6; font:600 10.5px Inter, sans-serif; text-align:center; }
     .ed-fondo span { display:flex; align-items:center; justify-content:center; aspect-ratio:3/4; border-radius:10px; font-size:18px; margin-bottom:3px; overflow:hidden; }
     .ed-fondo.sel { border-color:#3b82f6; }
+    .ed-marcas { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+    .ed-marca { border:2px solid transparent; border-radius:12px; padding:0; background:none; cursor:pointer; color:#cfd6e6; font:600 10.5px system-ui, sans-serif; text-align:center; }
+    .ed-marca span { display:flex; align-items:center; justify-content:center; height:54px; border-radius:10px; margin-bottom:3px; overflow:hidden; font-size:18px; padding:6px; }
+    .ed-marca span img { max-width:100%; max-height:100%; object-fit:contain; }
+    .ed-marca.sel { border-color:#3b82f6; }
+    .ed-degradado { height:34px; border-radius:10px; margin:10px 0 2px; border:1px solid rgba(255,255,255,.12); }
     .ed-chips { display:flex; flex-wrap:wrap; gap:6px; }
     .ed-chips .chip { padding:4px 10px; font-size:12px; }
     .ed-vista { display:flex; align-items:center; justify-content:center; padding:20px; background:repeating-conic-gradient(#121829 0 25%, #0e1322 0 50%) 0 0/24px 24px; min-height:0; overflow:auto; }
@@ -1367,6 +1371,18 @@
     // Login con la marca del negocio cuando se entra desde su página (panel.html?n=link-del-negocio)
     // Pantalla de ingreso: con ?n=slug toma la marca del negocio; si no, la que diseñó el super admin (Fase 29)
     let ING = null;
+    // Letras disponibles para la pantalla de ingreso (Google Fonts)
+    const FUENTES_ING = {
+      jost: { n: 'Jost', css: "'Jost'", g: 'Jost:wght@400;500;600;700' }, montserrat: { n: 'Montserrat', css: "'Montserrat'", g: 'Montserrat:wght@400;600;800' },
+      poppins: { n: 'Poppins', css: "'Poppins'", g: 'Poppins:wght@400;600;800' }, raleway: { n: 'Raleway', css: "'Raleway'", g: 'Raleway:wght@400;600;800' },
+      inter: { n: 'Inter', css: "'Inter'", g: 'Inter:wght@400;600;800' }, space: { n: 'Space Grotesk', css: "'Space Grotesk'", g: 'Space+Grotesk:wght@400;600;700' },
+      playfair: { n: 'Playfair Display (elegante)', css: "'Playfair Display'", g: 'Playfair+Display:wght@500;700;900' }, lora: { n: 'Lora (clásica)', css: "'Lora'", g: 'Lora:wght@400;600;700' },
+      dmserif: { n: 'DM Serif Display', css: "'DM Serif Display'", g: 'DM+Serif+Display' }, bebas: { n: 'Bebas Neue (alta)', css: "'Bebas Neue'", g: 'Bebas+Neue' },
+      archivo: { n: 'Archivo Black (gruesa)', css: "'Archivo Black'", g: 'Archivo+Black' } };
+    function cargarFuenteIng(k){
+      const f = FUENTES_ING[k]; if (!f || document.getElementById('fIng-' + k)) return;
+      const l = document.createElement('link'); l.id = 'fIng-' + k; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + f.g + '&display=swap'; document.head.appendChild(l);
+    }
     async function marcaLogin(forzar){
       const slug = new URLSearchParams(location.search).get('n');
       if (slug){                        // link con la marca de un negocio: su nombre/logo y su color
@@ -1374,7 +1390,7 @@
         try {
           const { data } = await db.rpc('agenda_config', { p_negocio: slug });
           const n = data?.negocio; if (!n?.nombre) return;
-          pintarIngreso({ titulo: n.nombre, logo: n.logo_url || null, texto_tarjeta: 'Acceso para el equipo', acento: n.color });
+          pintarIngreso({ titulo: n.nombre, logo: n.logo_url || null, marca: n.logo_url ? 'imagen' : 'texto', texto_tarjeta: 'Acceso para el equipo', acento: n.color });
           document.title = n.nombre + ' — Acceso equipo';
           if (n.estilo && n.estilo.sel && n.estilo.fondo){ $('vistaLogin').classList.add('con-estilo'); aplicarEstiloPublico(n); }
         } catch (e) {}
@@ -1386,12 +1402,19 @@
     function pintarIngreso(c){
       const v = $('vistaLogin'), hex = x => /^#[0-9a-f]{6}$/i.test(x || '');
       c = c || {};
-      v.style.setProperty('--lp-fondo', hex(c.color_fondo) ? c.color_fondo : '#332e2e');
+      const f1 = hex(c.color_fondo) ? c.color_fondo : '#332e2e';
+      v.style.setProperty('--lp-fondo', f1);
+      v.style.setProperty('--lp-bg', hex(c.color_fondo2) ? `linear-gradient(${Number(c.angulo ?? 135)}deg, ${f1}, ${c.color_fondo2})` : f1);
+      const ft = FUENTES_ING[c.fuente_texto] ? c.fuente_texto : 'jost', fm = FUENTES_ING[c.fuente_marca] ? c.fuente_marca : 'archivo';
+      cargarFuenteIng(ft); cargarFuenteIng(fm);
+      v.style.setProperty('--lp-f-texto', FUENTES_ING[ft].css); v.style.setProperty('--lp-f-marca', FUENTES_ING[fm].css);
       v.style.setProperty('--lp-boton', hex(c.acento) ? c.acento : '#262222');
       v.style.setProperty('--lp-osc', ((c.oscurecer ?? 35) / 100).toFixed(2));
       $('lpSaludo').textContent = c.saludo || 'Bienvenidos a';
       const img = $('lpMarcaImg'), txt = $('lpMarcaTxt');
-      if (c.logo){ img.src = c.logo; img.alt = c.titulo || 'twoweb'; img.classList.remove('oculto'); txt.classList.add('oculto'); }
+      const marca = c.marca || 'logo';
+      const src = marca === 'logo' ? 'imagenes/logo-two-claro.png' : marca === 'logo_oscuro' ? 'imagenes/logo-two-oscuro.png' : marca === 'imagen' ? c.logo : null;
+      if (src){ img.src = src; img.alt = c.titulo || 'two'; img.classList.remove('oculto'); txt.classList.add('oculto'); }
       else { img.classList.add('oculto'); img.removeAttribute('src'); txt.classList.remove('oculto'); txt.textContent = c.titulo || 'twoweb'; }
       $('lpSub').classList.toggle('oculto', !c.subtitulo); $('lpSub').textContent = c.subtitulo || '';
       $('lpTitCard').textContent = c.texto_tarjeta || 'Accede a tu cuenta';
@@ -1401,7 +1424,6 @@
       const e = c.estilo;
       if (e && e.sel && e.fondo){ v.classList.add('con-estilo'); FondoAnim.poner(e.sel, { ...e.fondo, capaItem: e.capa || null }); }
       else { v.classList.remove('con-estilo'); FondoAnim.poner(null); }
-      aplicarFuente(e && e.fuente || null);
     }
     async function cargarSesion(session){
       if (modoRecuperacion){ mostrar('vistaNuevaClave'); return; }
@@ -2485,7 +2507,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F30 · 07-10 b';
+    const VERSION_PANEL = 'F30 · 07-10 c';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -2793,6 +2815,8 @@
       ED = { saludo: c.saludo || '', titulo: c.titulo || '', subtitulo: c.subtitulo || '', texto_tarjeta: c.texto_tarjeta || '', aviso: c.aviso || '',
              color_fondo: c.color_fondo || ING_DEF.color_fondo, acento: c.acento || ING_DEF.acento, oscurecer: c.oscurecer ?? 35,
              instagram: c.instagram || '', facebook: c.facebook || '', tiktok: c.tiktok || '',
+             marca: c.marca || 'logo', fuente_texto: c.fuente_texto || 'jost', fuente_marca: c.fuente_marca || 'archivo',
+             color_fondo2: c.color_fondo2 || '', angulo: c.angulo ?? 135,
              logo: c.logo || '', logoCambio: false, sel: e.sel ? { ...e.sel } : null, fuente: e.fuente || 'defecto',
              imagen: e.fondo && e.fondo.propia ? e.fondo.imagen : null, imagenCambio: false, listo: false };
       cerrarDetalle(true);
@@ -2815,7 +2839,7 @@
       return { sel: s, fuente, fondo, capa };
     }
     function datosEdIng(){
-      const k = ['saludo', 'titulo', 'subtitulo', 'texto_tarjeta', 'aviso', 'color_fondo', 'acento', 'oscurecer', 'instagram', 'facebook', 'tiktok'];
+      const k = ['saludo', 'titulo', 'subtitulo', 'texto_tarjeta', 'aviso', 'color_fondo', 'color_fondo2', 'angulo', 'acento', 'oscurecer', 'instagram', 'facebook', 'tiktok', 'marca', 'fuente_texto', 'fuente_marca'];
       return Object.fromEntries(k.map(x => [x, typeof ED[x] === 'string' ? ED[x].trim() : ED[x]]));
     }
     function enviarBorrador(){
@@ -2829,31 +2853,37 @@
       const chip = (k, v, t) => `<button class="chip ${String(s?.[k] ?? '') === String(v) ? 'sel' : ''}" onclick="ajusteEdIng('${k}', ${typeof v === 'number' ? v : `'${v}'`})">${t}</button>`;
       const efectos = cat.filter(x => x.motor !== 'imagen');
       $('edIngPanel').innerHTML = `
+        <h4>Marca</h4>
+        <div class="ed-marcas">
+          ${[['logo', 'Logo two', 'imagenes/logo-two-claro.png', ED.color_fondo], ['logo_oscuro', 'Logo two oscuro', 'imagenes/logo-two-oscuro.png', '#f4f1ec'], ['texto', 'Texto', '', ED.color_fondo], ['imagen', 'Mi imagen', ED.logo, ED.color_fondo]].map(([k, t, src, bg]) =>
+            `<button class="ed-marca ${ED.marca === k ? 'sel' : ''}" onclick="marcaEdIng('${k}')"><span style="background:${esc(bg)};">${k === 'texto' ? `<b style="font-family:${FUENTES_ING[ED.fuente_marca].css};color:#fbf7f2;">${esc(ED.titulo || 'two')}</b>` : src ? `<img src="${esc(src)}" alt="">` : '📷'}</span>${t}</button>`).join('')}
+        </div>
+        ${ED.marca === 'texto' ? `${campoEd('titulo', 'Texto de la marca', 'twoweb', 40)}
+          <label>Letra de la marca</label><select onchange="ED.fuente_marca=this.value; cargarFuenteIng(this.value); enviarBorrador(); dibujarEdIng()">${Object.entries(FUENTES_ING).map(([k, f]) => `<option value="${k}" ${ED.fuente_marca === k ? 'selected' : ''}>${f.n}</option>`).join('')}</select>` : ''}
+        ${ED.marca === 'imagen' ? `<label class="boton-linea" style="cursor:pointer;margin-top:8px;display:inline-block;">📷 ${ED.logo ? 'Cambiar imagen' : 'Subir mi imagen (PNG transparente)'}<input type="file" accept="image/*" class="oculto" onchange="logoEdIng(this)"></label>` : ''}
         <h4>Textos</h4>
-        ${campoEd('saludo', 'Saludo (arriba, en letras separadas)', 'Bienvenidos a', 40)}
-        ${campoEd('titulo', 'Marca grande', 'twoweb', 40)}
+        ${campoEd('saludo', 'Saludo (arriba de la marca, en letras separadas)', 'Bienvenidos a', 40)}
         ${campoEd('subtitulo', 'Frase bajo la marca (opcional)', 'Ej: Tu agenda y tu tienda en un solo lugar', 100)}
         ${campoEd('texto_tarjeta', 'Texto sobre el formulario', 'Accede a tu cuenta', 60)}
         ${campoEd('aviso', 'Aviso sobre el formulario (opcional)', 'Ej: ✨ Nuevo: mensajes masivos', 200)}
-        <h4>Marca como imagen (opcional)</h4>
-        <p class="nota">Si subes una imagen (por ejemplo tu logo en blanco con fondo transparente), reemplaza a la marca escrita.</p>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px;">
-          ${ED.logo ? `<img class="ing-logo" src="${esc(ED.logo)}">` : ''}
-          <label class="boton-linea" style="cursor:pointer;margin:0;">📷 ${ED.logo ? 'Cambiar imagen' : 'Subir imagen'}<input type="file" accept="image/*" class="oculto" onchange="logoEdIng(this)"></label>
-          ${ED.logo ? `<button class="link" style="margin:0;" onclick="ED.logo=''; ED.logoCambio=true; dibujarEdIng(); enviarBorrador()">Quitar (usar texto)</button>` : ''}</div>
-        <h4>Colores y letra</h4>
+        <label>Letra de los textos (saludo, formulario)</label><select onchange="ED.fuente_texto=this.value; cargarFuenteIng(this.value); enviarBorrador()">${Object.entries(FUENTES_ING).map(([k, f]) => `<option value="${k}" ${ED.fuente_texto === k ? 'selected' : ''}>${f.n}</option>`).join('')}</select>
+        <h4>Fondo</h4>
+        <div class="ed-chips"><button class="chip ${!ED.color_fondo2 ? 'sel' : ''}" onclick="ED.color_fondo2=''; dibujarEdIng(); enviarBorrador()">Color liso</button>
+          <button class="chip ${ED.color_fondo2 ? 'sel' : ''}" onclick="ED.color_fondo2=ED.color_fondo2||'#151212'; dibujarEdIng(); enviarBorrador()">Degradado</button></div>
+        <div class="ed-degradado" style="background:${ED.color_fondo2 ? `linear-gradient(${ED.angulo}deg, ${esc(ED.color_fondo)}, ${esc(ED.color_fondo2)})` : esc(ED.color_fondo)};"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div><label>Fondo</label><input type="color" value="${esc(ED.color_fondo)}" style="height:40px;padding:2px;" oninput="ED.color_fondo=this.value; enviarBorrador()"></div>
-          <div><label>Botón "Entrar"</label><input type="color" value="${esc(ED.acento)}" style="height:40px;padding:2px;" oninput="ED.acento=this.value; enviarBorrador()"></div></div>
-        <label>Fuente</label><select onchange="ED.fuente=this.value; enviarBorrador()"><option value="defecto" ${ED.fuente === 'defecto' ? 'selected' : ''}>Jost (la del diseño)</option>${Object.entries(FUENTES_ESTILO).filter(([k]) => k !== 'defecto').map(([k, f]) => `<option value="${k}" ${ED.fuente === k ? 'selected' : ''}>${f.n}</option>`).join('')}</select>
+          <div><label>${ED.color_fondo2 ? 'Color 1' : 'Color de fondo'}</label><input type="color" value="${esc(ED.color_fondo)}" style="height:40px;padding:2px;" oninput="ED.color_fondo=this.value; enviarBorrador(); pintaDegEd()"></div>
+          ${ED.color_fondo2 ? `<div><label>Color 2</label><input type="color" value="${esc(ED.color_fondo2)}" style="height:40px;padding:2px;" oninput="ED.color_fondo2=this.value; enviarBorrador(); pintaDegEd()"></div>` : '<div></div>'}</div>
+        ${ED.color_fondo2 ? `<label>Ángulo del degradado · <span id="edAngTxt">${ED.angulo}°</span></label><input type="range" min="0" max="360" step="15" value="${ED.angulo}" oninput="ED.angulo=+this.value; $('edAngTxt').textContent=this.value+'°'; enviarBorrador(); pintaDegEd()">` : ''}
+        <label>Botón "Entrar"</label><input type="color" value="${esc(ED.acento)}" style="height:40px;padding:2px;" oninput="ED.acento=this.value; enviarBorrador()">
         <h4>Redes sociales (abajo a la izquierda)</h4>
         ${campoEd('instagram', 'Instagram', 'https://instagram.com/twoweb.cl', 300)}
         ${campoEd('facebook', 'Facebook', 'https://facebook.com/…', 300)}
         ${campoEd('tiktok', 'TikTok', 'https://tiktok.com/@…', 300)}
         <p class="nota">Deja vacío lo que no uses: no aparece.</p>
-        <h4>Fondo animado o imagen (opcional)</h4>
+        <h4>Fondo animado o foto (opcional, va encima del color)</h4>
         <div class="ed-fondos">
-          <button class="ed-fondo ${!s ? 'sel' : ''}" onclick="fondoEdIng('')"><span style="background:${esc(ED.color_fondo)};">■</span>Color liso</button>
+          <button class="ed-fondo ${!s ? 'sel' : ''}" onclick="fondoEdIng('')"><span style="background:${ED.color_fondo2 ? `linear-gradient(${ED.angulo}deg, ${esc(ED.color_fondo)}, ${esc(ED.color_fondo2)})` : esc(ED.color_fondo)};">✓</span>Solo color</button>
           <button class="ed-fondo ${s?.codigo === 'propio' ? 'sel' : ''}" onclick="fondoEdIng('propio')"><span style="${ED.imagen ? `background-image:url('${ED.imagen}');background-size:cover;background-position:center;` : 'background:#1a2033;'}">${ED.imagen ? '' : '📷'}</span>Tu imagen</button>
           ${cat.map(f => `<button class="ed-fondo ${s?.codigo === f.codigo ? 'sel' : ''}" onclick="fondoEdIng('${f.codigo}')"><span style="${tarjetaMini(f)}">${f.imagen ? '' : esc(f.icono || '✨')}</span>${esc(f.nombre)}</button>`).join('')}
         </div>
@@ -2864,9 +2894,15 @@
           <label>Velocidad</label><div class="ed-chips">${chip('velocidad', 1, 'Lenta')}${chip('velocidad', 2, 'Normal')}${chip('velocidad', 3, 'Rápida')}</div>
           <label>Oscurecer el fondo · <span id="edOscTxt">${ED.oscurecer}%</span></label><input type="range" min="0" max="85" step="5" value="${ED.oscurecer}" oninput="ED.oscurecer=+this.value; $('edOscTxt').textContent=this.value+'%'; enviarBorrador()">` : ''}
         <h4>Volver atrás</h4>
-        <button class="boton-linea" onclick="restablecerEdIng()">↺ Diseño original "Bienvenidos a"</button>
+        <button class="boton-linea" onclick="restablecerEdIng()">↺ Diseño original "Bienvenidos a two"</button>
         <p class="estado" id="estadoEdIng"></p>`;
     }
+    function marcaEdIng(k){
+      ED.marca = k;
+      if (k === 'imagen' && !ED.logo){ dibujarEdIng(); enviarBorrador(); setTimeout(() => document.querySelector('#edIngPanel input[type=file][onchange^="logoEdIng"]')?.click(), 50); return; }
+      dibujarEdIng(); enviarBorrador();
+    }
+    function pintaDegEd(){ const d = document.querySelector('#edIngPanel .ed-degradado'); if (d) d.style.background = ED.color_fondo2 ? `linear-gradient(${ED.angulo}deg, ${ED.color_fondo}, ${ED.color_fondo2})` : ED.color_fondo; }
     function fondoEdIng(cod){
       if (cod === 'propio' && !ED.imagen){ $('edIngArchivo').click(); return; }
       ED.sel = cod ? { codigo: cod, intensidad: ED.sel?.intensidad || 3, velocidad: ED.sel?.velocidad || 2, vidrio: true, ...(cod === 'propio' ? { efecto: ED.sel?.efecto || '' } : {}) } : null;
@@ -2879,7 +2915,7 @@
       input.value = '';
     }
     async function logoEdIng(input){
-      try { ED.logo = await logoPNG(input.files[0]); ED.logoCambio = true; dibujarEdIng(); enviarBorrador(); } catch (e) { alert(e.message); }
+      try { ED.logo = await logoPNG(input.files[0]); ED.logoCambio = true; ED.marca = 'imagen'; dibujarEdIng(); enviarBorrador(); } catch (e) { alert(e.message); }
       input.value = '';
     }
     function logoPNG(archivo){
@@ -2894,8 +2930,8 @@
       });
     }
     function restablecerEdIng(){
-      Object.assign(ED, { saludo: '', titulo: '', subtitulo: '', texto_tarjeta: '', aviso: '', color_fondo: ING_DEF.color_fondo, acento: ING_DEF.acento, oscurecer: 35,
-                          sel: null, fuente: 'defecto', logo: '', logoCambio: true });
+      Object.assign(ED, { saludo: '', titulo: '', subtitulo: '', texto_tarjeta: '', aviso: '', color_fondo: ING_DEF.color_fondo, color_fondo2: '', angulo: 135, acento: ING_DEF.acento, oscurecer: 35,
+                          sel: null, fuente: 'defecto', marca: 'logo', fuente_texto: 'jost', fuente_marca: 'archivo' });
       dibujarEdIng(); enviarBorrador(); estado('estadoEdIng', 'Así se ve el diseño original. Presiona Guardar para dejarlo (las redes sociales se mantienen).', '');
     }
     async function guardarEditorIngreso(){
