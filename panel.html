@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TwoWeb">
   <link rel="apple-touch-icon" href="/imagenes/apple-touch-icon.png?v=2">
-  <link rel="icon" type="image/png" sizes="32x32" href="/imagenes/favicon-32.png?v=2">
+  <link rel="icon" type="image/png" sizes="96x96" href="/imagenes/favicon-96.png?v=3">
   <script src="config.js"></script>
   <script src="fondos.js"></script>
   <script src="fidelidad.js"></script>
@@ -1361,7 +1361,7 @@
       document.querySelectorAll('h1.marca-neg .logo-neg').forEach(img => {
         if (NEG.logo_url) { img.src = NEG.logo_url; img.classList.remove('oculto'); } else { img.removeAttribute('src'); img.classList.add('oculto'); }
       });
-      // El ícono de la pestaña del panel es siempre el de two (no el logo del negocio que se está viendo)
+      iconosSegunSesion(); asegurarIconoApp();
       aplicarTemaActual();
       $('linkAgenda').href = conAgenda() ? linkAgenda() : linkTienda();
       $('linkAgenda').textContent = conAgenda() ? 'Ver agenda pública' : 'Ver mi tienda';
@@ -1369,6 +1369,47 @@
       $('negocioActual').innerHTML = yo.super
         ? `🏢 Viendo: <b>${esc(NEG.nombre || '')}</b> <span class="badge-plan ${esc(NEG.estado)}">${esc(NEG.estado || '')}</span> <button class="link" style="margin:0;" onclick="verTab('negocios')">cambiar</button>`
         : (yo.rol === 'admin' && plan ? `<span class="badge-plan">${esc(plan)}</span>${NEG.estado === 'prueba' ? ' <span class="badge-plan prueba">prueba</span>' : ''}` : '');
+    }
+
+    // ----- Ícono de la pestaña y de la app instalable (Fase 42) -----
+    // Super admin y pantalla de ingreso: two. Admin y su equipo: el logo de su negocio (pestaña, "Agregar a inicio" y avisos).
+    const ICONO_TWO = '/imagenes/favicon-96.png?v=3', TOUCH_TWO = '/imagenes/apple-touch-icon.png?v=2';
+    function ponerLink(rel, href){
+      let l = document.querySelector(`link[rel="${rel}"]`);
+      if (!l){ l = document.createElement('link'); l.rel = rel; document.head.appendChild(l); }
+      if (l.getAttribute('href') !== href){ l.removeAttribute('type'); l.removeAttribute('sizes'); l.setAttribute('href', href); }
+    }
+    function ponerIconos(o = {}){
+      ponerLink('icon', o.fav || ICONO_TWO); ponerLink('apple-touch-icon', o.touch || TOUCH_TWO); ponerLink('manifest', o.manifest || '/manifest.webmanifest');
+    }
+    const iconosNegocio = (slug, logo) => slug ? { fav: logo || null, touch: logo ? `/app/${slug}/icono-512.png` : null, manifest: `/app/${slug}.webmanifest` } : {};
+    function iconosSegunSesion(){ ponerIconos(!yo || yo.super || !NEG?.slug ? {} : iconosNegocio(NEG.slug, NEG.logo_url)); }
+    const iconoAviso = () => (!yo?.super && NEG?.slug && NEG.logo_url) ? `/app/${NEG.slug}/icono-512.png` : '/imagenes/app-192.png';
+    // El logo del negocio se prepara como ícono cuadrado de 512 px (lo hace el panel del admin, una vez por logo)
+    function iconoDesdeLogo(src){
+      return new Promise((ok, mal) => {
+        const im = new Image();
+        im.onload = () => {
+          const S = 512, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
+          const t = document.createElement('canvas'); t.width = t.height = 1; const tx = t.getContext('2d'); tx.drawImage(im, 0, 0, 1, 1, 0, 0, 1, 1);
+          const [r, g, b, a] = tx.getImageData(0, 0, 1, 1).data;                      // color de la esquina del logo como fondo
+          x.fillStyle = a > 200 ? `rgb(${r},${g},${b})` : '#ffffff'; x.fillRect(0, 0, S, S);
+          const k = Math.min(S * .76 / im.width, S * .76 / im.height), w = im.width * k, h = im.height * k;
+          x.imageSmoothingQuality = 'high'; x.drawImage(im, (S - w) / 2, (S - h) / 2, w, h);
+          ok(c.toDataURL('image/jpeg', .9));
+        };
+        im.onerror = () => mal(new Error('logo')); im.src = src;
+      });
+    }
+    async function asegurarIconoApp(){
+      if (!yo || yo.rol !== 'admin' || yo.super || !NEG?.id) return;
+      const k = 'twoweb-icono-' + NEG.id, firma = NEG.logo_url ? NEG.logo_url.length + ':' + NEG.logo_url.slice(-32) : 'sin-logo';
+      try { if (localStorage.getItem(k) === firma) return; } catch (e) {}
+      try {
+        const d = NEG.logo_url ? await iconoDesdeLogo(NEG.logo_url) : null;
+        const { error } = await db.rpc('guardar_app_icono', { p: d });
+        if (!error) try { localStorage.setItem(k, firma); } catch (e) {}
+      } catch (e) {}
     }
 
     // ================= TEMAS (apariencia) =================
@@ -1476,7 +1517,7 @@
                                        error.message.includes('confirm') ? "Falta confirmar tu correo: revisa tu bandeja de entrada." : "Error: " + error.message, 'error');
     }
     // Cierra la sesión SOLO en este dispositivo/pestaña (no saca a la persona de sus otros equipos)
-    async function salir(){ FondoAnim.poner(null); aplicarFuente(null); ['twoweb-fondo-panel', 'twoweb-fuente-panel', 'twoweb-fondo-img'].forEach(k => { try { localStorage.removeItem(k); } catch(e) {} }); MI_IMG = null; clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
+    async function salir(){ ponerIconos({}); FondoAnim.poner(null); aplicarFuente(null); ['twoweb-fondo-panel', 'twoweb-fuente-panel', 'twoweb-fondo-img'].forEach(k => { try { localStorage.removeItem(k); } catch(e) {} }); MI_IMG = null; clearInterval(relojNotif); if (canal){ db.removeChannel(canal); canal = null; } await db.auth.signOut({ scope: 'local' }); }
     function mostrarCodigo(){ $('cajaCodigo').classList.toggle('oculto'); }
     async function enviarCodigo(){
       const email = $('loginCorreo').value.trim().toLowerCase();
@@ -1530,18 +1571,19 @@
     async function marcaLogin(forzar){
       const slug = new URLSearchParams(location.search).get('n');
       if (slug){                        // link con la marca de un negocio: su nombre/logo y su color
-        if (marcaLogin.hecho) return; marcaLogin.hecho = true;
+        if (marcaLogin.hecho){ if (marcaLogin.ic) ponerIconos(marcaLogin.ic); return; } marcaLogin.hecho = true;
         try {
           const { data } = await db.rpc('agenda_config', { p_negocio: slug });
           const n = data?.negocio; if (!n?.nombre) return;
           pintarIngreso({ titulo: n.nombre, logo: n.logo_url || null, marca: n.logo_url ? 'imagen' : 'texto', texto_tarjeta: 'Acceso para el equipo', acento: n.color });
+          marcaLogin.ic = iconosNegocio(n.slug || slug, n.logo_url); ponerIconos(marcaLogin.ic);                      // su equipo instala la app con el logo del negocio
           document.title = n.nombre + ' — Acceso equipo';
           if (n.estilo && n.estilo.sel && n.estilo.fondo){ $('vistaLogin').classList.add('con-estilo'); aplicarEstiloPublico(n); }
         } catch (e) {}
         return;
       }
       try { if (!ING || forzar){ const { data } = await db.rpc('ingreso_config'); ING = data || {}; } } catch (e) { ING = ING || {}; }
-      pintarIngreso(ING);
+      ponerIconos({}); pintarIngreso(ING);
     }
     function pintarIngreso(c){
       const v = $('vistaLogin'), hex = x => /^#[0-9a-f]{6}$/i.test(x || '');
@@ -2861,7 +2903,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F41 · 07-10';
+    const VERSION_PANEL = 'F42 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3476,7 +3518,7 @@
     addEventListener('beforeinstallprompt', e => { e.preventDefault(); PROMPT_INSTALAR = e; if (yo) avisosApp(); });
     addEventListener('appinstalled', () => { PROMPT_INSTALAR = null; avisosApp(); mostrarToast({ id: 0, tipo: 'completada', titulo: '¡App instalada!', detalle: 'Ábrela desde el ícono TwoWeb de tu ' + (esMovil() ? 'pantalla de inicio' : 'escritorio') + '.' }); });
     async function avisoSistema(titulo, cuerpo, tag){
-      const op = { body: cuerpo, tag, icon: '/imagenes/app-192.png', badge: '/imagenes/app-192.png' };
+      const op = { body: cuerpo, tag, icon: iconoAviso(), badge: '/imagenes/app-192.png' };
       try { const reg = 'serviceWorker' in navigator && await navigator.serviceWorker.getRegistration(); if (reg) return reg.showNotification(titulo, op); } catch (e) {}
       try { new Notification(titulo, op); } catch (e) {}
     }

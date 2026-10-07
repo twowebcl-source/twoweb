@@ -15,7 +15,7 @@
       var slug = decodeURIComponent(partes[0] || '').toLowerCase();
       var resto = (partes[1] || '').toLowerCase();
       var q = location.search.replace(/^\?/, '');
-      var reservados = ['agenda', 'panel', 'barberia', 'index', 'imagenes', 'supabase', 'tienda', 'reservar', 'config'];
+      var reservados = ['agenda', 'panel', 'barberia', 'index', 'imagenes', 'supabase', 'tienda', 'reservar', 'config', 'privacidad', 'baja', 'app'];
       if (/^[a-z0-9]([a-z0-9-]{1,38})[a-z0-9]$/.test(slug) && reservados.indexOf(slug) < 0 && partes.length <= 2) {
         var conocido = ['', 'reservar', 'agenda', 'inscribete', 'tienda', 'productos'].indexOf(resto) >= 0;
         var destino = (resto === 'reservar' || resto === 'agenda' || resto === 'inscribete' || !conocido) ? '/agenda.html'
