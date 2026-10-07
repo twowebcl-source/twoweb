@@ -429,6 +429,14 @@
     .ideas .chip { padding:5px 11px; font-size:12.5px; }
     /* Vista previa del correo: estilo pergamino */
     .prev-mail { background:transparent; }
+    .kpi.lleno { border-color:color-mix(in srgb, var(--rojo) 55%, transparent) !important; }
+    .uso-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-top:12px; }
+    .uso-barra .ub-txt { display:flex; justify-content:space-between; gap:8px; font-size:13px; margin-bottom:5px; }
+    .uso-barra .ub-fondo { height:10px; border-radius:99px; background:var(--panel2); overflow:hidden; }
+    .uso-barra .ub-lleno { height:100%; border-radius:99px; background:var(--verde); transition:width .4s; }
+    .uso-barra .ub-lleno.amarillo { background:#f5b942; } .uso-barra .ub-lleno.rojo { background:var(--rojo); }
+    .uso-cap { margin-top:12px; padding:10px 12px; border-radius:12px; font-size:13.5px; line-height:1.5; background:color-mix(in srgb, var(--verde) 10%, transparent); border:1px solid color-mix(in srgb, var(--verde) 30%, transparent); }
+    .uso-cap.mal { background:color-mix(in srgb, var(--rojo) 10%, transparent); border-color:color-mix(in srgb, var(--rojo) 35%, transparent); }
     .prev-mail .pm-asunto { font-size:13px; color:var(--gris, #9aa1ad); margin-bottom:8px; }
     .prev-mail iframe { display:block; width:100%; height:520px; border:0; border-radius:12px; background:#342d2d; }
     .diseno-mail { margin-top:12px; padding:14px; border:1px solid var(--linea); border-radius:12px; }
@@ -2600,7 +2608,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F34 · 07-10 b';
+    const VERSION_PANEL = 'F35 · 07-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3572,17 +3580,19 @@
       const ce = await db.rpc('mi_correo_estilo');
       MSJ.conEstilo = !ce.error && !!ce.data;
       if (MSJ.conEstilo){ MSJ.estilo = ce.data.estilo || {}; MSJ.color = ce.data.color; MSJ.fuente = ce.data.fuente; MSJ.guardado = JSON.stringify(MSJ.estilo); }
-      const cupo = data.cupo_mes, libre = cupo == null ? null : Math.max(0, cupo - data.usados_mes);
+      const L = data.limites || { usadas_mes: 0, wsp_usadas_mes: 0, campanas_mes: null, wsp_campanas_mes: null };
       el.innerHTML = `
         <div class="kpis">
           <div class="kpi destacado"><b>${data.aceptan}</b><span>aceptan promociones (de ${data.clientes})</span></div>
-          <div class="kpi"><b>${cupo == null ? '∞' : libre}</b><span>${cupo == null ? 'correos masivos sin límite' : `correos masivos disponibles este mes (de ${cupo})`}</span></div>
+          ${kpiLimite(L.usadas_mes, L.campanas_mes, '✉️ envíos masivos por correo este mes', L.max_destinatarios)}
+          ${kpiLimite(L.wsp_usadas_mes, L.wsp_campanas_mes, '💬 listas de WhatsApp este mes', L.wsp_max_destinatarios)}
           <div class="kpi"><b>${data.confirmaciones_mes}</b><span>confirmaciones enviadas este mes</span></div>
           <div class="kpi"><b>${data.bajas}</b><span>se dieron de baja</span></div>
         </div>
         <div class="tarjeta">
           <h2 style="margin:0 0 4px;">📣 Mensaje a tus clientes</h2>
-          <p class="nota">Solo les llega a <b>tus</b> clientes que aceptaron recibir promociones. Cada correo trae un link para darse de baja.</p>
+          <p class="nota">Solo les llega a <b>tus</b> clientes que aceptaron recibir promociones. Cada correo trae un link para darse de baja.
+            ${L.plan ? `Tu plan <b>${esc(L.plan)}</b> incluye ${limTxt(L.campanas_mes, 'envío', 'envíos')} por correo y ${limTxt(L.wsp_campanas_mes, 'lista', 'listas')} de WhatsApp al mes${L.max_destinatarios ? `, hasta <b>${fmtN(L.max_destinatarios)}</b> clientes cada uno` : ''}. Se renueva el ${fechaRenueva(L.renueva)}.` : ''}</p>
           <div class="msj-grid" style="margin-top:12px;">
             <div>
               <div class="msj-fila"><label>Canal</label><div class="segmentado" id="msjCanal">
@@ -3617,10 +3627,10 @@
         </div>
         <div class="tarjeta">
           <h3 style="margin:0 0 8px;">Mensajes enviados</h3>
-          ${data.campanas.length ? `<div style="overflow-x:auto;"><table class="tabla-caja"><tr><th>Fecha</th><th>Canal</th><th>Mensaje</th><th>Para</th><th class="num">Destinatarios</th><th class="num">Enviados</th></tr>
+          ${data.campanas.length ? `<div style="overflow-x:auto;"><table class="tabla-caja"><tr><th>Fecha</th><th>Canal</th><th>Mensaje</th><th>Para</th><th class="num">Destinatarios</th><th>Estado</th></tr>
             ${data.campanas.map(c => `<tr><td>${new Date(c.creado).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</td><td>${c.canal === 'correo' ? '✉️ Correo' : '💬 WhatsApp'}</td>
               <td style="white-space:normal;min-width:220px;"><b>${esc(c.asunto || '')}</b>${c.asunto ? '<br>' : ''}<span class="nota">${esc(c.mensaje)}</span></td><td>${({ todos: 'Todos', recientes: 'Recientes', inactivos: 'Inactivos' })[c.filtro] || c.filtro}</td>
-              <td class="num">${c.destinatarios}</td><td class="num">${c.canal === 'correo' ? `${c.enviados}${c.errores ? ` <span class="nota">(${c.errores} con error)</span>` : ''}` : '—'}</td></tr>`).join('')}</table></div>`
+              <td class="num">${c.destinatarios}</td><td style="white-space:normal;min-width:190px;">${estadoCampana(c)}</td></tr>`).join('')}</table></div>`
             : '<p class="nota">Aún no envías mensajes masivos.</p>'}
         </div>`;
       dibujarFiltroMsj(); dibujarDisenoMsj(); vistaMsj(); cargarPlazos(); cargarWspConf();
@@ -3811,27 +3821,70 @@
         $('msjVista').innerHTML = `<div class="prev-mail"><div class="pm-asunto"><b>${esc(NEG.nombre || '')}</b> · ${esc(d.asunto || '(sin asunto)')}</div><iframe id="msjFrame" title="Vista previa del correo" scrolling="no"></iframe></div>
           <p class="nota" style="margin-top:6px;">Ejemplo con un cliente llamado ${ej}. Es exactamente el correo que les llega.</p>`;
         const fr = $('msjFrame'); fr.onload = () => altoFrameMsj(fr); fr.srcdoc = html;
+        const L = MSJ.info?.limites || {}, sinCupo = L.campanas_mes != null && L.usadas_mes >= L.campanas_mes, nn = L.max_destinatarios ? Math.min(n, L.max_destinatarios) : n;
+        const pr = (MSJ.info?.pruebas || [])[0];
         $('msjAcciones').innerHTML = `<button class="boton-linea" onclick="enviarMsj(true)">Enviarme una prueba</button>
-          <button class="boton" onclick="enviarMsj(false)" ${n ? '' : 'disabled'}>✉️ Enviar a ${n} cliente${n === 1 ? '' : 's'}</button>`;
+          <button class="boton" onclick="enviarMsj(false)" ${nn && !sinCupo ? '' : 'disabled'}>✉️ Enviar a ${nn} cliente${nn === 1 ? '' : 's'}</button>
+          ${sinCupo ? `<p class="nota" style="width:100%;margin:2px 0 0;">Ya usaste los ${L.campanas_mes} envíos masivos de tu plan este mes. Se renueva el ${fechaRenueva(L.renueva)}.</p>` : ''}
+          ${nn < n ? `<p class="nota" style="width:100%;margin:2px 0 0;">Tu plan permite ${fmtN(L.max_destinatarios)} clientes por envío: se enviará a los ${fmtN(nn)} que vinieron más recientemente (de ${fmtN(n)}).</p>` : ''}
+          ${pr ? `<p class="nota" style="width:100%;margin:2px 0 0;">Última prueba (${new Date(pr.creado).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}): ${estadoCorreo(pr)}</p>` : ''}`;
       } else {
         $('msjVista').innerHTML = `<div class="prev-wsp"><div class="burbuja">${esc(d.mensaje ? textoWsp(d, ej) : 'Escribe tu mensaje…').replace(/\*([^*\n]+)\*/g, '<b>$1</b>')}<div class="hora">${new Date().toTimeString().slice(0, 5)} ✓✓</div></div></div>
           <p class="nota" style="margin-top:6px;">WhatsApp no permite envíos automáticos gratis: te armamos la lista y tú tocas "Enviar" en cada cliente (se abre tu WhatsApp con el mensaje listo).</p>`;
         $('msjAcciones').innerHTML = `<button class="boton" style="background:#25d366;border-color:#25d366;color:#06240f;" onclick="prepararWsp()" ${n ? '' : 'disabled'}>💬 Preparar lista (${n})</button>`;
       }
     }
+    // ----- Límites y estado de los envíos (Fase 35) -----
+    const fmtN = n => Number(n || 0).toLocaleString('es-CL');
+    const fechaRenueva = f => f ? new Date(f + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'long' }) : '';
+    const limTxt = (n, uno, varios) => n == null ? `${varios} sin límite` : `<b>${n}</b> ${n === 1 ? uno : varios}`;
+    function kpiLimite(usados, max, txt, porEnvio){
+      const lleno = max != null && usados >= max;
+      return `<div class="kpi ${lleno ? 'lleno' : ''}"><b>${max == null ? `${usados} <small style="font-size:13px;opacity:.7;">de ∞</small>` : `${usados} <small style="font-size:13px;opacity:.7;">de ${max}</small>`}</b>
+        <span>${txt}${porEnvio ? ` · hasta ${fmtN(porEnvio)} clientes c/u` : ''}</span></div>`;
+    }
+    // Traduce los errores de Resend o de la función a algo que se entienda
+    function explicarError(e){
+      const t = String(e || '');
+      if (/domain.*not verified|verify a domain|testing emails to your own/i.test(t)) return 'El dominio de envío (twoweb.cl) aún no está verificado en Resend: por ahora solo se puede enviar al correo del dueño de la cuenta de Resend.';
+      if (/daily|quota|limit/i.test(t) && /exceed|reached|limit/i.test(t)) return 'Se alcanzó el límite de correos de Resend; se reintentará solo.';
+      if (/RESEND_API_KEY|api key|unauthorized|401/i.test(t)) return 'Falta o está mala la llave de Resend en Supabase (secreto RESEND_API_KEY).';
+      if (/invalid.*(to|email)|is invalid|422/i.test(t)) return 'El correo del cliente no es válido.';
+      if (/conexi|fetch|network|status 0/i.test(t)) return 'No se pudo conectar con Resend; se reintentará solo.';
+      return t.slice(0, 160);
+    }
+    function estadoCorreo(q){
+      if (q.estado === 'enviado') return '✅ enviado';
+      if (q.estado === 'error' && q.intentos >= 3) return `⚠️ no se pudo enviar: ${esc(explicarError(q.error))}`;
+      return `⏳ en cola${q.error ? ` (reintentando: ${esc(explicarError(q.error))})` : ''}`;
+    }
+    function estadoCampana(c){
+      if (c.canal !== 'correo') return '<span class="nota">Lista de WhatsApp preparada</span>';
+      const p = [];
+      if (c.enviados) p.push(`✅ ${c.enviados} enviado${c.enviados === 1 ? '' : 's'}`);
+      if (c.en_cola) p.push(`⏳ ${c.en_cola} en cola`);
+      if (c.errores) p.push(`⚠️ ${c.errores} con error`);
+      return (p.join(' · ') || '—') + (c.ultimo_error && (c.errores || c.en_cola) ? `<br><span class="nota">${esc(explicarError(c.ultimo_error))}</span>` : '');
+    }
+    async function refrescarPruebaMsj(){
+      if ($('tab-mensajes').classList.contains('oculto')) return;
+      const { data } = await db.rpc('mensajes_info'); if (!data) return;
+      MSJ.info.pruebas = data.pruebas; MSJ.info.campanas = data.campanas; vistaMsj();
+    }
     async function enviarMsj(prueba){
       const d = datosMsj(), n = ((MSJ.info?.filtros || {})[MSJ.filtro] || {}).correo ?? 0;
       if (d.asunto.length < 3) return estado('estadoMsj', 'Escribe el asunto.', 'error');
       if (d.mensaje.length < 5) return estado('estadoMsj', 'Escribe el mensaje.', 'error');
-      if (!prueba && !confirm(`¿Enviar este correo a ${n} cliente${n === 1 ? '' : 's'}?\n\nAsunto: ${d.asunto}\n\nNo se puede deshacer.`)) return;
+      const L = MSJ.info?.limites || {}, nn = L.max_destinatarios ? Math.min(n, L.max_destinatarios) : n;
+      if (!prueba && !confirm(`¿Enviar este correo a ${nn} cliente${nn === 1 ? '' : 's'}?${nn < n ? ` (tu plan permite ${L.max_destinatarios} por envío)` : ''}\n\nAsunto: ${d.asunto}\n${L.campanas_mes != null ? `\nEs tu envío ${L.usadas_mes + 1} de ${L.campanas_mes} este mes.` : ''}\nNo se puede deshacer.`)) return;
       estado('estadoMsj', 'Enviando…');
       const { data, error } = await db.rpc('enviar_campana', { p: { ...d, prueba } });
       if (error) return estado('estadoMsj', error.message, 'error');
       dispararCorreos();
-      if (prueba) return estado('estadoMsj', `✓ Prueba enviada a ${data.para}. Revisa tu bandeja (y la carpeta de spam) en 1 minuto.`, 'ok');
+      if (prueba){ estado('estadoMsj', `✓ Prueba enviada a ${data.para}. Revisa tu bandeja (y la carpeta de spam) en 1 minuto.`, 'ok'); setTimeout(refrescarPruebaMsj, 6000); setTimeout(refrescarPruebaMsj, 20000); return; }
       await cargarMensajes();
       setTimeout(() => { if (!$('tab-mensajes').classList.contains('oculto') && !$('msjTexto').value) cargarMensajes(); }, 8000);   // refresca "enviados"
-      estado('estadoMsj', `✓ Listo: ${data.destinatarios} correo${data.destinatarios === 1 ? '' : 's'} en camino. En "Mensajes enviados" ves cuántos llegaron.`, 'ok');
+      estado('estadoMsj', `✓ Listo: ${data.destinatarios} correo${data.destinatarios === 1 ? '' : 's'} en camino${data.recortado ? ` (de ${data.total_grupo}, por el límite de tu plan)` : ''}. En "Mensajes enviados" ves el estado de cada envío.`, 'ok');
     }
     async function prepararWsp(){
       const d = datosMsj();
@@ -3839,7 +3892,7 @@
       const { data, error } = await db.rpc('campana_whatsapp', { p: { mensaje: d.mensaje, filtro: d.filtro } });
       if (error) return estado('estadoMsj', error.message, 'error');
       MSJ.wsp = { d, lista: data.lista, hechos: new Set() };
-      estado('estadoMsj', '');
+      estado('estadoMsj', data.recortado ? `Tu plan permite ${data.lista.length} clientes por lista de WhatsApp: elegimos los que vinieron más recientemente (de ${data.total_grupo}).` : '', '');
       dibujarWsp(); $('msjWsp').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     function telWsp(t){ let n = String(t || '').replace(/\D/g, ''); if (/^9\d{8}$/.test(n)) n = '56' + n; return n; }
@@ -3893,7 +3946,8 @@
           <div class="kpi"><b>${q.pendientes}</b><span>en cola</span></div>
           <div class="kpi"><b>${q.errores_30d}</b><span>con error (30 días)</span></div>
         </div>
-        ${q.ultimo_error ? `<p class="nota" style="margin:-4px 0 10px;">Último error: ${esc(q.ultimo_error)}</p>` : ''}
+        ${q.ultimo_error ? `<p class="nota" style="margin:-4px 0 10px;">Último error: ${esc(q.ultimo_error)} → <b>${esc(explicarError(q.ultimo_error))}</b></p>` : ''}
+        <div id="usoCorreos"></div>
         <div id="wspMonitor"></div>
         <div class="tarjeta">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><h2 style="margin:0;">📣 Comunicado a los negocios</h2>
@@ -3923,7 +3977,56 @@
             ${data.comunicados.map(c => `<tr><td>${new Date(c.creado).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</td><td style="white-space:normal;min-width:220px;"><b>${esc(c.asunto)}</b><br><span class="nota">${esc(c.mensaje)}</span></td>
               <td class="num">${c.negocios}</td><td class="num">${c.en_panel ? c.leidos : '—'}</td><td class="num">${c.por_correo ? c.enviados + (c.errores ? ` <span class="nota">(${c.errores} error)</span>` : '') : '—'}</td></tr>`).join('')}</table></div>`
             : '<p class="nota">Aún no envías comunicados.</p>'}</div>`;
-      contarCom(); monitorWsp();
+      contarCom(); monitorWsp(); usoCorreos();
+    }
+    // Uso de correos de toda la plataforma vs. tu plan de Resend (Fase 35)
+    const PLANES_RESEND = { free: { n: 'Free · gratis', mes: 3000, dia: 100 }, pro: { n: 'Pro · US$20/mes', mes: 50000, dia: null }, scale: { n: 'Scale · US$90/mes', mes: 100000, dia: null }, otro: { n: 'Otro / personalizado' } };
+    async function usoCorreos(){
+      const el = $('usoCorreos'); if (!el) return;
+      const { data: u, error } = await db.rpc('super_uso_correos');
+      if (error){ el.innerHTML = /super_uso_correos/.test(error.message || '') ? '<p class="nota">Para ver el uso de correos y los límites de la plataforma, instala la Fase 35.</p>' : ''; return; }
+      const c = u.config, lm = c.limite_mes, ld = c.limite_dia, pct = (a, b) => b ? Math.min(100, Math.round(a / b * 100)) : 0;
+      const barra = (a, b, txt) => `<div class="uso-barra"><div class="ub-txt"><span>${txt}</span><b>${fmtN(a)}${b ? ` de ${fmtN(b)}` : ''}</b></div>
+          <div class="ub-fondo"><div class="ub-lleno ${pct(a, b) >= 90 ? 'rojo' : pct(a, b) >= 70 ? 'amarillo' : ''}" style="width:${b ? pct(a, b) : 4}%"></div></div></div>`;
+      const reservaN = lm ? Math.round(lm * c.reserva_pct / 100) : 0, trans = u.transaccionales_30d;
+      const comp = u.comprometido_real + trans, falta = lm && comp > lm;
+      el.innerHTML = `<div class="tarjeta">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><h3 style="margin:0;">📊 Uso de correos de la plataforma</h3>
+          <span class="nota">Plan de Resend: <b>${esc((PLANES_RESEND[c.plan_resend] || {}).n || c.plan_resend)}</b></span></div>
+        <div class="uso-grid">
+          ${barra(u.mes, lm, 'Este mes (todos los negocios)')}
+          ${barra(u.hoy, ld, 'Hoy')}
+          ${barra(u.proyeccion_mes, lm, 'Proyección a fin de mes (al ritmo actual)')}
+        </div>
+        <p class="nota" style="margin:6px 0 0;">Por tipo este mes: ${Object.entries(u.por_tipo).map(([k, v]) => `${({ confirmacion: 'confirmaciones', recordatorio: 'recordatorios', campana: 'promociones', prueba: 'pruebas', comunicado: 'comunicados' })[k] || k} <b>${fmtN(v)}</b>`).join(' · ') || 'nada aún'}
+          · en cola <b>${fmtN(u.en_cola)}</b> · con error <b>${fmtN(u.errores_mes)}</b></p>
+        <div class="uso-cap ${falta ? 'mal' : ''}">
+          <b>${falta ? '⚠️' : '✅'} Capacidad:</b> si los ${u.negocios_activos} negocios activos usan todos sus envíos este mes, saldrían unos <b>${fmtN(u.comprometido_real)}</b> correos de promoción
+          (con los clientes que hoy aceptan promociones; el máximo teórico de los planes es ${fmtN(u.comprometido)}), más ~<b>${fmtN(trans)}</b> confirmaciones y recordatorios (últimos 30 días).
+          ${lm ? (falta ? `Eso supera tu límite de ${fmtN(lm)}: conviene subir el plan de Resend o bajar los límites de los planes.` : `Cabe dentro de tu límite de ${fmtN(lm)} al mes.`) : ''}
+          ${ld ? `<br>Con el tope de ${fmtN(ld)} al día, lo que no cabe hoy sale solo al día siguiente (primero confirmaciones y recordatorios, después promociones).` : ''}
+        </div>
+        <details style="margin-top:10px;"><summary style="cursor:pointer;font-weight:600;">Por negocio este mes (${u.por_negocio.length})</summary>
+          ${u.por_negocio.length ? `<div style="overflow-x:auto;margin-top:8px;"><table class="tabla-caja"><tr><th>Negocio</th><th>Plan</th><th class="num">Correos</th><th class="num">Promociones</th><th class="num">Confirm. y record.</th><th class="num">Envíos masivos</th></tr>
+            ${u.por_negocio.map(x => `<tr><td>${esc(x.negocio)}</td><td>${esc(x.plan || '—')}</td><td class="num">${fmtN(x.total)}</td><td class="num">${fmtN(x.campanas)}</td><td class="num">${fmtN(x.confirmaciones)}</td><td class="num">${x.envios_mes}${x.envios_max != null ? ' / ' + x.envios_max : ''}</td></tr>`).join('')}</table></div>` : '<p class="nota">Aún no hay envíos este mes.</p>'}
+        </details>
+        <details style="margin-top:8px;"><summary style="cursor:pointer;font-weight:600;">⚙️ Límites de la plataforma (tu plan de Resend)</summary>
+          <div class="grid-2" style="margin-top:8px;">
+            <div><label>Plan de Resend</label><select id="lrPlan" onchange="const x = PLANES_RESEND[this.value]; if (x.mes){ $('lrMes').value = x.mes; $('lrDia').value = x.dia ?? ''; }">
+              ${Object.entries(PLANES_RESEND).map(([k, x]) => `<option value="${k}" ${c.plan_resend === k ? 'selected' : ''}>${x.n}</option>`).join('')}</select></div>
+            <div><label>Reserva para confirmaciones y recordatorios (%)</label><input id="lrRes" type="number" min="0" max="90" value="${c.reserva_pct}"></div>
+            <div><label>Correos al mes</label><input id="lrMes" type="number" min="0" placeholder="sin tope" value="${lm ?? ''}"></div>
+            <div><label>Correos al día</label><input id="lrDia" type="number" min="0" placeholder="sin tope" value="${ld ?? ''}"></div>
+          </div>
+          <p class="nota">Las promociones pueden usar hasta el ${100 - c.reserva_pct}% del mes (${lm ? fmtN(lm - reservaN) : '∞'}); el resto queda guardado para que las confirmaciones y recordatorios nunca fallen. Los límites de cada plan los cambias en 💳 Planes y cobros.</p>
+          <button class="boton" style="margin-top:8px;" onclick="guardarLimiteCorreos()">Guardar límites</button> <span class="estado" id="estadoLr"></span>
+        </details></div>`;
+    }
+    async function guardarLimiteCorreos(){
+      const p = { plan_resend: $('lrPlan').value, limite_mes: $('lrMes').value.trim(), limite_dia: $('lrDia').value.trim(), reserva_pct: $('lrRes').value.trim() };
+      const { error } = await db.rpc('super_guardar_limite_correos', { p });
+      if (error) return estado('estadoLr', 'Error: ' + error.message, 'error');
+      await usoCorreos(); estado('estadoLr', '✓ Guardado.', 'ok');
     }
     async function monitorWsp(){
       const { data, error } = await db.rpc('super_wsp_estado'); if (error || !data || !$('wspMonitor')) return;
@@ -4852,7 +4955,11 @@
           <div><label>Máx. equipo</label><input data-k="max_profesionales" type="number" min="1" placeholder="sin límite" value="${vNum(p.max_profesionales)}"></div>
           <div><label>Máx. locales</label><input data-k="max_locales" type="number" min="1" placeholder="sin límite" value="${vNum(p.max_locales)}"></div>
           <div><label>Máx. productos</label><input data-k="max_productos" type="number" min="0" placeholder="sin límite" value="${vNum(p.max_productos)}"></div>
-          <div><label>Correos masivos al mes</label><input data-k="correos_mes" type="number" min="0" placeholder="sin límite" value="${'correos_mes' in p ? vNum(p.correos_mes) : 500}"></div>
+          <div><label>✉️ Envíos masivos (correo) al mes</label><input data-k="campanas_mes" type="number" min="0" placeholder="sin límite" value="${vNum(p.campanas_mes)}"></div>
+          <div><label>✉️ Clientes máx. por envío</label><input data-k="max_destinatarios" type="number" min="1" placeholder="sin límite" value="${vNum(p.max_destinatarios)}"></div>
+          <div><label>💬 Listas de WhatsApp al mes</label><input data-k="wsp_campanas_mes" type="number" min="0" placeholder="sin límite" value="${vNum(p.wsp_campanas_mes)}"></div>
+          <div><label>💬 Clientes máx. por lista</label><input data-k="wsp_max_destinatarios" type="number" min="1" placeholder="sin límite" value="${vNum(p.wsp_max_destinatarios)}"></div>
+          <input data-k="correos_mes" type="hidden" value="${vNum(p.correos_mes)}">
           <div><label>Días de prueba gratis</label><input data-k="dias_prueba" type="number" min="0" max="365" value="${p.dias_prueba ?? 14}"></div>
           <div class="acc"><button class="boton" onclick="guardarPlan(this)">Guardar</button>${p.negocios ? '' : `<button class="boton-linea rojo" onclick="eliminarPlan('${esc(p.codigo)}')">✕</button>`}</div>
           <div class="checks"><label><input type="checkbox" data-k="dominio_incluido" ${p.dominio_incluido ? 'checked' : ''}> Dominio propio incluido</label>
