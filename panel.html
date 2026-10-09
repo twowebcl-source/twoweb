@@ -260,6 +260,26 @@
     .rp-donde { background:var(--panel2); border-radius:var(--r-s); padding:2px 12px 6px; margin-bottom:8px; }
     .rp-donde .rp-fila { font-size:13px; }
     .rp-fila small.nota { font-size:11px; }
+    .bal-trab { margin-top:2px; }
+    .bt-tit { display:flex; align-items:center; gap:10px; }
+    .bt-ava { width:32px; height:32px; font-size:14px; flex:none; }
+    .bt-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+    .bt-grid > div { background:var(--panel2); border-radius:var(--r-s); padding:10px 12px; border-left:3px solid var(--linea); }
+    .bt-grid > div.az { border-left-color:var(--azul); } .bt-grid > div.rj { border-left-color:var(--rojo); }
+    .bt-grid > div.fuerte { border-left-color:var(--voltaje); border-top:1px solid color-mix(in srgb, var(--voltaje) 30%, transparent); }
+    .bt-grid small { display:block; font-size:11px; color:var(--gris); margin-bottom:3px; }
+    .bt-grid b { font-size:19px; font-variant-numeric:tabular-nums; display:block; }
+    .bt-grid .az b { color:var(--azul); } .bt-grid .rj b { color:var(--rojo); }
+    .bt-grid span { display:block; font-size:11px; color:var(--gris); margin-top:3px; }
+    .bt-dias { display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; margin:12px 0 2px; }
+    .bt-dia { text-align:center; font-size:11px; color:var(--gris); }
+    .bt-dia b { display:block; color:var(--hueso); font-size:11px; font-weight:600; }
+    .bt-dia.hoy small { color:var(--voltaje); font-weight:700; }
+    .bt-col { height:58px; display:flex; flex-direction:column-reverse; border-radius:6px; overflow:hidden; background:var(--panel2); margin-bottom:3px; }
+    .bt-col i { display:block; width:100%; transition:height .4s ease; }
+    .bt-datos { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:10px; font-size:12.5px; color:var(--gris); }
+    .bt-datos b { color:var(--hueso); } .bt-datos b.rojo { color:var(--rojo); }
+    @media (max-width:640px){ .bt-grid { grid-template-columns:1fr 1fr; } .bt-grid b { font-size:17px; } }
     .chips-asis { display:flex; gap:6px; }
     .asis-mas { color:var(--verde); } .asis-menos { color:var(--rojo); }
     #asisTabla tr.sel td { background:color-mix(in srgb, var(--voltaje) 8%, transparent); }
@@ -2321,7 +2341,7 @@
         const pct = t.comision ?? 50, parte = Math.round(cobrado * pct / 100) + propinas;
         h += `<div class="kpi destacado"><b>${clp(parte)}</b><span>ganancia de ${esc(t.nombre)} (${pct}% + propinas)</span></div>`;
       }
-      $('kpis').innerHTML = h + (t ? '' : repartoDia(delDia));
+      $('kpis').innerHTML = h + (t ? balanceTrab(t.id, diaVista, diaVista) : repartoDia(delDia));
     }
     // "Todos": cuánto ganó cada profesional y cuánto queda para el local (lo cobrado menos las comisiones; las propinas son de cada uno).
     // Al tocar el cuadro se abre el detalle con las sumas y el IVA (cálculos al centavo, sin redondear hasta el final).
@@ -2393,7 +2413,7 @@
       const t = desde === hasta ? f(desde) : `${deTexto(desde).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} al ${deTexto(hasta).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}`;
       return t[0].toUpperCase() + t.slice(1);
     }
-    const serviciosRango = (desde, hasta) => calcularReparto(reservasTodas.filter(r => r.fecha >= desde && r.fecha <= hasta && enFiltro(r.trabajador_id)));
+    const serviciosRango = (desde, hasta, tid) => calcularReparto(reservasTodas.filter(r => r.fecha >= desde && r.fecha <= hasta && (tid ? r.trabajador_id === tid : enFiltro(r.trabajador_id))));
     // Productos: lo trae la base (ventas entregadas en el período + compras del período)
     async function cargarBalanceProd(desde, hasta){
       if (!conTienda()) return { sinTienda: true };
@@ -2410,10 +2430,11 @@
       return { prods, trabs: (d.trabajadores || []).map(t => ({ ...t, comision: Number(t.comision) || 0 })), pedidos: d.pedidos || 0, vend, uni, costo, com, sinCosto,
                ivaV, cmp, credito, ivaPagar: r2(ivaV.iva - credito), local, real };
     }
-    async function abrirBalance(desde, hasta, modo){
+    async function abrirBalance(desde, hasta, modo, tid){
       const id = Date.now();
-      BAL = { id, desde, hasta, modo: modo || 'todo', S: serviciosRango(desde, hasta), P: null };
+      BAL = { id, desde, hasta, tid: tid || null, modo: tid ? 'servicios' : (modo || 'todo'), S: serviciosRango(desde, hasta, tid), P: null };
       pintarBalance();
+      if (tid) return;                                                   // un profesional: solo servicios
       const P = await cargarBalanceProd(desde, hasta);
       if (!BAL || BAL.id !== id) return;
       BAL.P = P; pintarBalance(true);
@@ -2424,12 +2445,13 @@
       if (!BAL) return;
       const v = $('ventanaDetalle'), abiertos = conservar ? [...v.querySelectorAll('details')].map(d => d.open) : [], sc = v.scrollTop;
       const { S, P, modo } = BAL, dia = BAL.desde === BAL.hasta;
-      const tabs = [['todo', '◎ Todo'], ['servicios', '✂️ Servicios'], ['productos', '🛍 Productos']].filter(([k]) => k !== 'productos' || conTienda() || modo === 'productos');
+      const tabs = BAL.tid ? [] : [['todo', '◎ Todo'], ['servicios', '✂️ Servicios'], ['productos', '🛍 Productos']].filter(([k]) => k !== 'productos' || conTienda() || modo === 'productos');
+      const tNom = BAL.tid ? (trabajadores.find(x => x.id === BAL.tid) || {}).nombre : null;
       const cuerpo = modo === 'servicios' ? htmlServicios(S, dia) : modo === 'productos' ? htmlProductos(P, dia) : htmlTodo(S, P, dia);
       v.classList.add('ancha');
-      v.innerHTML = `<h3 style="font-size:19px;" class="bal-h">${iconoBalance('balG2')}Balance Inteligente</h3>
-        <p class="nota" style="margin-bottom:10px;">${esc(etiquetaRango(BAL.desde, BAL.hasta))}</p>
-        <div class="bal-tabs" role="tablist">${tabs.map(([k, t]) => `<button role="tab" class="${modo === k ? 'sel' : ''}" onclick="modoBalance('${k}')">${t}</button>`).join('')}</div>
+      v.innerHTML = `<h3 style="font-size:19px;" class="bal-h">${iconoBalance('balG2')}Balance Inteligente${tNom ? ' · ' + esc(tNom) : ''}</h3>
+        <p class="nota" style="margin-bottom:10px;">${esc(etiquetaRango(BAL.desde, BAL.hasta))}${tNom ? ' · solo sus atenciones' : ''}</p>
+        <div class="bal-tabs ${tabs.length ? '' : 'oculto'}" role="tablist">${tabs.map(([k, t]) => `<button role="tab" class="${modo === k ? 'sel' : ''}" onclick="modoBalance('${k}')">${t}</button>`).join('')}</div>
         ${cuerpo}
         <div class="det-acciones"><button class="boton-linea" onclick="cerrarDetalle();verTab('caja')">Ir a Caja</button>${conTienda() ? `<button class="boton-linea" onclick="abrirCompras('${BAL.desde}', '${BAL.hasta}')">📥 Compras</button>` : ''}<button class="boton" style="margin-left:auto;" onclick="BAL=null;cerrarDetalle()">Cerrar</button></div>`;
       $('fondoDetalle').classList.remove('oculto');
@@ -2534,12 +2556,58 @@
           <details class="rp-iva"><summary>¿Por qué el IVA a pagar no calza con la ganancia? ›</summary>
             <p class="nota" style="margin:0;">La ganancia real descuenta el IVA de cada venta y el costo sin IVA de lo vendido. El IVA a pagar, en cambio, resta el IVA de <b>todo lo que compraste con factura en el período</b>, aunque esos productos aún no se vendan. Por eso pueden ser distintos: es normal. Confírmalo con tu contador para el F29.</p></details></div>`;
     }
+    // ===================== BALANCE DE UN PROFESIONAL (Fase 52): Agenda del día y Semana, solo admin =====================
+    // Lo que generó, lo que gana, el IVA de lo que generó y lo que realmente le deja al local; horas y rendimiento.
+    function balanceTrab(tid, desde, hasta){
+      const t = trabajadores.find(x => x.id === tid); if (!t || yo.rol !== 'admin') return '';
+      const lista = reservasTodas.filter(r => r.trabajador_id === tid && r.fecha >= desde && r.fecha <= hasta);
+      const R = calcularReparto(lista), dia = desde === hasta, pend = lista.filter(r => ['confirmada', 'en_atencion'].includes(r.estado));
+      const A = calcularAsistencia(tid, desde, hasta), per = dia ? (desde === hoyTxt() ? 'hoy' : 'ese día') : 'la semana';
+      const cab = `<div class="rep-cab"><div class="rep-tit bt-tit"><span class="avatar bt-ava" ${estiloFoto(t.foto_url)}>${esc((t.nombre || '?')[0].toUpperCase())}</span>
+          <span>${iconoBalance('balT' + tid)}Balance de ${esc(t.nombre)} <span class="nota">· ${dia ? (desde === hoyTxt() ? 'en vivo' : esc(etiquetaRango(desde, hasta))) : 'semana'}</span></span></div>
+          ${R ? `<span class="rep-ver">Abrir análisis ›</span>` : ''}</div>`;
+      if (!R) return `<div class="reparto bal-trab">${cab}<div class="bal-vacio" style="margin:6px 0 0;">Aún no hay atenciones cobradas ${per}.${pend.length ? ` Tiene <b>${pend.length}</b> por atender (${clp(sumaTotal(pend))}).` : ''}</div></div>`;
+      const p = R.pros[0], gana = r2(p.com + p.prop), base = R.entra || 1, real = R.real, iva = R.ivaDia.iva;
+      const realVis = Math.max(real, 0), ivaVis = Math.min(iva, Math.max(R.local, 0));
+      const horas = A.atend / 60, porHora = horas > 0 ? Math.round(R.real / horas) : null, ticket = Math.round(R.serv / p.n);
+      // Por día (semana): barras con lo que gana el profesional y lo que le deja al local
+      let dias = '';
+      if (!dia){
+        const fechas = []; for (let d = deTexto(desde); fechaTexto(d) <= hasta; d.setDate(d.getDate() + 1)) fechas.push(fechaTexto(d));
+        const xs = fechas.map(f => { const Rd = calcularReparto(lista.filter(r => r.fecha === f)); return { f, e: Rd ? Rd.entra : 0, g: Rd ? r2(Rd.pros[0].com + Rd.pros[0].prop) : 0, l: Rd ? Math.max(Rd.real, 0) : 0 }; });
+        const mx = Math.max(1, ...xs.map(x => x.e));
+        dias = `<div class="bt-dias">${xs.map(x => `<div class="bt-dia ${x.f === hoyTxt() ? 'hoy' : ''}" title="${esc(fechaDiaCaja(x.f))}: generó ${clp(x.e)} · gana ${clpX(x.g)} · deja al local ${clpX(x.l)}">
+            <div class="bt-col"><i style="height:${x.g / mx * 100}%;background:var(--azul)"></i><i style="height:${x.l / mx * 100}%;background:var(--voltaje)"></i><i style="height:${Math.max(0, x.e - x.g - x.l) / mx * 100}%;background:var(--rojo);opacity:.8"></i></div>
+            <small>${DIAS[deTexto(x.f).getDay()].slice(0, 2)}</small><b>${x.e ? (x.e >= 1000 ? Math.round(x.e / 1000) + 'k' : x.e) : '·'}</b></div>`).join('')}</div>`;
+      }
+      return `<div class="reparto bal-trab" role="button" tabindex="0" onclick="abrirBalance('${desde}', '${hasta}', 'servicios', ${tid})" onkeydown="if(event.key==='Enter'){abrirBalance('${desde}', '${hasta}', 'servicios', ${tid})}">
+        ${cab}
+        <div class="rep-barra" role="img" aria-label="Reparto de lo que generó">
+          <i style="flex:${gana / base};background:var(--azul);" title="${esc(t.nombre)} gana ${clpX(gana)}"></i>
+          ${ivaVis > 0 ? `<i style="flex:${ivaVis / base};background:var(--rojo);" title="IVA ${clp2(iva)}"></i>` : ''}
+          ${realVis > 0 ? `<i style="flex:${realVis / base};background:var(--voltaje);" title="Ganancia real del local ${clp2(real)}"></i>` : ''}</div>
+        <div class="bt-grid">
+          <div><small>Generó ${per}</small><b>${clp(R.entra)}</b><span>${p.n} atención${p.n === 1 ? '' : 'es'}${R.prop ? ` · ${clp(R.prop)} propinas` : ''}</span></div>
+          <div class="az"><small>Gana ${esc(t.nombre)}</small><b>${clpX(gana)}</b><span>${p.pct}% de servicios${p.prop ? ' + propinas' : ''} · ${pctTxt(gana, base)}</span></div>
+          <div class="rj"><small>IVA de lo que generó</small><b>${clp2(iva)}</b><span>${pctTxt(iva, base)} de lo que entró</span></div>
+          <div class="fuerte"><small>Le deja al local (real)</small><b>${sable(clp2(real), real)}</b><span>${pctTxt(real, base)} · después de su pago e IVA</span></div>
+        </div>
+        ${dias}
+        <div class="bt-datos">
+          <span>🎟 Ticket promedio <b>${clp(ticket)}</b></span>
+          <span>⏱ Atendiendo <b>${hhmm(A.atend)}</b>${A.prog ? ` de ${hhmm(A.prog)} en horario (${Math.round(A.atend / A.prog * 100)}%)` : ''}</span>
+          ${porHora != null ? `<span>⚡ Rinde al local <b class="${porHora < 0 ? 'rojo' : ''}">${clp(porHora)}</b> por hora</span>` : ''}
+          ${A.extra || A.bloq ? `<span>Balance de horas ${txtBalance(A.bal)}</span>` : ''}
+          ${pend.length ? `<span>⏳ Por atender <b>${pend.length}</b> · ${clp(sumaTotal(pend))}</span>` : ''}
+        </div></div>`;
+    }
     // Propinas dentro o fuera del IVA (se recuerda en este navegador; por defecto: dentro)
     function ivaConPropinas(){ try { return localStorage.getItem('tw-iva-propinas') !== '0'; } catch (e) { return true; } }
     function cambiarIvaPropinas(si){
       try { localStorage.setItem('tw-iva-propinas', si ? '1' : '0'); } catch (e) {}
       if (tabVisible('dia')) dibujarDia();
-      if (BAL){ BAL.S = serviciosRango(BAL.desde, BAL.hasta); pintarBalance(true); }
+      if (tabVisible('semana')) dibujarSemana();
+      if (BAL){ BAL.S = serviciosRango(BAL.desde, BAL.hasta, BAL.tid); pintarBalance(true); }
     }
 
     // Caja: Balance Inteligente del período con selector Todo / Servicios / Productos
@@ -2684,7 +2752,8 @@
       $('kpisSemana').innerHTML =
         `<div class="kpi"><b>${deSemana.filter(activa).length}</b><span>reservas en la semana</span></div>` +
         `<div class="kpi"><b>${clp(yo.rol === 'admin' ? sumaTotal(deSemana) : gananciaHecha(deSemana))}</b><span>${yo.rol === 'admin' ? 'total de la semana' : 'tu ganancia'}</span></div>` +
-        `<div class="kpi"><b>${deSemana.filter(r => r.estado === 'completada').length}</b><span>completadas</span></div>`;
+        `<div class="kpi"><b>${deSemana.filter(r => r.estado === 'completada').length}</b><span>completadas</span></div>` +
+        (yo.rol === 'admin' && tid ? balanceTrab(tid, txt[0], txt[6]) : '');
       if (!tid){ $('agendaSemana').innerHTML = '<p class="vacio">Elige un profesional.</p>'; return; }
       grillaAgenda($('agendaSemana'), dias.map((d, i) => {
         const res = deSemana.filter(r => r.fecha === txt[i]);
@@ -3755,7 +3824,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F51 · 09-10 a';
+    const VERSION_PANEL = 'F52 · 09-10 a';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
