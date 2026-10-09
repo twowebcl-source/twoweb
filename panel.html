@@ -260,6 +260,47 @@
     .rp-donde { background:var(--panel2); border-radius:var(--r-s); padding:2px 12px 6px; margin-bottom:8px; }
     .rp-donde .rp-fila { font-size:13px; }
     .rp-fila small.nota { font-size:11px; }
+    .bal-tabs { display:flex; gap:4px; padding:4px; border-radius:999px; background:var(--panel2); border:1px solid var(--linea); margin:0 0 14px; width:max-content; max-width:100%; overflow-x:auto; scrollbar-width:none; }
+    .bal-tabs::-webkit-scrollbar { display:none; }
+    .bal-tabs button { border:0; background:transparent; color:var(--gris); padding:7px 14px; border-radius:999px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .bal-tabs button.sel { background:var(--voltaje); color:#fff; }
+    .bal-tabs.mini { margin:0; } .bal-tabs.mini button { padding:5px 11px; font-size:12px; }
+    .bal-vacio { padding:22px 16px; text-align:center; color:var(--gris); border:1px dashed var(--linea); border-radius:var(--r-s); margin:6px 0 10px; }
+    .bal-res { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; cursor:pointer; }
+    .bal-res > div { background:var(--panel2); border-radius:var(--r-s); padding:10px 12px; }
+    .bal-res small { display:block; font-size:11px; color:var(--gris); margin-bottom:3px; }
+    .bal-res b { font-size:17px; font-variant-numeric:tabular-nums; } .bal-res b.rojo { color:var(--rojo); }
+    .bal-res .fuerte { border:1px solid color-mix(in srgb, var(--voltaje) 40%, transparent); }
+    .bal-caja { margin:4px 0 14px; cursor:default; }
+    .bal-prod { margin:0 0 14px; }
+    .bal-chips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+    .bal-cmp { font-size:13.5px; }
+    .bal-cmp-f { display:grid; grid-template-columns:1.5fr 1fr 1fr 1.1fr; gap:8px; align-items:baseline; padding:7px 0; border-bottom:1px dashed var(--linea); }
+    .bal-cmp-f > b { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+    .bal-cmp-f > span small { color:var(--gris); font-size:11px; }
+    .bal-cmp-f.cab { font-size:11px; color:var(--gris); text-transform:uppercase; letter-spacing:.03em; border-bottom:1px solid var(--linea); }
+    .bal-cmp-f.cab > b { font-weight:600; }
+    .bal-cmp-f.res { font-weight:700; } .bal-cmp-f.res > b { font-weight:700; }
+    .bal-cmp-f.real { border-bottom:none; padding-top:12px; }
+    .rp-resul.cuatro { grid-template-columns:repeat(4, 1fr); }
+    .rp-prod .rp-th, .rp-prod .rp-tr { grid-template-columns:1.7fr .7fr 1fr 1fr 1fr; }
+    .compra-prev { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px; margin-top:10px; }
+    .compra-prev:empty { display:none; }
+    .compra-prev > div { background:var(--panel2); border-radius:var(--r-s); padding:9px 12px; }
+    .compra-prev small { display:block; font-size:11px; color:var(--gris); }
+    .compra-prev b { font-size:16px; } .compra-prev b.rojo { color:var(--rojo); }
+    .prod-costo { display:block; font-size:11px; color:var(--gris); font-weight:400; margin-top:2px; }
+    .prod-costo b { color:var(--hueso); } .prod-costo b.rojo { color:var(--rojo); } .prod-costo.sin { color:var(--amarillo, #f59e0b); }
+    .link.rojo { color:var(--rojo); }
+    @media (max-width:640px){ .ventana.con-cadena { padding-right:32px; } }
+    @media (max-width:640px){
+      .bal-res { grid-template-columns:1fr 1fr; }
+      .rp-resul.cuatro { grid-template-columns:1fr 1fr; }
+      .bal-cmp-f { grid-template-columns:1fr 1fr 1fr; }
+      .bal-cmp-f > span { grid-column:1 / -1; }
+      .bal-cmp-f.cab > span { display:none; }
+      .bal-cmp-f > b { text-align:right; font-size:12.5px; }
+    }
     /* Sable de luz: una hoja de luz fina bajo el valor; el color cambia según el monto. Solo la alerta roja se mueve */
     .sable { --sc:#facc15; position:relative; display:inline-block; color:var(--sc) !important; padding:0 2px 6px 4px; transform-origin:50% 60%;
       text-shadow:0 0 5px color-mix(in srgb, var(--sc) 40%, transparent); }
@@ -299,6 +340,7 @@
     .ch-marco.izq-on { --fi:28px; } .ch-marco.der-on { --fd:28px; }
     @media (min-width:721px){ #tab-caja .grid-caja { grid-template-columns:minmax(240px, 1fr) 2fr; } }
     .rp-kpis .fuerte.rojo b { color:var(--rojo); }
+    .rp-kpis .fuerte.verde b, .bal-res b.verde { color:var(--verde); }
     .rp-iva3 { margin-bottom:8px; }
     .bal-ico { width:24px; height:24px; vertical-align:-6px; margin-right:7px; filter:drop-shadow(0 0 5px color-mix(in srgb, var(--voltaje) 55%, transparent)); }
     .bal-giro { transform-origin:16px 16px; animation:balGiro 9s linear infinite; }
@@ -1247,6 +1289,7 @@
         </div>
         <div id="informeCaja" class="oculto"></div>
         <div class="kpis" id="kpisCaja"></div>
+        <div id="balCaja" class="oculto"></div>
         <div class="grid-caja">
           <div class="tarjeta" style="margin-top:0;"><h3>Por método de pago</h3><div id="cajaMetodos"></div></div>
           <div class="tarjeta" style="margin-top:0;"><h3 id="cajaTituloDetalle">Detalle</h3><div id="cajaDetalle"></div></div>
@@ -1338,6 +1381,14 @@
       <!-- Productos de la tienda (admin edita; el equipo solo ve) — Fase 14 -->
       <div id="tab-productos" class="oculto">
         <div class="kpis" id="kpisProd"></div>
+        <div class="reparto bal-prod solo-admin" style="cursor:default;">
+          <div class="rep-cab"><div class="rep-tit" id="balProdTit">Balance Inteligente · Productos</div>
+            <button class="boton" onclick="abrirCompras()">📥 Registrar compra</button></div>
+          <div class="bal-chips"><span class="nota">Ver balance de productos:</span>
+            <button class="chip" onclick="balanceProdPeriodo('dia')">Hoy</button><button class="chip" onclick="balanceProdPeriodo('semana')">Esta semana</button>
+            <button class="chip" onclick="balanceProdPeriodo('mes')">Este mes</button><button class="chip" onclick="abrirCompras()">📋 Memoria de compras</button></div>
+          <p class="nota" style="margin:6px 0 0;">Cada compra suma stock y calcula el costo real de cada producto (con factura, sin IVA). Así el balance muestra cuánto ganas de verdad al vender.</p>
+        </div>
         <div class="tarjeta solo-admin" style="margin-top:0;">
           <div class="barra" style="margin:0;">
             <a class="boton-linea" id="linkTiendaProd" target="_blank" rel="noopener">🛍 Ver mi tienda</a>
@@ -2275,7 +2326,7 @@
       const serv = pros.reduce((a, p) => a + p.serv, 0), prop = pros.reduce((a, p) => a + p.prop, 0);
       const com = Math.round(pros.reduce((a, p) => a + p.com, 0) * 100) / 100, local = Math.round((serv - com) * 100) / 100;
       const ivaConProp = ivaConPropinas(), baseIva = serv + (ivaConProp ? prop : 0), ivaDia = separarIva(baseIva);   // IVA sobre todo lo que ingresó
-      return { fecha: diaVista, pros, serv, prop, com, local, entra: serv + prop, ivaConProp, baseIva, ivaDia, real: Math.round((local - ivaDia.iva) * 100) / 100 };
+      return { pros, serv, prop, com, local, entra: serv + prop, ivaConProp, baseIva, ivaDia, real: Math.round((local - ivaDia.iva) * 100) / 100 };
     }
     // Barra: cada profesional + IVA a pagar + lo que realmente le queda al local
     function barraReparto(R){
@@ -2286,7 +2337,7 @@
     }
     function repartoDia(delDia){
       const R = REPARTO = calcularReparto(delDia); if (!R) return '';
-      const base = R.serv + R.prop, hoy = R.fecha === hoyTxt();
+      const base = R.serv + R.prop, hoy = diaVista === hoyTxt();
       return `<div class="reparto" role="button" tabindex="0" onclick="abrirReparto()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirReparto();}">
         <div class="rep-cab"><div class="rep-tit">${iconoBalance('balG1')}Balance Inteligente <span class="nota">· ${hoy ? 'en vivo' : 'del día'} · solo atenciones cobradas</span></div><span class="rep-ver">Abrir análisis e IVA ›</span></div>
         ${barraReparto(R)}
@@ -2294,56 +2345,273 @@
           <div class="rep-item local"><span class="rep-pto" style="background:var(--voltaje);"></span><span class="rep-nom">🏪 Para el local<small>cobrado − comisiones · considera su <u>IVA</u></small></span><b>${sable(clpX(R.local), R.local)}<small>${pctTxt(R.local, base)}</small></b></div></div>
         <div class="rep-pie"><span>Entró ${hoy ? 'hoy' : 'ese día'}: <b>${clp(R.entra)}</b> <small>(servicios + propinas)</small></span><span>IVA a pagar: <b class="rojo">${clp2(R.ivaDia.iva)}</b> · Ganancia real del local: <b>${sable(clp2(R.real), R.real)}</b></span></div></div>`;
     }
-    function abrirReparto(){
-      const R = REPARTO; if (!R) return;
-      const f = deTexto(R.fecha).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
-      const fila = (a, b, cls = '') => `<div class="rp-fila ${cls}"><span>${a}</span><b>${b}</b></div>`;
-      const neg = R.real < 0, base = R.baseIva, conProp = R.ivaConProp && R.prop > 0;
-      const queBase = conProp ? 'servicios + propinas' : 'servicios';
-      $('ventanaDetalle').classList.add('ancha');
-      $('ventanaDetalle').innerHTML = `<h3 style="font-size:19px;" class="bal-h">${iconoBalance('balG2')}Balance Inteligente</h3>
-        <p class="nota" style="margin-bottom:12px;">${esc(f[0].toUpperCase() + f.slice(1))} · ${R.pros.reduce((a, p) => a + p.n, 0)} atenciones cobradas</p>
-        <div class="rp-kpis"><div><small>Servicios cobrados</small><b>${clp(R.serv)}</b></div><div><small>Propinas</small><b>${clp(R.prop)}</b></div><div class="fuerte"><small>Entró en total</small><b>${clp(R.entra)}</b></div></div>
+    const tabVisible = t => !!$('tab-' + t) && !$('tab-' + t).classList.contains('oculto');
+    // ===================== BALANCE INTELIGENTE: Todo · Servicios · Productos (Fase 49) =====================
+    // Servicios: lo cobrado en atenciones (comisiones, propinas, IVA). Productos: ventas entregadas, costo de compra, comisiones e IVA.
+    // Todo: la suma de ambos. Se abre desde la Agenda del día, desde Caja (su período) y desde Productos.
+    let BAL = null;
+    const fila = (a, b, cls = '') => `<div class="rp-fila ${cls}"><span>${a}</span><b>${b}</b></div>`;
+    const r2 = n => Math.round(n * 100) / 100;
+    function etiquetaRango(desde, hasta){
+      const f = d => deTexto(d).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
+      const t = desde === hasta ? f(desde) : `${deTexto(desde).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} al ${deTexto(hasta).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+      return t[0].toUpperCase() + t.slice(1);
+    }
+    const serviciosRango = (desde, hasta) => calcularReparto(reservasTodas.filter(r => r.fecha >= desde && r.fecha <= hasta && enFiltro(r.trabajador_id)));
+    // Productos: lo trae la base (ventas entregadas en el período + compras del período)
+    async function cargarBalanceProd(desde, hasta){
+      if (!conTienda()) return { sinTienda: true };
+      const { data, error } = await db.rpc('balance_productos', { p_desde: desde, p_hasta: hasta });
+      if (error) return { error: /balance_productos/.test(error.message || '') ? 'Falta instalar la Fase 49 en Supabase.' : error.message };
+      return calcularProductos(data);
+    }
+    function calcularProductos(d){
+      const prods = (d.productos || []).map((p, i) => ({ ...p, costo: Number(p.costo) || 0, comision: Number(p.comision) || 0, color: COLS_REP[i % COLS_REP.length] }));
+      const vend = prods.reduce((a, p) => a + p.vendido, 0), uni = prods.reduce((a, p) => a + p.unidades, 0);
+      const costo = r2(prods.reduce((a, p) => a + p.costo, 0)), com = r2(prods.reduce((a, p) => a + p.comision, 0)), sinCosto = prods.reduce((a, p) => a + (p.sin_costo || 0), 0);
+      const ivaV = separarIva(vend), cmp = d.compras || { n: 0, total: 0, factura: 0, sin_factura: 0 }, credito = separarIva(cmp.factura).iva;
+      const local = r2(vend - com), real = r2(local - ivaV.iva - costo);
+      return { prods, trabs: (d.trabajadores || []).map(t => ({ ...t, comision: Number(t.comision) || 0 })), pedidos: d.pedidos || 0, vend, uni, costo, com, sinCosto,
+               ivaV, cmp, credito, ivaPagar: r2(ivaV.iva - credito), local, real };
+    }
+    async function abrirBalance(desde, hasta, modo){
+      const id = Date.now();
+      BAL = { id, desde, hasta, modo: modo || 'todo', S: serviciosRango(desde, hasta), P: null };
+      pintarBalance();
+      const P = await cargarBalanceProd(desde, hasta);
+      if (!BAL || BAL.id !== id) return;
+      BAL.P = P; pintarBalance(true);
+    }
+    function abrirReparto(){ abrirBalance(diaVista, diaVista, 'servicios'); }
+    function modoBalance(m){ if (!BAL) return; BAL.modo = m; pintarBalance(); $('ventanaDetalle').scrollTop = 0; }
+    function pintarBalance(conservar){
+      if (!BAL) return;
+      const v = $('ventanaDetalle'), abiertos = conservar ? [...v.querySelectorAll('details')].map(d => d.open) : [], sc = v.scrollTop;
+      const { S, P, modo } = BAL, dia = BAL.desde === BAL.hasta;
+      const tabs = [['todo', '◎ Todo'], ['servicios', '✂️ Servicios'], ['productos', '🛍 Productos']].filter(([k]) => k !== 'productos' || conTienda() || modo === 'productos');
+      const cuerpo = modo === 'servicios' ? htmlServicios(S, dia) : modo === 'productos' ? htmlProductos(P, dia) : htmlTodo(S, P, dia);
+      v.classList.add('ancha');
+      v.innerHTML = `<h3 style="font-size:19px;" class="bal-h">${iconoBalance('balG2')}Balance Inteligente</h3>
+        <p class="nota" style="margin-bottom:10px;">${esc(etiquetaRango(BAL.desde, BAL.hasta))}</p>
+        <div class="bal-tabs" role="tablist">${tabs.map(([k, t]) => `<button role="tab" class="${modo === k ? 'sel' : ''}" onclick="modoBalance('${k}')">${t}</button>`).join('')}</div>
+        ${cuerpo}
+        <div class="det-acciones"><button class="boton-linea" onclick="cerrarDetalle();verTab('caja')">Ir a Caja</button>${conTienda() ? `<button class="boton-linea" onclick="abrirCompras('${BAL.desde}', '${BAL.hasta}')">📥 Compras</button>` : ''}<button class="boton" style="margin-left:auto;" onclick="BAL=null;cerrarDetalle()">Cerrar</button></div>`;
+      $('fondoDetalle').classList.remove('oculto');
+      if (conservar){ v.querySelectorAll('details').forEach((d, i) => d.open = !!abiertos[i]); v.scrollTop = sc; }
+    }
+    // ----- Servicios y equipo -----
+    function htmlServicios(R, dia){
+      if (!R) return `<div class="bal-vacio">✂️ No hay atenciones cobradas ${dia ? 'este día' : 'en este período'}.</div>`;
+      const neg = R.real < 0, base = R.baseIva, conProp = R.ivaConProp && R.prop > 0, queBase = conProp ? 'servicios + propinas' : 'servicios', per = dia ? 'del día' : 'del período';
+      return `<div class="rp-kpis"><div><small>Servicios cobrados</small><b>${clp(R.serv)}</b></div><div><small>Propinas</small><b>${clp(R.prop)}</b></div><div class="fuerte"><small>Entró en total</small><b>${clp(R.entra)}</b></div></div>
         ${barraReparto(R)}
         <div class="rp-ley">${R.pros.map(p => `<span><i style="background:${p.color};"></i>${esc(p.nom)}</span>`).join('')}<span><i style="background:var(--rojo);"></i>IVA</span><span><i style="background:var(--voltaje);"></i>Ganancia real del local</span></div>
-
         <div class="rp-sec"><div class="rp-tit"><span class="rp-num">1</span> Lo que gana cada profesional</div>
           <div class="rp-tabla"><div class="rp-th"><span>Profesional</span><span>Servicios</span><span>Comisión</span><span>Propinas</span><span>Gana</span></div>
           ${R.pros.map(p => `<div class="rp-tr"><span><i style="background:${p.color};"></i>${esc(p.nom)}${p.tu ? ' <em>(tú)</em>' : ''}<small>${p.n} atención${p.n === 1 ? '' : 'es'}</small></span>
             <span data-l="Servicios">${clp(p.serv)}</span><span data-l="Comisión">${clp(p.serv)} × ${p.pct}% = ${clpX(p.com)}</span><span data-l="Propinas">+ ${clp(p.prop)}</span><b data-l="Gana">${clpX(p.gan)}</b></div>`).join('')}
           <div class="rp-tr total"><span>Total a pagar al equipo</span><span>${clp(R.serv)}</span><span>${clpX(R.com)}</span><span>+ ${clp(R.prop)}</span><b>${clpX(R.com + R.prop)}</b></div></div>
-          <p class="nota">Las propinas son 100% de quien atendió.</p></div>
-
+          <p class="nota">Las propinas son 100% de quien atendió. Las comisiones por productos están en la pestaña 🛍 Productos.</p></div>
         <div class="rp-sec"><div class="rp-tit"><span class="rp-num">2</span> Para el local</div>
           ${fila('Entró en total <small class="nota">(servicios + propinas)</small>', clp(R.entra))}${fila('− Equipo <small class="nota">(comisiones + propinas)</small>', '− ' + clpX(R.com + R.prop))}${fila('= Para el local', sable(clpX(R.local), R.local), 'res brillo')}
           <details class="rp-iva"><summary>Considera este ingreso y su <u>IVA</u> ›</summary>
             <p class="nota" style="margin:0 0 6px;">Los ${clpX(R.local)} todavía no son ganancia: al local le ingresaron <b>${clp(base)}</b> (${queBase}) y el IVA se paga sobre todo eso.</p>
             <div class="rp-resul"><div><small>Total sin IVA</small><b class="subr">${clp2(R.ivaDia.neto)}</b></div><div><small>IVA a pagar</small><b class="subr rojo">${clp2(R.ivaDia.iva)}</b></div><div class="fuerte"><small>Ganancia real</small><b>${sable(clp2(R.real), R.real)}</b></div></div>
             <p class="nota">El detalle de la cuenta está en los puntos 3 y 4.</p></details></div>
-
-        <div class="rp-sec iva"><div class="rp-tit"><span class="rp-num">3</span> <u>IVA</u> del día <span class="nota">· sobre todo lo que ingresó (${queBase})</span></div>
+        <div class="rp-sec iva"><div class="rp-tit"><span class="rp-num">3</span> <u>IVA</u> ${per} <span class="nota">· sobre todo lo que ingresó (${queBase})</span></div>
           <div class="rp-kpis rp-iva3"><div><small>Total ingresado</small><b>${clp(base)}</b></div><div class="fuerte"><small>Total sin IVA</small><b>${clp2(R.ivaDia.neto)}</b></div><div class="fuerte rojo"><small>Total IVA a pagar</small><b>${clp2(R.ivaDia.iva)}</b></div></div>
           <p class="nota">Redondeado a pesos (como en la boleta): sin IVA <b>${clp(Math.round(R.ivaDia.neto))}</b> · IVA <b>${clp(base - Math.round(R.ivaDia.neto))}</b>.</p>
           ${R.prop > 0 ? `<label class="rp-chk"><input type="checkbox" ${R.ivaConProp ? 'checked' : ''} onchange="cambiarIvaPropinas(this.checked)"> Incluir las propinas (${clp(R.prop)}) en el IVA</label>` : ''}
-
           <details class="rp-iva"><summary>¿Cuánto le queda al local después de pagar el IVA? ›</summary>
             ${fila('Para el local (punto 2)', clpX(R.local))}${fila('− Total IVA a pagar', '− ' + clp2(R.ivaDia.iva))}${fila('= Ganancia real del local', sable(clp2(R.real), R.real), 'res brillo')}
-            ${neg ? '<p class="nota" style="color:var(--rojo);">⚠️ Las comisiones más el IVA superan lo que le quedó al local: este día el local pierde plata.</p>' : `<p class="nota">De cada $100 que ingresaron, al local le quedan $${base ? (Math.round(R.real / base * 1000) / 10).toLocaleString('es-CL') : 0}.</p>`}
+            ${neg ? '<p class="nota" style="color:var(--rojo);">⚠️ Las comisiones más el IVA superan lo que le quedó al local: aquí el local pierde plata.</p>' : `<p class="nota">De cada $100 que ingresaron, al local le quedan $${base ? (Math.round(R.real / base * 1000) / 10).toLocaleString('es-CL') : 0}.</p>`}
             <div class="rp-donde"><div style="font-size:12px;color:var(--gris);margin:6px 0 2px;">A dónde se fueron los ${clp(R.entra)} que entraron</div>
               ${fila('Equipo (comisiones + propinas)', clpX(R.com + R.prop))}${fila('IVA (al Estado)', clp2(R.ivaDia.iva))}${fila('Ganancia real del local', clp2(R.real))}${fila('Total', clp(R.entra), 'res')}</div>
-            <p class="nota">Este IVA es el de las ventas del día. A fin de mes se le resta el IVA de las compras del local con factura (productos, insumos, arriendo, etc.), así que el que se paga de verdad puede ser menor. Confírmalo con tu contador.</p></details></div>
-
-        <p class="nota">El detalle por atención (medio de pago, productos, descuentos) sigue en Caja.</p>
-        <div class="det-acciones"><button class="boton-linea" onclick="cerrarDetalle();verTab('caja')">Ir a Caja</button><button class="boton" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>`;
-      $('fondoDetalle').classList.remove('oculto');
+            <p class="nota">A fin de mes al IVA se le resta el de las compras con factura (ver 🛍 Productos y ◎ Todo). Confírmalo con tu contador.</p></details></div>`;
+    }
+    // ----- Productos -----
+    function barraProductos(P){
+      const base = P.vend || 1, ivaVis = Math.min(P.ivaV.iva, Math.max(P.vend - P.costo - P.com, 0)), realVis = Math.max(P.real, 0);
+      const seg = [{ w: P.costo / base, c: '#94a3b8', t: `Costo de lo vendido: ${clp2(P.costo)}` }, { w: P.com / base, c: '#c084fc', t: `Comisiones: ${clp2(P.com)}` },
+                   { w: ivaVis / base, c: 'var(--rojo)', t: `IVA de las ventas: ${clp2(P.ivaV.iva)}` }, { w: realVis / base, c: 'var(--voltaje)', t: `Ganancia real: ${clp2(P.real)}` }].filter(s => s.w > 0);
+      return `<div class="rep-barra" role="img" aria-label="A dónde va cada venta">${seg.map(s => `<i style="flex:${s.w};background:${s.c};" title="${esc(s.t)}"></i>`).join('')}</div>`;
+    }
+    function htmlProductos(P, dia){
+      if (!P) return '<div class="bal-vacio">Cargando productos…</div>';
+      if (P.sinTienda) return '<div class="bal-vacio">🛍 Este negocio no tiene la tienda de productos activada.</div>';
+      if (P.error) return `<div class="bal-vacio error">${esc(P.error)}</div>`;
+      const per = dia ? 'del día' : 'del período', neg = P.real < 0;
+      const compras = `<div class="rp-sec"><div class="rp-tit"><span class="rp-num">5</span> Memoria de compras ${per}</div>
+          <div class="rp-kpis"><div><small>Comprado</small><b>${clp(P.cmp.total)}</b></div><div><small>Con factura</small><b>${clp(P.cmp.factura)}</b></div><div><small>Sin factura</small><b>${clp(P.cmp.sin_factura)}</b></div></div>
+          <p class="nota">${P.cmp.n} compra${P.cmp.n === 1 ? '' : 's'} registrada${P.cmp.n === 1 ? '' : 's'}. Cada compra suma stock y actualiza el costo promedio del producto. <a href="#" class="link" onclick="event.preventDefault();abrirCompras('${BAL.desde}', '${BAL.hasta}')">Ver y registrar compras ›</a></p></div>`;
+      if (!P.prods.length) return `<div class="bal-vacio">🛍 No hay ventas de productos entregadas ${dia ? 'este día' : 'en este período'}.</div>` + compras;
+      return `<div class="rp-kpis"><div><small>Unidades vendidas</small><b>${P.uni}</b></div><div><small>Ventas (pedidos)</small><b>${P.pedidos}</b></div><div class="fuerte"><small>Vendido</small><b>${clp(P.vend)}</b></div></div>
+        ${barraProductos(P)}
+        <div class="rp-ley"><span><i style="background:#94a3b8;"></i>Costo</span>${P.com ? '<span><i style="background:#c084fc;"></i>Comisiones</span>' : ''}<span><i style="background:var(--rojo);"></i>IVA</span><span><i style="background:var(--voltaje);"></i>Ganancia real</span></div>
+        <div class="rp-sec"><div class="rp-tit"><span class="rp-num">1</span> Lo que se vendió</div>
+          <div class="rp-tabla rp-prod"><div class="rp-th"><span>Producto</span><span>Unidades</span><span>Vendido</span><span>Costo</span><span>Margen</span></div>
+          ${P.prods.map(p => `<div class="rp-tr"><span><i style="background:${p.color};"></i>${esc(p.nombre)}${p.sin_costo ? '<small>⚠ sin costo registrado</small>' : ''}</span>
+            <span data-l="Unidades">${p.unidades}</span><span data-l="Vendido">${clp(p.vendido)}</span><span data-l="Costo">${p.sin_costo === p.unidades ? '—' : clpX(p.costo)}</span><b data-l="Margen">${clpX(r2(p.vendido - p.costo))}</b></div>`).join('')}
+          <div class="rp-tr total"><span>Total</span><span>${P.uni}</span><span>${clp(P.vend)}</span><span>${clpX(P.costo)}</span><b>${clpX(r2(P.vend - P.costo))}</b></div></div>
+          <p class="nota">Margen = vendido − lo que te costó (con factura el costo es sin IVA, porque ese IVA lo recuperas). Aún falta descontar el IVA de la venta (punto 3).</p>
+          ${P.trabs.length ? `<div class="rp-donde"><div style="font-size:12px;color:var(--gris);margin:6px 0 2px;">Comisiones por vender productos</div>${P.trabs.map(t => fila(esc(t.nombre || 'Equipo'), clpX(t.comision))).join('')}</div>` : ''}</div>
+        <div class="rp-sec"><div class="rp-tit"><span class="rp-num">2</span> Para el local</div>
+          ${fila('Vendido', clp(P.vend))}${P.com ? fila('− Comisiones por venta', '− ' + clpX(P.com)) : ''}${fila('= Para el local', sable(clpX(P.local), P.local), 'res brillo')}
+          <details class="rp-iva"><summary>Considera este ingreso, su <u>IVA</u> y su costo ›</summary>
+            <div class="rp-resul cuatro"><div><small>Vendido sin IVA</small><b class="subr">${clp2(P.ivaV.neto)}</b></div><div><small>IVA de las ventas</small><b class="subr rojo">${clp2(P.ivaV.iva)}</b></div>
+              <div><small>Costo de lo vendido</small><b class="subr">${clp2(P.costo)}</b></div><div class="fuerte"><small>Ganancia real</small><b>${sable(clp2(P.real), P.real)}</b></div></div></details></div>
+        <div class="rp-sec iva"><div class="rp-tit"><span class="rp-num">3</span> <u>IVA</u> ${per}</div>
+          <div class="rp-kpis rp-iva3"><div><small>IVA de las ventas</small><b>${clp2(P.ivaV.iva)}</b></div><div class="fuerte verde"><small>IVA de compras con factura</small><b>− ${clp2(P.credito)}</b></div><div class="fuerte ${P.ivaPagar < 0 ? 'verde' : 'rojo'}"><small>${P.ivaPagar < 0 ? 'IVA a favor' : 'IVA a pagar'}</small><b>${clp2(Math.abs(P.ivaPagar))}</b></div></div>
+          <p class="nota">IVA a pagar = IVA de lo que vendiste − IVA de lo que compraste con factura en este período (crédito fiscal).${P.ivaPagar < 0 ? ' Quedó a favor: se usa en los meses siguientes.' : ''}</p></div>
+        <div class="rp-sec"><div class="rp-tit"><span class="rp-num">4</span> Ganancia real de productos</div>
+          ${fila('Para el local (punto 2)', clpX(P.local))}${fila('− IVA de las ventas', '− ' + clp2(P.ivaV.iva))}${fila('− Costo de lo vendido', '− ' + clp2(P.costo))}${fila('= Ganancia real', sable(clp2(P.real), P.real), 'res brillo')}
+          ${P.sinCosto ? `<p class="nota" style="color:var(--amarillo, #f59e0b);">⚠ ${P.sinCosto} unidad${P.sinCosto === 1 ? '' : 'es'} vendida${P.sinCosto === 1 ? '' : 's'} sin costo registrado: la ganancia se ve mayor de lo real. Registra sus compras o pon su costo en el producto.</p>` : ''}
+          ${neg ? '<p class="nota" style="color:var(--rojo);">⚠️ Aquí los productos dejan pérdida: revisa precios, costos o comisiones.</p>' : `<p class="nota">De cada $100 vendidos en productos, al local le quedan $${(Math.round(P.real / P.vend * 1000) / 10).toLocaleString('es-CL')}.</p>`}
+          <details class="rp-iva"><summary>¿A dónde se fueron los ${clp(P.vend)} vendidos? ›</summary>
+            <div class="rp-donde">${fila('Costo de lo vendido (proveedor)', clp2(P.costo))}${P.com ? fila('Comisiones', clpX(P.com)) : ''}${fila('IVA (al Estado)', clp2(P.ivaV.iva))}${fila('Ganancia real', clp2(P.real))}${fila('Total', clp(P.vend), 'res')}</div></details></div>
+        ${compras}`;
+    }
+    // ----- Todo junto -----
+    function htmlTodo(S, P, dia){
+      const pOk = P && !P.error && !P.sinTienda, sOk = !!S;
+      if (!sOk && (!pOk || !P.prods.length)) return `<div class="bal-vacio">${!P ? 'Cargando…' : `No hay movimientos ${dia ? 'este día' : 'en este período'}.`}</div>` + (pOk ? htmlProductos(P, dia) : '');
+      const s = sOk ? S : { entra: 0, com: 0, prop: 0, local: 0, ivaDia: { iva: 0 }, real: 0 }, p = pOk ? P : { vend: 0, com: 0, local: 0, costo: 0, ivaV: { iva: 0 }, credito: 0, real: 0 };
+      const entra = s.entra + p.vend, equipo = r2(s.com + s.prop + p.com), local = r2(s.local + p.local), ivaDeb = r2(s.ivaDia.iva + p.ivaV.iva);
+      const ivaPagar = r2(ivaDeb - p.credito), real = r2(s.real + p.real), per = dia ? 'del día' : 'del período';
+      const filaT = (nom, vs, vp, vt, cls = '') => `<div class="bal-cmp-f ${cls}"><span>${nom}</span><b data-l="Servicios">${vs}</b><b data-l="Productos">${vp}</b><b data-l="Total">${vt}</b></div>`;
+      return `<div class="rp-kpis"><div><small>Entró en total</small><b>${clp(entra)}</b></div><div class="fuerte ${ivaPagar < 0 ? 'verde' : 'rojo'}"><small>${ivaPagar < 0 ? 'IVA a favor' : 'IVA a pagar'} ${per}</small><b>${clp2(Math.abs(ivaPagar))}</b></div><div class="fuerte"><small>Ganancia real total</small><b>${sable(clp2(real), real)}</b></div></div>
+        <div class="rep-barra" role="img" aria-label="Servicios y productos">${[{ w: s.entra, c: 'var(--azul)', t: 'Servicios' }, { w: p.vend, c: '#c084fc', t: 'Productos' }].filter(x => x.w > 0).map(x => `<i style="flex:${x.w};background:${x.c};" title="${x.t}"></i>`).join('')}</div>
+        <div class="rp-ley"><span><i style="background:var(--azul);"></i>Servicios ${pctTxt(s.entra, entra)}</span><span><i style="background:#c084fc;"></i>Productos ${pctTxt(p.vend, entra)}</span></div>
+        <div class="rp-sec"><div class="rp-tit"><span class="rp-num">1</span> Servicios + productos</div>
+          <div class="bal-cmp">
+            <div class="bal-cmp-f cab"><span></span><b>✂️ Servicios</b><b>🛍 Productos</b><b>◎ Total</b></div>
+            ${filaT('Entró', clp(s.entra), clp(p.vend), clp(entra))}
+            ${filaT('− Equipo <small>(comisiones + propinas)</small>', clpX(s.com + s.prop), clpX(p.com), clpX(equipo))}
+            ${filaT('= Para el local', clpX(s.local), clpX(p.local), sable(clpX(local), local), 'res')}
+            ${filaT('− Costo de productos', '—', clp2(p.costo), clp2(p.costo))}
+            ${filaT('− IVA de las ventas', clp2(s.ivaDia.iva), clp2(p.ivaV.iva), clp2(ivaDeb))}
+            ${filaT('= Ganancia real', clp2(s.real), clp2(p.real), sable(clp2(real), real), 'res real')}
+          </div>
+          <p class="nota">Toca ✂️ Servicios o 🛍 Productos arriba para ver el detalle de cada uno.</p></div>
+        <div class="rp-sec iva"><div class="rp-tit"><span class="rp-num">2</span> <u>IVA</u> ${per} <span class="nota">· lo que se declara</span></div>
+          ${fila('IVA de servicios', clp2(s.ivaDia.iva))}${fila('+ IVA de productos vendidos', clp2(p.ivaV.iva))}${fila('− IVA de compras con factura', '− ' + clp2(p.credito))}${fila(ivaPagar < 0 ? '= IVA a favor' : '= IVA a pagar', `<span style="color:var(${ivaPagar < 0 ? '--verde' : '--rojo'})">${clp2(Math.abs(ivaPagar))}</span>`, 'res')}
+          <details class="rp-iva"><summary>¿Por qué el IVA a pagar no calza con la ganancia? ›</summary>
+            <p class="nota" style="margin:0;">La ganancia real descuenta el IVA de cada venta y el costo sin IVA de lo vendido. El IVA a pagar, en cambio, resta el IVA de <b>todo lo que compraste con factura en el período</b>, aunque esos productos aún no se vendan. Por eso pueden ser distintos: es normal. Confírmalo con tu contador para el F29.</p></details></div>`;
     }
     // Propinas dentro o fuera del IVA (se recuerda en este navegador; por defecto: dentro)
     function ivaConPropinas(){ try { return localStorage.getItem('tw-iva-propinas') !== '0'; } catch (e) { return true; } }
     function cambiarIvaPropinas(si){
       try { localStorage.setItem('tw-iva-propinas', si ? '1' : '0'); } catch (e) {}
-      const abiertos = [...document.querySelectorAll('#ventanaDetalle details')].map(d => d.open), sc = $('ventanaDetalle').scrollTop;
-      dibujarDia(); abrirReparto();
-      document.querySelectorAll('#ventanaDetalle details').forEach((d, i) => d.open = !!abiertos[i]); $('ventanaDetalle').scrollTop = sc;
+      if (tabVisible('dia')) dibujarDia();
+      if (BAL){ BAL.S = serviciosRango(BAL.desde, BAL.hasta); pintarBalance(true); }
+    }
+
+    // Caja: Balance Inteligente del período con selector Todo / Servicios / Productos
+    let BAL_CAJA_MODO = (() => { try { return localStorage.getItem('tw-bal-caja') || 'todo'; } catch (e) { return 'todo'; } })(), BAL_CAJA_P = {};
+    function modoBalCaja(m){ BAL_CAJA_MODO = m; try { localStorage.setItem('tw-bal-caja', m); } catch (e) {} const [d, h] = rangoCaja(); pintarBalCaja(d, h); }
+    async function pintarBalCaja(desde, hasta){
+      const el = $('balCaja'); if (!el) return;
+      const clave = desde + '|' + hasta, S = serviciosRango(desde, hasta);
+      if (!conTienda() && BAL_CAJA_MODO === 'productos') BAL_CAJA_MODO = 'todo';
+      const dibujar = () => {
+        const P = BAL_CAJA_P[clave], m = BAL_CAJA_MODO, pOk = P && !P.error && !P.sinTienda;
+        const s = S || { entra: 0, ivaDia: { iva: 0 }, real: 0, local: 0 }, p = pOk ? P : { vend: 0, ivaPagar: 0, ivaV: { iva: 0 }, credito: 0, real: 0, local: 0 };
+        const v = m === 'servicios' ? { entra: s.entra, local: s.local, iva: s.ivaDia.iva, real: s.real, txtIva: 'IVA a pagar' }
+          : m === 'productos' ? { entra: p.vend, local: p.local, iva: p.ivaPagar, real: p.real, txtIva: p.ivaPagar < 0 ? 'IVA a favor' : 'IVA a pagar' }
+          : (() => { const iva = r2(s.ivaDia.iva + p.ivaV.iva - p.credito); return { entra: s.entra + p.vend, local: r2(s.local + p.local), iva, real: r2(s.real + p.real), txtIva: iva < 0 ? 'IVA a favor' : 'IVA a pagar' }; })();
+        const espera = m !== 'servicios' && conTienda() && !P;
+        const tabs = [['todo', '◎ Todo'], ['servicios', '✂️ Servicios'], ['productos', '🛍 Productos']].filter(([k]) => k !== 'productos' || conTienda());
+        el.innerHTML = `<div class="reparto bal-caja">
+          <div class="rep-cab"><div class="rep-tit">${iconoBalance('balG3')}Balance Inteligente <span class="nota">· ${esc($('cajaTxt').textContent)}</span></div>
+            <div class="bal-tabs mini" role="tablist">${tabs.map(([k, t]) => `<button role="tab" class="${m === k ? 'sel' : ''}" onclick="modoBalCaja('${k}')">${t}</button>`).join('')}</div></div>
+          ${P && P.error && m !== 'servicios' ? `<p class="nota error">${esc(P.error)}</p>` : ''}
+          <div class="bal-res" role="button" tabindex="0" onclick="abrirBalance('${desde}', '${hasta}', BAL_CAJA_MODO)" onkeydown="if(event.key==='Enter'){abrirBalance('${desde}', '${hasta}', BAL_CAJA_MODO)}">
+            <div><small>Entró</small><b>${espera ? '…' : clp(v.entra)}</b></div>
+            <div><small>Para el local</small><b>${espera ? '…' : clpX(v.local)}</b></div>
+            <div><small>${v.txtIva}</small><b class="${v.iva < 0 ? 'verde' : 'rojo'}">${espera ? '…' : clp2(Math.abs(v.iva))}</b></div>
+            <div class="fuerte"><small>Ganancia real</small><b>${espera ? '…' : sable(clp2(v.real), v.real)}</b></div>
+          </div>
+          <div class="rep-pie"><span>${m === 'servicios' ? 'Atenciones cobradas, comisiones y propinas' : m === 'productos' ? 'Ventas entregadas, costo de compra y comisiones' : 'Servicios + productos, con el IVA de compras con factura descontado'}</span>
+            <span class="rep-ver" style="cursor:pointer;" onclick="abrirBalance('${desde}', '${hasta}', BAL_CAJA_MODO)">Abrir análisis e IVA ›</span></div></div>`;
+      };
+      dibujar();
+      if (conTienda() && !BAL_CAJA_P[clave]){ BAL_CAJA_P[clave] = await cargarBalanceProd(desde, hasta); const [d2, h2] = rangoCaja(); if (d2 === desde && h2 === hasta) dibujar(); }
+    }
+
+    // ===================== COMPRAS (memoria de compras de productos, Fase 49) =====================
+    let COMPRAS_RANGO = null;
+    async function abrirCompras(desde, hasta){
+      if (!desde){ const h = hoyTxt(); desde = h.slice(0, 8) + '01'; hasta = h; }
+      COMPRAS_RANGO = [desde, hasta];
+      if (!productos.length){ const { data } = await leerProductos(false); productos = data || []; }
+      const v = $('ventanaDetalle'); v.classList.add('ancha');
+      const opts = productos.slice().sort((a, b) => a.nombre.localeCompare(b.nombre)).map(p => `<option value="${p.id}">${esc(p.nombre)}${p.costo != null ? ` · costo ${clpX(Number(p.costo))}` : ''}</option>`).join('');
+      v.innerHTML = `<h3 style="font-size:19px;">📥 Compras de productos</h3>
+        <p class="nota" style="margin-bottom:10px;">Registra lo que le compras a tus proveedores: suma el stock solo y calcula cuánto te cuesta cada producto.</p>
+        <div class="tarjeta" style="margin-top:0;"><div class="form-grid">
+          <div class="full"><label for="cProd">Producto</label><select id="cProd" onchange="previaCompra()">${opts || '<option value="">Primero crea tus productos</option>'}</select></div>
+          <div><label for="cCant">Cantidad</label><input id="cCant" type="number" min="1" step="1" value="1" oninput="previaCompra()"></div>
+          <div><label for="cCosto">Costo por unidad ($)</label><input id="cCosto" type="number" min="0" step="10" placeholder="Lo que pagaste por cada uno" oninput="previaCompra()"></div>
+          <div><label for="cProv">Proveedor (opcional)</label><input id="cProv" maxlength="80" list="cProvs" placeholder="Ej: Distribuidora Sur"><datalist id="cProvs"></datalist></div>
+          <div><label for="cFecha">Fecha</label><input id="cFecha" type="date" value="${hoyTxt()}" max="${hoyTxt()}"></div>
+          <div class="full"><label class="check-linea"><input type="checkbox" id="cFac" onchange="previaCompra()"> Vino con <b>factura</b> (el IVA de esta compra se descuenta del IVA a pagar)</label></div>
+        </div>
+        <div class="compra-prev" id="cPrev"></div>
+        <div class="det-acciones" style="margin-top:8px;"><button class="boton" onclick="guardarCompra()">Registrar compra</button></div>
+        <p class="estado" id="estadoCompra"></p></div>
+        <div class="barra" style="margin:14px 0 6px;"><h3 style="margin:0;font-size:15px;">Compras registradas</h3>
+          <span style="display:flex;gap:6px;margin-left:auto;align-items:center;"><input type="date" id="cDesde" value="${desde}" onchange="listarCompras()" style="width:auto;"><span class="nota">al</span><input type="date" id="cHasta" value="${hasta}" onchange="listarCompras()" style="width:auto;"></span></div>
+        <div id="listaCompras"><p class="nota">Cargando…</p></div>
+        <div class="det-acciones">${BAL ? '<button class="boton-linea" onclick="pintarBalance()">‹ Volver al balance</button>' : ''}<button class="boton" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>`;
+      $('fondoDetalle').classList.remove('oculto');
+      previaCompra(); listarCompras();
+    }
+    function previaCompra(){
+      const p = productos.find(x => x.id === Number($('cProd')?.value)), cant = Math.max(0, parseInt($('cCant').value) || 0), costo = Math.max(0, Number($('cCosto').value) || 0), fac = $('cFac').checked;
+      if (!p || !cant || !costo){ $('cPrev').innerHTML = ''; return; }
+      const real = fac ? r2(costo / 1.19) : costo, total = cant * costo, precio = p.precio_oferta ?? p.precio, margen = precio ? r2(separarIva(precio).neto - real) : 0;
+      $('cPrev').innerHTML = `<div><small>Total de la compra</small><b>${clp(total)}</b></div>
+        <div><small>Costo real por unidad</small><b>${clpX(real)}</b><small>${fac ? 'sin IVA (lo recuperas)' : 'sin factura: el IVA no se recupera'}</small></div>
+        ${fac ? `<div><small>IVA recuperable</small><b>${clp2(separarIva(total).iva)}</b></div>` : ''}
+        <div><small>Ganas por unidad vendida</small><b class="${margen < 0 ? 'rojo' : ''}">${clp2(margen)}</b><small>a ${clp(precio)}, ya sin IVA</small></div>`;
+    }
+    async function guardarCompra(){
+      const p = { producto_id: Number($('cProd').value), cantidad: parseInt($('cCant').value), costo_unit: Math.round(Number($('cCosto').value)),
+                  con_factura: $('cFac').checked, proveedor: $('cProv').value.trim(), fecha: $('cFecha').value };
+      if (!p.producto_id) return estado('estadoCompra', 'Elige el producto.', 'error');
+      if (!p.cantidad || p.cantidad < 1) return estado('estadoCompra', 'Escribe la cantidad.', 'error');
+      if ($('cCosto').value === '' || p.costo_unit < 0) return estado('estadoCompra', 'Escribe el costo por unidad.', 'error');
+      estado('estadoCompra', 'Guardando…');
+      const { data, error } = await db.rpc('registrar_compra', { p });
+      if (error) return estado('estadoCompra', /registrar_compra/.test(error.message || '') ? 'Falta instalar la Fase 49 en Supabase.' : error.message, 'error');
+      const pr = productos.find(x => x.id === p.producto_id); if (pr){ pr.costo = data.costo; pr.stock = data.stock; }
+      estado('estadoCompra', `✓ Compra registrada. ${pr ? esc(pr.nombre) + ': ' : ''}costo promedio ${clpX(Number(data.costo))}${data.stock != null ? ` · stock ${data.stock}` : ''}.`, 'ok');
+      $('cCant').value = 1; $('cCosto').value = ''; previaCompra(); listarCompras();
+      if (tabVisible('productos')) cargarProductos(true);
+      BAL_CAJA_P = {};
+      if (BAL) BAL.P = await cargarBalanceProd(BAL.desde, BAL.hasta);
+    }
+    async function listarCompras(){
+      const d = $('cDesde').value, h = $('cHasta').value; if (!d || !h) return;
+      const { data, error } = await db.rpc('compras_lista', { p_desde: d, p_hasta: h });
+      if (error) return $('listaCompras').innerHTML = `<p class="error">${/compras_lista/.test(error.message || '') ? 'Falta instalar la Fase 49 en Supabase.' : esc(error.message)}</p>`;
+      const l = data || [], tot = l.reduce((a, c) => a + c.total, 0), fac = l.filter(c => c.con_factura).reduce((a, c) => a + c.total, 0);
+      $('cProvs').innerHTML = [...new Set(l.map(c => c.proveedor).filter(Boolean))].map(x => `<option value="${esc(x)}">`).join('');
+      $('listaCompras').innerHTML = !l.length ? '<p class="nota">No hay compras en estas fechas.</p>' : `<div style="overflow-x:auto;"><table class="tabla-caja">
+        <tr><th>Fecha</th><th>Producto</th><th>Proveedor</th><th class="num">Cant.</th><th class="num">Costo c/u</th><th class="num">Total</th><th>Factura</th><th></th></tr>
+        ${l.map(c => `<tr><td>${esc(deTexto(c.fecha).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }))}</td><td>${esc(c.producto)}</td><td>${esc(c.proveedor || '—')}</td><td class="num">${c.cantidad}</td><td class="num">${clp(c.costo_unit)}</td><td class="num">${clp(c.total)}</td><td>${c.con_factura ? '🧾 Sí' : 'No'}</td>
+          <td><button class="link rojo" style="margin:0;" onclick="borrarCompra(${c.id})" title="Borrar (resta el stock)">Borrar</button></td></tr>`).join('')}
+        <tr class="total"><td>Total</td><td></td><td></td><td class="num">${l.reduce((a, c) => a + c.cantidad, 0)}</td><td></td><td class="num">${clp(tot)}</td><td>${clp(fac)} con factura</td><td></td></tr></table></div>
+        <p class="nota">IVA recuperable de estas compras con factura: <b>${clp2(separarIva(fac).iva)}</b>.</p>`;
+      apilarTablas($('listaCompras')); $('listaCompras').querySelectorAll('div[style*="overflow-x"]').forEach(encadenarH);
+    }
+    async function borrarCompra(id){
+      if (!confirm('¿Borrar esta compra? Se resta su cantidad del stock y se recalcula el costo del producto.')) return;
+      const { error } = await db.rpc('borrar_compra', { p_id: id });
+      if (error) return estado('estadoCompra', error.message, 'error');
+      const { data } = await leerProductos(false); productos = data || [];
+      BAL_CAJA_P = {}; listarCompras(); if (tabVisible('productos')) dibujarProductos();
+      if (BAL) BAL.P = await cargarBalanceProd(BAL.desde, BAL.hasta);
     }
 
     // Foto del profesional (la sube el admin en Equipo y horarios): en su avatar de arriba y en la agenda
@@ -3109,7 +3377,7 @@
                sin: hechas.filter(r => !r.metodo_pago).reduce((a, r) => a + rec(r), 0), total: cobrado(hechas),
                propinas: hechas.reduce((a, r) => a + (r.propina || 0), 0) };
     }
-    function dibujarCaja(){ dibujarCajaBase(); apilarTablas($('tab-caja')); $('tab-caja').querySelectorAll('div[style*="overflow-x"]').forEach(encadenarH); }
+    function dibujarCaja(){ BAL_CAJA_P = {}; dibujarCajaBase(); apilarTablas($('tab-caja')); $('tab-caja').querySelectorAll('div[style*="overflow-x"]').forEach(encadenarH); }
     // Cadena horizontal para tablas anchas (misma idea que la agenda): se arrastra, tiene flechas y gira con la rueda
     function encadenarH(sc){
       if (!sc || sc.parentNode.classList.contains('ch-marco')) return;
@@ -3169,6 +3437,7 @@
       const informe = !admin || tid;
       $('informeCaja').classList.toggle('oculto', !informe); $('kpisCaja').classList.toggle('oculto', informe);
       grid.classList.toggle('oculto', informe); tarjetaLista.classList.toggle('oculto', informe);
+      $('balCaja').classList.toggle('oculto', informe || !admin);
       if (informe){ informeLiquidacion(lista, tid || yo.trabajador_id, txt); return; }
 
       if (!admin){
@@ -3196,6 +3465,7 @@
 
       // ----- Vista del admin: todo, con comisiones -----
       tarjetas[0].classList.remove('oculto');
+      pintarBalCaja(desde, hasta);
       const R = resumenPagos(lista), pend = lista.filter(r => r.estado === 'confirmada' || r.estado === 'en_atencion');
       const pagoProf = sumaParte(hechas);
       $('kpisCaja').innerHTML =
@@ -3325,7 +3595,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F48 · 09-10 b';
+    const VERSION_PANEL = 'F49 · 09-10 a';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -5957,11 +6227,18 @@
       $('catProd').classList.toggle('oculto', cats.length < 2);
       dibujarProductos();
     }
+    function balanceProdPeriodo(per){
+      const h = hoyTxt(); let d = h;
+      if (per === 'semana') d = fechaTexto(lunesDe(new Date()));
+      if (per === 'mes') d = h.slice(0, 8) + '01';
+      abrirBalance(d, h, 'productos');
+    }
     function filtroProd(f){ filtroPr = f; document.querySelectorAll('[data-fpr]').forEach(c => c.classList.toggle('sel', c.dataset.fpr === f)); dibujarProductos(); }
     function dibujarProductos(){
       const adm = yo.rol === 'admin', activos = productos.filter(p => p.activo);
       const agot = activos.filter(p => p.agotado), bajos = activos.filter(p => p.stock != null && p.stock > 0 && p.stock <= 5);
       document.querySelector('[data-fpr="bajo"]')?.classList.toggle('oculto', !adm);
+      if ($('balProdTit')) $('balProdTit').innerHTML = iconoBalance('balG4') + 'Balance Inteligente · Productos';
       if (!adm && filtroPr === 'bajo') filtroPr = 'todos';
       $('kpisProd').innerHTML =
         `<div class="kpi destacado"><b>${activos.length}</b><span>productos a la venta</span></div>` +
@@ -5982,10 +6259,16 @@
           <div class="mini" ${p.imagen_url ? `style="background-image:url('${esc(p.imagen_url)}')"` : ''}>${p.imagen_url ? '' : esc((p.nombre || '?')[0].toUpperCase())}</div>
           <div class="nom"><b>${esc(p.nombre)}${p.destacado ? '<span class="etq ac">Destacado</span>' : ''}${p.activo ? '' : '<span class="etq">Oculto</span>'}</b>
             <span>${esc(p.categoria || 'Sin categoría')}</span></div>
-          <div class="pre">${p.precio_oferta !== null ? `<s>${clp(p.precio)}</s>${clp(p.precio_oferta)}` : clp(p.precio)}</div>
+          <div class="pre">${p.precio_oferta !== null ? `<s>${clp(p.precio)}</s>${clp(p.precio_oferta)}` : clp(p.precio)}${adm ? margenProd(p) : ''}</div>
           <div class="stock">${adm && p.stock !== null ? `<button onclick="ajustarStock(${p.id}, -1)" aria-label="Restar uno">−</button>` : ''}${st}${adm ? `<button onclick="ajustarStock(${p.id}, 1)" aria-label="Sumar uno">+</button>` : ''}</div>
           <div class="acc-prod">${adm ? `<button class="boton-linea" onclick="editarProducto(${p.id})">Editar</button>` : ''}</div></div>`;
       }).join('');
+    }
+    // Costo y ganancia por unidad (ya sin IVA de la venta) — solo el admin
+    function margenProd(p){
+      if (p.costo == null) return '<small class="prod-costo sin">sin costo · <a href="#" class="link" onclick="event.preventDefault();abrirCompras()">registrar compra</a></small>';
+      const precio = p.precio_oferta ?? p.precio, gan = r2(separarIva(precio).neto - Number(p.costo));
+      return `<small class="prod-costo">costo ${clpX(Number(p.costo))} · ganas <b class="${gan < 0 ? 'rojo' : ''}">${clpX(gan)}</b>${p.comision_pct ? ` · ${p.comision_pct}% comisión` : ''}</small>`;
     }
     async function ajustarStock(id, d){
       const p = productos.find(x => x.id === id); const nuevo = Math.max(0, (p.stock ?? 0) + d);
@@ -6005,6 +6288,10 @@
           <div><label for="pStock">Stock (vacío = no controlar)</label><input id="pStock" type="number" min="0" step="1" value="${p.stock ?? ''}"></div>
           <div><label for="pPrecio">Precio ($)</label><input id="pPrecio" type="number" min="0" step="10" value="${p.precio ?? 0}"></div>
           <div><label for="pOferta">Precio oferta ($, opcional)</label><input id="pOferta" type="number" min="0" step="10" value="${p.precio_oferta ?? ''}"></div>
+          <div><label for="pCosto">Costo real por unidad ($)</label><input id="pCosto" type="number" min="0" step="1" value="${p.costo != null ? Math.round(Number(p.costo)) : ''}" placeholder="Se calcula con tus compras">
+            <p class="nota" style="margin:4px 0 0;">Se actualiza solo al <a href="#" class="link" onclick="event.preventDefault();abrirCompras()">registrar compras</a>. Con factura va sin IVA.</p></div>
+          <div><label for="pCom">Comisión por venta (%)</label><input id="pCom" type="number" min="0" max="100" step="1" value="${p.comision_pct || 0}">
+            <p class="nota" style="margin:4px 0 0;">0 = todo para el local. Se paga a quien atendió cuando lo vende en su atención.</p></div>
           <div class="full"><label>Foto (cuadrada se ve mejor)</label>
             <input type="file" id="pFoto" accept="image/*" onchange="elegirFotoProducto(this)">
             <div class="prev-img" id="prevProd">${p.imagen_url ? `<img src="${esc(p.imagen_url)}" alt=""><button class="link" style="margin:0;" onclick="prodImgNueva=''; $('prevProd').innerHTML='<span class=nota>Se quitará al guardar.</span>'">Quitar foto</button>` : '<span class="nota">Sin foto: se muestra la inicial.</span>'}</div></div>
@@ -6034,6 +6321,10 @@
       const p = { nombre: $('pNom').value.trim(), descripcion: $('pDesc').value.trim() || null, categoria: $('pCat').value.trim() || null,
                   precio: num($('pPrecio').value) ?? 0, precio_oferta: num($('pOferta').value), stock: num($('pStock').value),
                   activo: $('pActivo').checked, destacado: $('pDest').checked };
+      if ($('pCosto')){ const c = num($('pCosto').value), ant = productos.find(x => x.id === id);
+        if (c !== null && c < 0) return estado('estadoProd', 'El costo no puede ser negativo.', 'error');
+        if (!ant || c === null || Math.round(Number(ant.costo)) !== c) p.costo = c;                 // no pisa los decimales del promedio si no cambió
+        p.comision_pct = Math.min(100, Math.max(0, num($('pCom').value) || 0)); }
       if (!p.nombre) return estado('estadoProd', 'Escribe el nombre del producto.', 'error');
       if (p.precio < 0 || (p.precio_oferta !== null && p.precio_oferta < 0) || (p.stock !== null && p.stock < 0)) return estado('estadoProd', 'Precios y stock no pueden ser negativos.', 'error');
       if (p.precio_oferta !== null && p.precio_oferta >= p.precio) return estado('estadoProd', 'El precio oferta debe ser menor que el precio normal (o déjalo vacío).', 'error');
