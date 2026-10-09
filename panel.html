@@ -260,6 +260,38 @@
     .rp-donde { background:var(--panel2); border-radius:var(--r-s); padding:2px 12px 6px; margin-bottom:8px; }
     .rp-donde .rp-fila { font-size:13px; }
     .rp-fila small.nota { font-size:11px; }
+    /* Sable de luz: el valor late y una hoja de luz lo ilumina por debajo */
+    .sable { --sc:var(--voltaje); position:relative; display:inline-block; color:var(--sc) !important; padding:0 2px 7px; transform-origin:50% 60%;
+      text-shadow:0 0 6px color-mix(in srgb, var(--sc) 75%, transparent), 0 0 16px color-mix(in srgb, var(--sc) 45%, transparent);
+      animation:sableLatido 1.8s ease-in-out infinite; }
+    .sable.sith { --sc:var(--rojo); }
+    .sable::after { content:""; position:absolute; left:-6px; right:-6px; bottom:0; height:3px; border-radius:3px;
+      background:linear-gradient(90deg, transparent, #fff 10%, #fff 90%, transparent);
+      box-shadow:0 0 3px 1px var(--sc), 0 0 10px 3px color-mix(in srgb, var(--sc) 80%, transparent), 0 0 22px 6px color-mix(in srgb, var(--sc) 40%, transparent);
+      transform-origin:left center; animation:sableEncender .7s cubic-bezier(.2,.8,.2,1) both, sableZumbido 3.2s linear .7s infinite; }
+    @keyframes sableLatido { 0%, 100% { transform:scale(1); } 14% { transform:scale(1.07); } 28% { transform:scale(1); } 42% { transform:scale(1.045); } 60% { transform:scale(1); } }
+    @keyframes sableEncender { from { transform:scaleX(0); opacity:.4; } to { transform:scaleX(1); opacity:1; } }
+    @keyframes sableZumbido { 0%, 100% { opacity:1; } 47% { opacity:1; } 49% { opacity:.72; } 51% { opacity:1; } 83% { opacity:.88; } 85% { opacity:1; } }
+    @media (prefers-reduced-motion:reduce){ .sable, .sable::after { animation:none; } }
+    .rp-fila.brillo { padding-top:10px; padding-bottom:4px; }
+    .rp-fila.brillo b { font-size:19px; }
+    .rep-item.local b .sable { font-size:17px; }
+    .rp-resul { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:6px 0 4px; }
+    .rp-resul > div { background:color-mix(in srgb, var(--hueso) 4%, transparent); border:1px solid var(--linea); border-radius:var(--r-s); padding:9px 12px 10px; }
+    .rp-resul small { display:block; font-size:11px; color:var(--gris); margin-bottom:4px; }
+    .rp-resul b { font-size:16px; font-variant-numeric:tabular-nums; }
+    .rp-resul b.subr { padding-bottom:3px; border-bottom:2px solid color-mix(in srgb, var(--hueso) 35%, transparent); }
+    .rp-resul b.subr.rojo { color:var(--rojo); border-bottom-color:color-mix(in srgb, var(--rojo) 60%, transparent); }
+    .rp-resul .fuerte { border-color:color-mix(in srgb, var(--voltaje) 40%, transparent); }
+    @media (max-width:560px){ .rp-resul { grid-template-columns:1fr 1fr; } .rp-resul .fuerte { grid-column:1 / -1; } }
+    /* Tablas anchas de Caja: cadena horizontal en vez de la barra gris */
+    .ch-marco { position:relative; }
+    .ch-marco > .con-cadena { overflow-x:auto; }
+    .ch-marco > .cadena-h { position:relative; left:auto; right:auto; bottom:auto; margin-top:8px; display:none; }
+    .ch-marco.con-h > .cadena-h { display:flex; }
+    .ch-marco.con-h > .con-cadena { -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 var(--fi, 0px), #000 calc(100% - var(--fd, 0px)), transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 var(--fi, 0px), #000 calc(100% - var(--fd, 0px)), transparent 100%); }
+    .ch-marco.izq-on { --fi:28px; } .ch-marco.der-on { --fd:28px; }
+    @media (min-width:721px){ #tab-caja .grid-caja { grid-template-columns:minmax(240px, 1fr) 2fr; } }
     .rp-kpis .fuerte.rojo b { color:var(--rojo); }
     .rp-iva3 { margin-bottom:8px; }
     .bal-ico { width:24px; height:24px; vertical-align:-6px; margin-right:7px; filter:drop-shadow(0 0 5px color-mix(in srgb, var(--voltaje) 55%, transparent)); }
@@ -2198,6 +2230,8 @@
     // Al tocar el cuadro se abre el detalle con las sumas y el IVA (cálculos al centavo, sin redondear hasta el final).
     const IVA = 0.19, COLS_REP = ['#60a5fa', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#22d3ee', '#a3e635', '#fb923c'];
     let REPARTO = null;
+    // Valor con "sable de luz": late y queda iluminado (rojo si es negativo)
+    const sable = (txt, n) => `<span class="sable${n < 0 ? ' sith' : ''}">${txt}</span>`;
     // Ícono "Balance Inteligente": hexágono con anillo de reparto que gira y núcleo que late
     const iconoBalance = id => `<svg class="bal-ico" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--voltaje)"/><stop offset="1" style="stop-color:var(--azul)"/></linearGradient></defs>
       <path d="M16 2.5 27.7 9.25v13.5L16 29.5 4.3 22.75V9.25Z" fill="none" stroke="url(#${id})" stroke-width="1.6" stroke-linejoin="round"/>
@@ -2242,8 +2276,8 @@
         <div class="rep-cab"><div class="rep-tit">${iconoBalance('balG1')}Balance Inteligente <span class="nota">· ${hoy ? 'en vivo' : 'del día'} · solo atenciones cobradas</span></div><span class="rep-ver">Abrir análisis e IVA ›</span></div>
         ${barraReparto(R)}
         <div class="rep-lista">${R.pros.map(p => `<div class="rep-item"><span class="rep-pto" style="background:${p.color};"></span><span class="rep-nom">${esc(p.nom)}${p.tu ? ' <em>(tú)</em>' : ''}<small>${p.n} atención${p.n === 1 ? '' : 'es'} · ${p.pct}%${p.prop ? ' + propinas' : ''}</small></span><b>${clpX(p.gan)}<small>${pctTxt(p.gan, base)}</small></b></div>`).join('')}
-          <div class="rep-item local"><span class="rep-pto" style="background:var(--voltaje);"></span><span class="rep-nom">🏪 Para el local<small>cobrado − comisiones · considera su <u>IVA</u></small></span><b>${clpX(R.local)}<small>${pctTxt(R.local, base)}</small></b></div></div>
-        <div class="rep-pie"><span>Entró ${hoy ? 'hoy' : 'ese día'}: <b>${clp(R.entra)}</b> <small>(servicios + propinas)</small></span><span>IVA a pagar: <b class="rojo">${clp2(R.ivaDia.iva)}</b> · Ganancia real del local: <b class="${R.real < 0 ? 'rojo' : 'naranja'}">${clp2(R.real)}</b></span></div></div>`;
+          <div class="rep-item local"><span class="rep-pto" style="background:var(--voltaje);"></span><span class="rep-nom">🏪 Para el local<small>cobrado − comisiones · considera su <u>IVA</u></small></span><b>${sable(clpX(R.local), R.local)}<small>${pctTxt(R.local, base)}</small></b></div></div>
+        <div class="rep-pie"><span>Entró ${hoy ? 'hoy' : 'ese día'}: <b>${clp(R.entra)}</b> <small>(servicios + propinas)</small></span><span>IVA a pagar: <b class="rojo">${clp2(R.ivaDia.iva)}</b> · Ganancia real del local: <b>${sable(clp2(R.real), R.real)}</b></span></div></div>`;
     }
     function abrirReparto(){
       const R = REPARTO; if (!R) return;
@@ -2266,11 +2300,10 @@
           <p class="nota">Las propinas son 100% de quien atendió.</p></div>
 
         <div class="rp-sec"><div class="rp-tit"><span class="rp-num">2</span> Para el local</div>
-          ${fila('Entró en total <small class="nota">(servicios + propinas)</small>', clp(R.entra))}${fila('− Equipo <small class="nota">(comisiones + propinas)</small>', '− ' + clpX(R.com + R.prop))}${fila('= Para el local', clpX(R.local), 'res')}
+          ${fila('Entró en total <small class="nota">(servicios + propinas)</small>', clp(R.entra))}${fila('− Equipo <small class="nota">(comisiones + propinas)</small>', '− ' + clpX(R.com + R.prop))}${fila('= Para el local', sable(clpX(R.local), R.local), 'res brillo')}
           <details class="rp-iva"><summary>Considera este ingreso y su <u>IVA</u> ›</summary>
             <p class="nota" style="margin:0 0 6px;">Los ${clpX(R.local)} todavía no son ganancia: al local le ingresaron <b>${clp(base)}</b> (${queBase}) y el IVA se paga sobre todo eso.</p>
-            ${fila(`Total sin IVA: ${clp(base)} ÷ 1,19`, clp2(R.ivaDia.neto))}${fila(`IVA a pagar: ${clp(base)} − ${clp2(R.ivaDia.neto)}`, clp2(R.ivaDia.iva))}
-            ${fila(`Ganancia real: ${clpX(R.local)} − ${clp2(R.ivaDia.iva)}`, clp2(R.real), 'res' + (neg ? ' neg' : ''))}
+            <div class="rp-resul"><div><small>Total sin IVA</small><b class="subr">${clp2(R.ivaDia.neto)}</b></div><div><small>IVA a pagar</small><b class="subr rojo">${clp2(R.ivaDia.iva)}</b></div><div class="fuerte"><small>Ganancia real</small><b>${sable(clp2(R.real), R.real)}</b></div></div>
             <p class="nota">El detalle de la cuenta está en los puntos 3 y 4.</p></details></div>
 
         <div class="rp-sec iva"><div class="rp-tit"><span class="rp-num">3</span> <u>IVA</u> del día <span class="nota">· sobre todo lo que ingresó (${queBase})</span></div>
@@ -2279,7 +2312,7 @@
           ${R.prop > 0 ? `<label class="rp-chk"><input type="checkbox" ${R.ivaConProp ? 'checked' : ''} onchange="cambiarIvaPropinas(this.checked)"> Incluir las propinas (${clp(R.prop)}) en el IVA</label>` : ''}
 
           <details class="rp-iva"><summary>¿Cuánto le queda al local después de pagar el IVA? ›</summary>
-            ${fila('Para el local (punto 2)', clpX(R.local))}${fila('− Total IVA a pagar', '− ' + clp2(R.ivaDia.iva))}${fila('= Ganancia real del local', clp2(R.real), 'res' + (neg ? ' neg' : ''))}
+            ${fila('Para el local (punto 2)', clpX(R.local))}${fila('− Total IVA a pagar', '− ' + clp2(R.ivaDia.iva))}${fila('= Ganancia real del local', sable(clp2(R.real), R.real), 'res brillo')}
             ${neg ? '<p class="nota" style="color:var(--rojo);">⚠️ Las comisiones más el IVA superan lo que le quedó al local: este día el local pierde plata.</p>' : `<p class="nota">De cada $100 que ingresaron, al local le quedan $${base ? (Math.round(R.real / base * 1000) / 10).toLocaleString('es-CL') : 0}.</p>`}
             <div class="rp-donde"><div style="font-size:12px;color:var(--gris);margin:6px 0 2px;">A dónde se fueron los ${clp(R.entra)} que entraron</div>
               ${fila('Equipo (comisiones + propinas)', clpX(R.com + R.prop))}${fila('IVA (al Estado)', clp2(R.ivaDia.iva))}${fila('Ganancia real del local', clp2(R.real))}${fila('Total', clp(R.entra), 'res')}</div>
@@ -3027,7 +3060,33 @@
                sin: hechas.filter(r => !r.metodo_pago).reduce((a, r) => a + rec(r), 0), total: cobrado(hechas),
                propinas: hechas.reduce((a, r) => a + (r.propina || 0), 0) };
     }
-    function dibujarCaja(){ dibujarCajaBase(); apilarTablas($('tab-caja')); }
+    function dibujarCaja(){ dibujarCajaBase(); apilarTablas($('tab-caja')); $('tab-caja').querySelectorAll('div[style*="overflow-x"]').forEach(encadenarH); }
+    // Cadena horizontal para tablas anchas (misma idea que la agenda): se arrastra, tiene flechas y gira con la rueda
+    function encadenarH(sc){
+      if (!sc || sc.parentNode.classList.contains('ch-marco')) return;
+      const m = document.createElement('div'); m.className = 'ch-marco';
+      sc.parentNode.insertBefore(m, sc); m.appendChild(sc); sc.classList.add('con-cadena');
+      m.insertAdjacentHTML('beforeend', '<div class="cadena-h" aria-hidden="true"><button type="button" tabindex="-1" data-h="-1" title="Izquierda">◀</button><div class="ch-riel"></div><button type="button" tabindex="-1" data-h="1" title="Derecha">▶</button></div>');
+      const rh = m.querySelector('.ch-riel'), [bl, br] = m.querySelectorAll('.cadena-h button');
+      const pintar = () => {
+        const maxX = sc.scrollWidth - sc.clientWidth, x = sc.scrollLeft, wh = rh.clientWidth;
+        m.classList.toggle('con-h', maxX > 2); m.classList.toggle('izq-on', x > 4); m.classList.toggle('der-on', x < maxX - 4);
+        bl.disabled = x <= 2; br.disabled = x >= maxX - 2;
+        const thw = maxX > 2 ? Math.max(40, wh * sc.clientWidth / sc.scrollWidth) : wh;
+        rh.style.setProperty('--cx', (-x * 0.5).toFixed(1) + 'px'); rh.style.setProperty('--tw', thw.toFixed(1) + 'px');
+        rh.style.setProperty('--tl', (maxX > 2 ? (wh - thw) * x / maxX : 0).toFixed(1) + 'px');
+      };
+      sc.addEventListener('scroll', pintar, { passive: true });
+      if (window.ResizeObserver){ const ro = new ResizeObserver(pintar); ro.observe(sc); ro.observe(m); }
+      bl.onclick = br.onclick = e => sc.scrollBy({ left: +e.currentTarget.dataset.h * sc.clientWidth * 0.6, behavior: 'smooth' });
+      sc.addEventListener('wheel', e => { if (sc.scrollWidth <= sc.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY) || !e.shiftKey) return; e.preventDefault(); sc.scrollLeft += e.deltaY; }, { passive: false });
+      let act = false;
+      const mover = ev => { const r = rh.getBoundingClientRect(); sc.scrollLeft = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * (sc.scrollWidth - sc.clientWidth); };
+      rh.addEventListener('pointerdown', ev => { act = true; rh.setPointerCapture(ev.pointerId); mover(ev); });
+      rh.addEventListener('pointermove', ev => { if (act) mover(ev); });
+      rh.addEventListener('pointerup', () => { act = false; });
+      requestAnimationFrame(pintar);
+    }
     // En celular las tablas de Caja se leen como tarjetas: cada celda lleva el nombre de su columna
     function apilarTablas(raiz){
       if (!raiz) return;
@@ -3217,7 +3276,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F46 · 09-10 d';
+    const VERSION_PANEL = 'F46 · 09-10 e';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
