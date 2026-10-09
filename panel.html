@@ -259,6 +259,33 @@
     .rp-real.neg b { color:var(--rojo); }
     .rp-donde { background:var(--panel2); border-radius:var(--r-s); padding:2px 12px 6px; margin-bottom:8px; }
     .rp-donde .rp-fila { font-size:13px; }
+    .rp-fila small.nota { font-size:11px; }
+    .rp-kpis .fuerte.rojo b { color:var(--rojo); }
+    .rp-iva3 { margin-bottom:8px; }
+    .bal-ico { width:24px; height:24px; vertical-align:-6px; margin-right:7px; filter:drop-shadow(0 0 5px color-mix(in srgb, var(--voltaje) 55%, transparent)); }
+    .bal-giro { transform-origin:16px 16px; animation:balGiro 9s linear infinite; }
+    .bal-pulso { transform-origin:16px 16px; animation:balPulso 2.2s ease-in-out infinite; }
+    @keyframes balGiro { to { transform:rotate(360deg); } }
+    @keyframes balPulso { 50% { transform:scale(.6); opacity:.55; } }
+    @media (prefers-reduced-motion:reduce){ .bal-giro, .bal-pulso { animation:none; } }
+    .rep-tit { letter-spacing:.01em; }
+    .reparto { background:linear-gradient(180deg, color-mix(in srgb, var(--voltaje) 5%, var(--panel)), var(--panel) 60%); }
+    /* Caja en celular: cada fila de tabla se vuelve una tarjeta (sin deslizar hacia el lado) */
+    .grid-caja > * { min-width:0; }
+    @media (max-width:640px){
+      .tabla-caja.apilar, .tabla-caja.apilar tbody { display:block; width:100%; }
+      .tabla-caja.apilar tr.cab { display:none; }
+      .tabla-caja.apilar tr { display:grid; grid-template-columns:1fr 1fr; gap:2px 16px; padding:10px 12px; margin-bottom:8px; border:1px solid var(--linea); border-radius:var(--r-s); background:var(--panel2); }
+      .tabla-caja.apilar td { display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:3px 0; border:none; white-space:normal; text-align:right; min-width:0; }
+      .tabla-caja.apilar td::before { content:attr(data-l); color:var(--gris); font-size:11px; font-weight:400; text-align:left; }
+      .tabla-caja.apilar td[data-l=""], .tabla-caja.apilar td.ancha { grid-column:1 / -1; }
+      .tabla-caja.apilar td[data-l=""] { justify-content:flex-start; flex-wrap:wrap; gap:4px 8px; text-align:left; font-size:14px; font-weight:700; padding-bottom:6px; margin-bottom:4px; border-bottom:1px dashed var(--linea); }
+      .tabla-caja.apilar td[data-l=""]::before { display:none; }
+      .tabla-caja.apilar td.cero { display:none; }
+      .tabla-caja.apilar tr.total { border-color:color-mix(in srgb, var(--voltaje) 50%, transparent); }
+      .tabla-caja.apilar tr.total td.cero { display:flex; }
+      #tab-caja [style*="overflow-x"] { overflow:visible !important; }
+    }
     .rp-chk { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gris); margin:4px 0 2px; cursor:pointer; }
     .rp-chk input { width:auto; margin:0; }
     .rp-kpis { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:12px; }
@@ -2171,7 +2198,12 @@
     // Al tocar el cuadro se abre el detalle con las sumas y el IVA (cálculos al centavo, sin redondear hasta el final).
     const IVA = 0.19, COLS_REP = ['#60a5fa', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#22d3ee', '#a3e635', '#fb923c'];
     let REPARTO = null;
-    const clp2 = n => '$' + Number(n || 0).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Ícono "Balance Inteligente": hexágono con anillo de reparto que gira y núcleo que late
+    const iconoBalance = id => `<svg class="bal-ico" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--voltaje)"/><stop offset="1" style="stop-color:var(--azul)"/></linearGradient></defs>
+      <path d="M16 2.5 27.7 9.25v13.5L16 29.5 4.3 22.75V9.25Z" fill="none" stroke="url(#${id})" stroke-width="1.6" stroke-linejoin="round"/>
+      <g class="bal-giro"><circle cx="16" cy="16" r="7" fill="none" stroke="url(#${id})" stroke-width="3" stroke-dasharray="18 5 8 5 6 2" stroke-linecap="round"/></g>
+      <circle class="bal-pulso" cx="16" cy="16" r="2.3" style="fill:var(--voltaje)"/></svg>`;
+    const clp2 = n => (n < 0 ? '−$' : '$') + Math.abs(Number(n || 0)).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const clpX = n => Number.isInteger(Math.round(n * 100) / 100) ? clp(n) : clp2(n);           // con decimales solo si los tiene
     const pctTxt = (a, t) => t ? (Math.round(a / t * 1000) / 10).toLocaleString('es-CL') + '%' : '0%';
     // Separa un monto con IVA incluido: neto = monto / 1,19 y IVA = monto − neto (en centavos para no perder decimales)
@@ -2207,7 +2239,7 @@
       const R = REPARTO = calcularReparto(delDia); if (!R) return '';
       const base = R.serv + R.prop, hoy = R.fecha === hoyTxt();
       return `<div class="reparto" role="button" tabindex="0" onclick="abrirReparto()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirReparto();}">
-        <div class="rep-cab"><div class="rep-tit">💰 Reparto ${hoy ? 'de hoy' : 'del día'} <span class="nota">· solo atenciones cobradas</span></div><span class="rep-ver">Ver detalle e IVA ›</span></div>
+        <div class="rep-cab"><div class="rep-tit">${iconoBalance('balG1')}Balance Inteligente <span class="nota">· ${hoy ? 'en vivo' : 'del día'} · solo atenciones cobradas</span></div><span class="rep-ver">Abrir análisis e IVA ›</span></div>
         ${barraReparto(R)}
         <div class="rep-lista">${R.pros.map(p => `<div class="rep-item"><span class="rep-pto" style="background:${p.color};"></span><span class="rep-nom">${esc(p.nom)}${p.tu ? ' <em>(tú)</em>' : ''}<small>${p.n} atención${p.n === 1 ? '' : 'es'} · ${p.pct}%${p.prop ? ' + propinas' : ''}</small></span><b>${clpX(p.gan)}<small>${pctTxt(p.gan, base)}</small></b></div>`).join('')}
           <div class="rep-item local"><span class="rep-pto" style="background:var(--voltaje);"></span><span class="rep-nom">🏪 Para el local<small>cobrado − comisiones · considera su <u>IVA</u></small></span><b>${clpX(R.local)}<small>${pctTxt(R.local, base)}</small></b></div></div>
@@ -2220,7 +2252,7 @@
       const neg = R.real < 0, base = R.baseIva, conProp = R.ivaConProp && R.prop > 0;
       const queBase = conProp ? 'servicios + propinas' : 'servicios';
       $('ventanaDetalle').classList.add('ancha');
-      $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">💰 Reparto del día</h3>
+      $('ventanaDetalle').innerHTML = `<h3 style="font-size:19px;" class="bal-h">${iconoBalance('balG2')}Balance Inteligente</h3>
         <p class="nota" style="margin-bottom:12px;">${esc(f[0].toUpperCase() + f.slice(1))} · ${R.pros.reduce((a, p) => a + p.n, 0)} atenciones cobradas</p>
         <div class="rp-kpis"><div><small>Servicios cobrados</small><b>${clp(R.serv)}</b></div><div><small>Propinas</small><b>${clp(R.prop)}</b></div><div class="fuerte"><small>Entró en total</small><b>${clp(R.entra)}</b></div></div>
         ${barraReparto(R)}
@@ -2234,7 +2266,7 @@
           <p class="nota">Las propinas son 100% de quien atendió.</p></div>
 
         <div class="rp-sec"><div class="rp-tit"><span class="rp-num">2</span> Para el local</div>
-          ${fila('Servicios cobrados', clp(R.serv))}${fila('− Comisiones del equipo', '− ' + clpX(R.com))}${fila('= Para el local', clpX(R.local), 'res')}
+          ${fila('Entró en total <small class="nota">(servicios + propinas)</small>', clp(R.entra))}${fila('− Equipo <small class="nota">(comisiones + propinas)</small>', '− ' + clpX(R.com + R.prop))}${fila('= Para el local', clpX(R.local), 'res')}
           <details class="rp-iva"><summary>Considera este ingreso y su <u>IVA</u> ›</summary>
             <p class="nota" style="margin:0 0 6px;">Los ${clpX(R.local)} todavía no son ganancia: al local le ingresaron <b>${clp(base)}</b> (${queBase}) y el IVA se paga sobre todo eso.</p>
             ${fila(`Total sin IVA: ${clp(base)} ÷ 1,19`, clp2(R.ivaDia.neto))}${fila(`IVA a pagar: ${clp(base)} − ${clp2(R.ivaDia.neto)}`, clp2(R.ivaDia.iva))}
@@ -2242,8 +2274,7 @@
             <p class="nota">El detalle de la cuenta está en los puntos 3 y 4.</p></details></div>
 
         <div class="rp-sec iva"><div class="rp-tit"><span class="rp-num">3</span> <u>IVA</u> del día <span class="nota">· sobre todo lo que ingresó (${queBase})</span></div>
-          <div class="rp-ec"><div><small>Total ingresado</small><b>${clp(base)}</b></div><span>÷ 1,19 =</span><div class="fuerte"><small>Total sin IVA</small><b>${clp2(R.ivaDia.neto)}</b></div></div>
-          <div class="rp-ec"><div><small>Total ingresado</small><b>${clp(base)}</b></div><span>− ${clp2(R.ivaDia.neto)} =</span><div class="fuerte rojo"><small>Total IVA a pagar</small><b>${clp2(R.ivaDia.iva)}</b></div></div>
+          <div class="rp-kpis rp-iva3"><div><small>Total ingresado</small><b>${clp(base)}</b></div><div class="fuerte"><small>Total sin IVA</small><b>${clp2(R.ivaDia.neto)}</b></div><div class="fuerte rojo"><small>Total IVA a pagar</small><b>${clp2(R.ivaDia.iva)}</b></div></div>
           <p class="nota">Redondeado a pesos (como en la boleta): sin IVA <b>${clp(Math.round(R.ivaDia.neto))}</b> · IVA <b>${clp(base - Math.round(R.ivaDia.neto))}</b>.</p>
           ${R.prop > 0 ? `<label class="rp-chk"><input type="checkbox" ${R.ivaConProp ? 'checked' : ''} onchange="cambiarIvaPropinas(this.checked)"> Incluir las propinas (${clp(R.prop)}) en el IVA</label>` : ''}
 
@@ -2996,7 +3027,22 @@
                sin: hechas.filter(r => !r.metodo_pago).reduce((a, r) => a + rec(r), 0), total: cobrado(hechas),
                propinas: hechas.reduce((a, r) => a + (r.propina || 0), 0) };
     }
-    function dibujarCaja(){
+    function dibujarCaja(){ dibujarCajaBase(); apilarTablas($('tab-caja')); }
+    // En celular las tablas de Caja se leen como tarjetas: cada celda lleva el nombre de su columna
+    function apilarTablas(raiz){
+      if (!raiz) return;
+      raiz.querySelectorAll('table.tabla-caja').forEach(t => {
+        const filas = [...t.rows], cab = filas.find(r => r.querySelector('th')); if (!cab) return;
+        const tit = [...cab.cells].map(c => c.textContent.trim());
+        cab.classList.add('cab'); t.classList.add('apilar');
+        filas.forEach(r => { if (r === cab) return; [...r.cells].forEach((c, i) => {
+          c.dataset.l = i === 0 && !tit[0] ? '' : (tit[i] || '');
+          c.classList.toggle('cero', i > 0 && /^(\$0|—)$/.test(c.textContent.trim()));
+          c.classList.toggle('ancha', /^(Cliente|Servicios)$/.test(tit[i] || '') && c.textContent.trim().length > 14);
+        }); });
+      });
+    }
+    function dibujarCajaBase(){
       const admin = yo.rol === 'admin', sel = $('cajaTrab');
       if (admin && !sel.options.length)
         sel.innerHTML = `<option value="">${LOCAL_PANEL ? 'Todo ' + esc(nombreLocal(LOCAL_PANEL)) : 'Todo el equipo'}</option>` + trabsFiltro().map(t => `<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
@@ -3171,7 +3217,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F46 · 09-10 c';
+    const VERSION_PANEL = 'F46 · 09-10 d';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
