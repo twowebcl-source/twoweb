@@ -229,13 +229,69 @@
     .cv-riel::after { content:""; position:absolute; left:0; right:0; top:var(--tt); height:var(--th); background:var(--voltaje); border-radius:6px; }
     .cv-riel:hover::after { filter:brightness(1.2); }
     .nombre-auto { margin:6px 0 0; }
-    .reparto { flex-basis:100%; border:1px solid var(--linea); border-radius:var(--r-s); padding:10px 14px; background:var(--panel); }
-    .rep-tit { font-weight:700; margin-bottom:6px; }
-    .rep-lista { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:6px 18px; }
-    .rep-item { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:5px 0; border-bottom:1px dashed var(--linea); }
-    .rep-item small { display:block; color:var(--gris); font-size:11px; }
-    .rep-item.local { border-bottom:none; }
+    .reparto { flex-basis:100%; border:1px solid var(--linea); border-radius:var(--r-s); padding:12px 16px; background:var(--panel); cursor:pointer; transition:border-color .15s, transform .15s; }
+    .reparto:hover, .reparto:focus-visible { border-color:color-mix(in srgb, var(--voltaje) 55%, transparent); outline:none; }
+    .reparto:active { transform:scale(.995); }
+    .rep-cab { display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+    .rep-tit { font-weight:700; }
+    .rep-ver { font-size:12px; color:var(--voltaje); font-weight:600; white-space:nowrap; }
+    .rep-barra { display:flex; height:10px; border-radius:99px; overflow:hidden; gap:2px; background:var(--panel2); margin-bottom:10px; }
+    .rep-barra i { display:block; min-width:4px; }
+    .rep-lista { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:4px 22px; }
+    .rep-item { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px dashed var(--linea); }
+    .rep-pto { width:10px; height:10px; border-radius:3px; flex:none; }
+    .rep-nom { flex:1; min-width:0; }
+    .rep-nom em { font-style:normal; color:var(--gris); }
+    .rep-item small { display:block; color:var(--gris); font-size:11px; font-weight:400; }
+    .rep-item b { text-align:right; font-variant-numeric:tabular-nums; }
     .rep-item.local b { color:var(--voltaje); font-size:17px; }
+    .rep-item u { text-decoration-color:var(--voltaje); text-underline-offset:2px; }
+    .rep-pie { display:flex; justify-content:space-between; gap:6px 16px; flex-wrap:wrap; margin-top:8px; font-size:13px; color:var(--gris); }
+    .rep-pie b { color:var(--hueso); font-variant-numeric:tabular-nums; }
+    .rp-kpis { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:12px; }
+    .rp-kpis div, .rp-ec div { background:var(--panel2); border-radius:var(--r-s); padding:9px 12px; }
+    .rp-kpis small, .rp-ec small { display:block; font-size:11px; color:var(--gris); }
+    .rp-kpis b, .rp-ec b { font-size:17px; font-variant-numeric:tabular-nums; }
+    .rp-kpis .fuerte b, .rp-ec .fuerte b { color:var(--voltaje); }
+    .rp-ec .fuerte.rojo b { color:var(--rojo); }
+    .rp-ley { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12px; color:var(--gris); margin:-4px 0 6px; }
+    .rp-ley i, .rp-tr i { display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:middle; }
+    .rp-sec { border-top:1px solid var(--linea); padding:12px 0 6px; margin-top:8px; }
+    .rp-tit { font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .rp-num { width:22px; height:22px; border-radius:50%; background:var(--voltaje); color:#fff; font-size:12px; display:inline-grid; place-items:center; }
+    .rp-tabla { font-size:13px; }
+    .rp-th, .rp-tr { display:grid; grid-template-columns:1.3fr .8fr 1.9fr .8fr .9fr; gap:8px; align-items:center; padding:7px 0; border-bottom:1px dashed var(--linea); }
+    .rp-th { font-size:11px; color:var(--gris); text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--linea); }
+    .rp-tr > :not(:first-child), .rp-th > :not(:first-child) { text-align:right; font-variant-numeric:tabular-nums; }
+    .rp-tr small { display:block; color:var(--gris); font-size:11px; margin-left:15px; }
+    .rp-tr em { font-style:normal; color:var(--gris); }
+    .rp-tr.total { border-bottom:none; font-weight:700; }
+    .rp-tr b { color:var(--voltaje); }
+    .rp-fila { display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-size:14px; }
+    .rp-fila b { font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .rp-fila.res { border-top:1px solid var(--linea); margin-top:2px; padding-top:7px; }
+    .rp-fila.res b { color:var(--voltaje); font-size:16px; }
+    .rp-fila.neg b { color:var(--rojo); }
+    .rp-iva { margin:8px 0 4px; background:var(--panel2); border-radius:var(--r-s); padding:8px 12px; }
+    .rp-iva summary { cursor:pointer; font-size:12px; color:var(--gris); list-style:none; }
+    .rp-iva summary::-webkit-details-marker { display:none; }
+    .rp-iva[open] summary { margin-bottom:6px; color:var(--hueso); }
+    .rp-iva u, .rp-tit u { text-decoration-color:var(--voltaje); text-underline-offset:2px; }
+    .rp-ec { display:grid; grid-template-columns:1fr 130px 1.3fr; gap:8px; align-items:center; margin-bottom:8px; }
+    .rp-ec > span { color:var(--gris); font-size:13px; text-align:center; }
+    @media (max-width:560px){
+      .rp-kpis { grid-template-columns:1fr 1fr; } .rp-kpis .fuerte { grid-column:1 / -1; }
+      .rp-th { display:none; }
+      .rp-tr { grid-template-columns:1fr; gap:3px; }
+      .rp-tr > [data-l] { display:flex; justify-content:space-between; gap:10px; }
+      .rp-tr > [data-l]::before { content:attr(data-l); color:var(--gris); font-size:12px; font-weight:400; }
+      .rp-tr > span:first-child { margin-bottom:2px; }
+      .rp-tr.total { grid-template-columns:1fr auto; }
+      .rp-tr.total > span:not(:first-child) { display:none; }
+      .rp-ec { grid-template-columns:1fr 74px 1fr; gap:6px; }
+      .rp-ec > span { white-space:normal; max-width:74px; text-align:center; font-size:12px; }
+      .rp-ec b { font-size:15px; } .rp-ec div { padding:8px 9px; }
+    }
     .loc-lista { display:grid; gap:10px; }
     .loc-item { border:1px solid var(--linea); border-radius:var(--r-s); padding:12px; background:color-mix(in srgb, var(--panel2) 60%, transparent); }
     .loc-item.nuevo { border-style:dashed; border-color:var(--voltaje); }
@@ -2098,23 +2154,86 @@
       }
       $('kpis').innerHTML = h + (t ? '' : repartoDia(delDia));
     }
-    // "Todos": cuánto ganó cada profesional hoy y cuánto queda para el local (lo cobrado menos las comisiones; las propinas son de cada uno)
-    function repartoDia(delDia){
-      const hechas = delDia.filter(r => r.estado === 'completada'); if (!hechas.length) return '';
+    // "Todos": cuánto ganó cada profesional y cuánto queda para el local (lo cobrado menos las comisiones; las propinas son de cada uno).
+    // Al tocar el cuadro se abre el detalle con las sumas y el IVA (cálculos al centavo, sin redondear hasta el final).
+    const IVA = 0.19, COLS_REP = ['#60a5fa', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#22d3ee', '#a3e635', '#fb923c'];
+    let REPARTO = null;
+    const clp2 = n => '$' + Number(n || 0).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const clpX = n => Number.isInteger(Math.round(n * 100) / 100) ? clp(n) : clp2(n);           // con decimales solo si los tiene
+    const pctTxt = (a, t) => t ? (Math.round(a / t * 1000) / 10).toLocaleString('es-CL') + '%' : '0%';
+    // Separa un monto con IVA incluido: neto = monto / 1,19 y IVA = monto − neto (en centavos para no perder decimales)
+    function separarIva(monto){
+      const c = Math.round(monto * 100), neto = Math.round(c / (1 + IVA));
+      return { neto: neto / 100, iva: (c - neto) / 100 };
+    }
+    function calcularReparto(delDia){
+      const hechas = delDia.filter(r => r.estado === 'completada'); if (!hechas.length) return null;
       const yoT = trabajadores.find(x => x.correo && yo.correo && x.correo.toLowerCase() === yo.correo.toLowerCase());
       const ids = [...new Set(hechas.map(r => r.trabajador_id))];
-      let local = 0, entra = 0;
-      const filas = ids.map(id => {
+      const pros = ids.map(id => {
         const tr = trabajadores.find(x => x.id === id) || { nombre: hechas.find(r => r.trabajador_id === id)?.trabajador || '—', comision: 50 };
         const rs = hechas.filter(r => r.trabajador_id === id), pct = tr.comision ?? 50;
-        const serv = rs.reduce((a, r) => a + (r.total || 0), 0), prop = rs.reduce((a, r) => a + (r.propina || 0), 0), com = Math.round(serv * pct / 100);
-        local += serv - com; entra += serv + prop;
-        return { nom: tr.nombre + (yoT && yoT.id === id ? ' (tú)' : ''), gan: com + prop, n: rs.length, pct, prop };
+        const serv = rs.reduce((a, r) => a + (r.total || 0), 0), prop = rs.reduce((a, r) => a + (r.propina || 0), 0);
+        const com = Math.round(serv * pct) / 100;                                        // comisión exacta (al centavo)
+        return { id, nom: tr.nombre, tu: !!(yoT && yoT.id === id), n: rs.length, pct, serv, prop, com, gan: com + prop };
       }).sort((a, b) => b.gan - a.gan);
-      return `<div class="reparto"><div class="rep-tit">💰 Reparto de hoy <span class="nota">· solo atenciones cobradas</span></div>
-        <div class="rep-lista">${filas.map(f => `<div class="rep-item"><span>${esc(f.nom)} <small>${f.n} atención${f.n === 1 ? '' : 'es'} · ${f.pct}%${f.prop ? ' + propinas' : ''}</small></span><b>${clp(f.gan)}</b></div>`).join('')}
-          <div class="rep-item local"><span>🏪 Para el local <small>lo cobrado menos comisiones</small></span><b>${clp(local)}</b></div></div>
-        <div class="nota" style="margin-top:6px;">Entró hoy en total: <b>${clp(entra)}</b> (servicios + propinas) · el detalle completo está en Caja.</div></div>`;
+      pros.forEach((p, i) => p.color = COLS_REP[i % COLS_REP.length]);
+      const serv = pros.reduce((a, p) => a + p.serv, 0), prop = pros.reduce((a, p) => a + p.prop, 0);
+      const com = Math.round(pros.reduce((a, p) => a + p.com, 0) * 100) / 100, local = Math.round((serv - com) * 100) / 100;
+      return { fecha: diaVista, pros, serv, prop, com, local, entra: serv + prop, ivaLocal: separarIva(local), ivaDia: separarIva(serv) };
+    }
+    function barraReparto(R){
+      const base = R.serv + R.prop || 1;
+      const seg = R.pros.map(p => ({ w: p.gan / base, c: p.color, t: `${p.nom}: ${clpX(p.gan)}` }))
+        .concat([{ w: R.local / base, c: 'var(--voltaje)', t: `Para el local: ${clpX(R.local)}` }]).filter(s => s.w > 0);
+      return `<div class="rep-barra" role="img" aria-label="Reparto del día">${seg.map(s => `<i style="flex:${s.w};background:${s.c};" title="${esc(s.t)}"></i>`).join('')}</div>`;
+    }
+    function repartoDia(delDia){
+      const R = REPARTO = calcularReparto(delDia); if (!R) return '';
+      const base = R.serv + R.prop, hoy = R.fecha === hoyTxt();
+      return `<div class="reparto" role="button" tabindex="0" onclick="abrirReparto()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirReparto();}">
+        <div class="rep-cab"><div class="rep-tit">💰 Reparto ${hoy ? 'de hoy' : 'del día'} <span class="nota">· solo atenciones cobradas</span></div><span class="rep-ver">Ver detalle e IVA ›</span></div>
+        ${barraReparto(R)}
+        <div class="rep-lista">${R.pros.map(p => `<div class="rep-item"><span class="rep-pto" style="background:${p.color};"></span><span class="rep-nom">${esc(p.nom)}${p.tu ? ' <em>(tú)</em>' : ''}<small>${p.n} atención${p.n === 1 ? '' : 'es'} · ${p.pct}%${p.prop ? ' + propinas' : ''}</small></span><b>${clpX(p.gan)}<small>${pctTxt(p.gan, base)}</small></b></div>`).join('')}
+          <div class="rep-item local"><span class="rep-pto" style="background:var(--voltaje);"></span><span class="rep-nom">🏪 Para el local<small>cobrado − comisiones · considera su <u>IVA</u></small></span><b>${clpX(R.local)}<small>${pctTxt(R.local, base)}</small></b></div></div>
+        <div class="rep-pie"><span>Entró ${hoy ? 'hoy' : 'ese día'}: <b>${clp(R.entra)}</b> <small>(servicios + propinas)</small></span><span>IVA del día: <b>${clp2(R.ivaDia.iva)}</b></span></div></div>`;
+    }
+    function abrirReparto(){
+      const R = REPARTO; if (!R) return;
+      const f = deTexto(R.fecha).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
+      const quedaLocal = Math.round((R.local - R.ivaDia.iva) * 100) / 100;
+      const fila = (a, b, cls = '') => `<div class="rp-fila ${cls}"><span>${a}</span><b>${b}</b></div>`;
+      $('ventanaDetalle').classList.add('ancha');
+      $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">💰 Reparto del día</h3>
+        <p class="nota" style="margin-bottom:12px;">${esc(f[0].toUpperCase() + f.slice(1))} · ${R.pros.reduce((a, p) => a + p.n, 0)} atenciones cobradas</p>
+        <div class="rp-kpis"><div><small>Servicios cobrados</small><b>${clp(R.serv)}</b></div><div><small>Propinas</small><b>${clp(R.prop)}</b></div><div class="fuerte"><small>Entró en total</small><b>${clp(R.entra)}</b></div></div>
+        ${barraReparto(R)}
+        <div class="rp-ley">${R.pros.map(p => `<span><i style="background:${p.color};"></i>${esc(p.nom)}</span>`).join('')}<span><i style="background:var(--voltaje);"></i>Local</span></div>
+
+        <div class="rp-sec"><div class="rp-tit"><span class="rp-num">1</span> Lo que gana cada profesional</div>
+          <div class="rp-tabla"><div class="rp-th"><span>Profesional</span><span>Servicios</span><span>Comisión</span><span>Propinas</span><span>Gana</span></div>
+          ${R.pros.map(p => `<div class="rp-tr"><span><i style="background:${p.color};"></i>${esc(p.nom)}${p.tu ? ' <em>(tú)</em>' : ''}<small>${p.n} atención${p.n === 1 ? '' : 'es'}</small></span>
+            <span data-l="Servicios">${clp(p.serv)}</span><span data-l="Comisión">${clp(p.serv)} × ${p.pct}% = ${clpX(p.com)}</span><span data-l="Propinas">+ ${clp(p.prop)}</span><b data-l="Gana">${clpX(p.gan)}</b></div>`).join('')}
+          <div class="rp-tr total"><span>Total a pagar al equipo</span><span>${clp(R.serv)}</span><span>${clpX(R.com)}</span><span>+ ${clp(R.prop)}</span><b>${clpX(R.com + R.prop)}</b></div></div>
+          <p class="nota">Las propinas son 100% de quien atendió y no llevan IVA.</p></div>
+
+        <div class="rp-sec"><div class="rp-tit"><span class="rp-num">2</span> Para el local</div>
+          ${fila('Servicios cobrados', clp(R.serv))}${fila('− Comisiones del equipo', '− ' + clpX(R.com))}${fila('= Para el local', clpX(R.local), 'res')}
+          <details class="rp-iva"><summary>Considera este ingreso y su <u>IVA</u> ›</summary>
+            ${fila(`Ganancia sin IVA: ${clpX(R.local)} ÷ 1,19`, clp2(R.ivaLocal.neto), 'res')}${fila(`IVA de esta parte: ${clpX(R.local)} − ${clp2(R.ivaLocal.neto)}`, clp2(R.ivaLocal.iva))}
+            <p class="nota">Esto es solo la parte del local. El IVA que se declara se calcula sobre <b>todo lo cobrado</b> (punto 3).</p></details></div>
+
+        <div class="rp-sec iva"><div class="rp-tit"><span class="rp-num">3</span> IVA del día <span class="nota">· sobre todo lo cobrado en servicios</span></div>
+          <div class="rp-ec"><div><small>Total cobrado</small><b>${clp(R.serv)}</b></div><span>÷ 1,19 =</span><div class="fuerte"><small>Total (ganancia sin IVA)</small><b>${clp2(R.ivaDia.neto)}</b></div></div>
+          <div class="rp-ec"><div><small>Total cobrado</small><b>${clp(R.serv)}</b></div><span>− ${clp2(R.ivaDia.neto)} =</span><div class="fuerte rojo"><small>Total IVA a pagar</small><b>${clp2(R.ivaDia.iva)}</b></div></div>
+          <p class="nota">Redondeado a pesos (como en la boleta): neto <b>${clp(Math.round(R.ivaDia.neto))}</b> · IVA <b>${clp(Math.round(R.serv) - Math.round(R.ivaDia.neto))}</b>. Las propinas (${clp(R.prop)}) quedan fuera.</p>
+          <details class="rp-iva"><summary>¿Y si el local paga todo el IVA del día? ›</summary>
+            ${fila('Para el local', clpX(R.local))}${fila('− Total IVA a pagar', '− ' + clp2(R.ivaDia.iva))}${fila('= Le queda al local', clp2(quedaLocal), 'res' + (quedaLocal < 0 ? ' neg' : ''))}
+            <p class="nota">Pasa cuando la boleta sale a nombre del local por el total y las comisiones se pagan completas. Confírmalo con tu contador.</p></details></div>
+
+        <p class="nota">El detalle por atención (medio de pago, productos, descuentos) sigue en Caja.</p>
+        <div class="det-acciones"><button class="boton-linea" onclick="cerrarDetalle();verTab('caja')">Ir a Caja</button><button class="boton" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>`;
+      $('fondoDetalle').classList.remove('oculto');
     }
 
     // Foto del profesional (la sube el admin en Equipo y horarios): en su avatar de arriba y en la agenda
@@ -3021,7 +3140,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F46 · 08-10 c';
+    const VERSION_PANEL = 'F46 · 09-10 a';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
