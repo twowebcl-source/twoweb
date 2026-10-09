@@ -260,6 +260,20 @@
     .rp-donde { background:var(--panel2); border-radius:var(--r-s); padding:2px 12px 6px; margin-bottom:8px; }
     .rp-donde .rp-fila { font-size:13px; }
     .rp-fila small.nota { font-size:11px; }
+    .chips-asis { display:flex; gap:6px; }
+    .asis-mas { color:var(--verde); } .asis-menos { color:var(--rojo); }
+    #asisTabla tr.sel td { background:color-mix(in srgb, var(--voltaje) 8%, transparent); }
+    .asis-res { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:12px; }
+    .asis-res > div { background:var(--panel2); border-radius:var(--r-s); padding:10px 12px; }
+    .asis-res small { display:block; font-size:11px; color:var(--gris); margin-bottom:3px; }
+    .asis-res b { font-size:18px; } .asis-res .fuerte { border:1px solid color-mix(in srgb, var(--voltaje) 40%, transparent); }
+    #asisDetalle .tabla-caja td { white-space:normal; vertical-align:top; line-height:1.6; }
+    @media (max-width:640px){ .asis-res { grid-template-columns:1fr 1fr; } .asis-res .fuerte { grid-column:1 / -1; } }
+    .efectivo-caja { margin-top:14px; padding:12px 14px; border-radius:12px; border:1px solid var(--linea); background:var(--panel2); }
+    .efectivo-caja.debe { border-color:color-mix(in srgb, var(--voltaje) 55%, transparent); }
+    .efectivo-caja.debe .liq-fila.total b { color:var(--voltaje); }
+    .efectivo-caja.cobra { border-color:color-mix(in srgb, var(--verde) 50%, transparent); }
+    .efectivo-caja.cobra .liq-fila.total b { color:var(--verde); }
     .bal-tabs { display:flex; gap:4px; padding:4px; border-radius:999px; background:var(--panel2); border:1px solid var(--linea); margin:0 0 14px; width:max-content; max-width:100%; overflow-x:auto; scrollbar-width:none; }
     .bal-tabs::-webkit-scrollbar { display:none; }
     .bal-tabs button { border:0; background:transparent; color:var(--gris); padding:7px 14px; border-radius:999px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
@@ -1137,6 +1151,7 @@
         <button class="tab solo-admin mod-agenda" data-tab="dia" onclick="verTab('dia')">Agenda del día</button>
         <button class="tab mod-agenda" data-tab="semana" onclick="verTab('semana')">Semana</button>
         <button class="tab mod-agenda" data-tab="lista" onclick="verTab('lista')">Historial</button>
+        <button class="tab solo-admin mod-agenda" data-tab="asistencia" onclick="verTab('asistencia')">⏱ Asistencia</button>
         <button class="tab mod-agenda" data-tab="caja" onclick="verTab('caja')">Caja</button>
         <button class="tab mod-tienda" data-tab="pedidos" onclick="verTab('pedidos')">🛒 Pedidos <span class="contador-tab oculto" id="nPedNuevos"></span></button>
         <button class="tab mod-tienda" data-tab="productos" onclick="verTab('productos')">📦 Productos</button>
@@ -1218,6 +1233,26 @@
       </div>
 
       <!-- Lista -->
+      <!-- Asistencia (solo admin, Fase 50): horas extra vs horas bloqueadas por profesional -->
+      <div id="tab-asistencia" class="oculto">
+        <div class="barra">
+          <div class="chips-asis">
+            <button class="chip" data-p="dia" onclick="periodoAsis('dia')">Día</button>
+            <button class="chip" data-p="semana" onclick="periodoAsis('semana')">Semana</button>
+            <button class="chip sel" data-p="mes" onclick="periodoAsis('mes')">Mes</button>
+          </div>
+          <button class="boton-linea" onclick="moverAsis(-1)" aria-label="Anterior">‹</button>
+          <span class="fecha-txt" id="asisTxt"></span>
+          <button class="boton-linea" onclick="moverAsis(1)" aria-label="Siguiente">›</button>
+          <button class="boton-linea" onclick="asisRef = new Date(); dibujarAsistencia()">Hoy</button>
+        </div>
+        <div class="kpis" id="kpisAsis"></div>
+        <div class="tarjeta" style="margin-top:0;"><h3>Horas por profesional</h3><div id="asisTabla"></div>
+          <p class="nota" style="margin-top:8px;"><b>Horas extra</b> = tiempo atendiendo fuera de su horario (antes de entrar, después de salir, en colación o en su día libre).
+            <b>Horas bloqueadas</b> = tiempo bloqueado dentro de su horario (trámites, médico, ausencias). <b>Balance</b> = extra − bloqueadas. Toca un profesional para ver el detalle por día.</p></div>
+        <div class="tarjeta oculto" id="asisDetalle"></div>
+      </div>
+
       <div id="tab-lista" class="oculto">
         <div class="filtros">
           <button class="chip sel" data-f="proximas" onclick="filtrar('proximas')">Próximas</button>
@@ -2082,16 +2117,17 @@
       if (yo.rol === 'trabajador' && !TRAB_VE_PROD) document.querySelector('.tab[data-tab="productos"]')?.classList.add('oculto');
     }
     // El selector de local (solo negocios con 2+ locales) aparece solo donde filtra algo
-    const TABS_CON_LOCAL = ['dia', 'semana', 'lista', 'caja', 'equipo', 'servicios'];
+    const TABS_CON_LOCAL = ['dia', 'semana', 'lista', 'asistencia', 'caja', 'equipo', 'servicios'];
     function verTab(t){
       document.querySelectorAll('.tab').forEach(b => b.classList.toggle('sel', b.dataset.tab === t));
       $('filtroLocal')?.classList.toggle('oculto', yo?.rol !== 'admin' || locales.length < 2 || !TABS_CON_LOCAL.includes(t));
       requestAnimationFrame(() => { centrarTabSel(); pintarRiel(); });
-      ['midia','dia','semana','lista','caja','equipo','servicios','clientes','negocios','mihorario','pedidos','productos','cobros','marca','fondos','mensajes','comunicados'].forEach(x => $('tab-'+x).classList.toggle('oculto', x !== t));
+      ['midia','dia','semana','lista','asistencia','caja','equipo','servicios','clientes','negocios','mihorario','pedidos','productos','cobros','marca','fondos','mensajes','comunicados'].forEach(x => $('tab-'+x).classList.toggle('oculto', x !== t));
       if (t === 'cobros') cargarCobros();
       if (t === 'pedidos') cargarPedidos();
       if (t === 'productos') cargarProductos();
       if (t === 'caja') dibujarCaja();
+      if (t === 'asistencia') dibujarAsistencia();
       if (t === 'midia') dibujarMiDia();
       if (t === 'dia'){ pintarSolicitudesPend(); pintarLinkNegocio(); }
       if (t === 'dia') dibujarDia();
@@ -3088,6 +3124,7 @@
       if (t === 'dia') { dibujarDia(); pintarSolicitudesPend(); } if (t === 'lista') dibujarLista();
       if (t === 'semana') dibujarSemana(); if (t === 'midia') dibujarMiDia();
       if (t === 'caja') dibujarCaja();
+      if (t === 'asistencia') dibujarAsistencia();
     }
     const PAGOS = { efectivo:'Efectivo', debito:'Débito', transferencia:'Transferencia' };
     // Cambia estado y/o método de pago en el servidor (valida permisos: el profesional solo las suyas)
@@ -3354,6 +3391,96 @@
     let cajaPeriodo = 'dia', cajaRef = new Date();
     const cobrado = lista => lista.filter(r => r.estado === 'completada').reduce((a, r) => a + (r.total || 0), 0);
     const COLOR_PAGO = { efectivo:'var(--verde)', debito:'var(--azul)', transferencia:'var(--voltaje)', sin:'var(--gris)' };
+    // ================= ASISTENCIA (Fase 50): horas extra vs horas bloqueadas =================
+    let asisPeriodo = 'mes', asisRef = new Date(), ASIS_SEL = null;
+    function periodoAsis(p){ asisPeriodo = p; document.querySelectorAll('.chips-asis .chip').forEach(c => c.classList.toggle('sel', c.dataset.p === p)); dibujarAsistencia(); }
+    function moverAsis(n){
+      if (asisPeriodo === 'dia') asisRef.setDate(asisRef.getDate() + n);
+      else if (asisPeriodo === 'semana') asisRef.setDate(asisRef.getDate() + 7 * n);
+      else asisRef = new Date(asisRef.getFullYear(), asisRef.getMonth() + n, 1);
+      dibujarAsistencia();
+    }
+    function rangoAsis(){
+      const r = asisRef;
+      if (asisPeriodo === 'dia'){ const t = fechaTexto(r); return [t, t, (t === hoyTxt() ? 'Hoy · ' : '') + r.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })]; }
+      if (asisPeriodo === 'semana'){ const l = lunesDe(r), d = new Date(l); d.setDate(d.getDate() + 6);
+        return [fechaTexto(l), fechaTexto(d), `Semana del ${l.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} al ${d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}`]; }
+      const a = new Date(r.getFullYear(), r.getMonth(), 1), b = new Date(r.getFullYear(), r.getMonth() + 1, 0);
+      const m = a.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' }); return [fechaTexto(a), fechaTexto(b), m[0].toUpperCase() + m.slice(1)];
+    }
+    const hhmm = min => { const m = Math.round(Math.abs(min)); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+    const cruce = (a1, a2, b1, b2) => Math.max(0, Math.min(a2, b2) - Math.max(a1, b1));
+    // Tramos de trabajo de un profesional en un día (en minutos), sin la colación
+    function tramosDia(tid, fecha){
+      const h = horarios.find(x => x.trabajador_id === tid && x.dia === deTexto(fecha).getDay()); if (!h || !h.inicio || !h.fin) return [];
+      const i = aMin(h.inicio), f = aMin(h.fin), ai = aMin(h.almuerzo_inicio), af = aMin(h.almuerzo_fin);
+      return ai != null && af != null && af > ai && ai > i && af < f ? [[i, ai], [af, f]] : [[i, f]];
+    }
+    // Una atención: cuánto cayó fuera del horario (usa la hora real de inicio y término si existe)
+    function minutosFuera(r, tramos){
+      let [ini, fin] = rangoDe(r);
+      if (r.inicio_real) ini = aMin(String(r.inicio_real).slice(11, 16));
+      if (r.termino_real) fin = aMin(String(r.termino_real).slice(11, 16));
+      if (fin == null || ini == null || fin <= ini) return { ini, fin, dur: 0, fuera: 0 };
+      const dentro = tramos.reduce((a, [a1, a2]) => a + cruce(ini, fin, a1, a2), 0);
+      return { ini, fin, dur: fin - ini, fuera: fin - ini - dentro };
+    }
+    function calcularAsistencia(tid, desde, hasta){
+      const R = { prog: 0, atend: 0, extra: 0, bloq: 0, dias: [] };
+      for (let d = deTexto(desde); fechaTexto(d) <= hasta; d.setDate(d.getDate() + 1)){
+        const f = fechaTexto(d), tramos = tramosDia(tid, f), D = { fecha: f, prog: tramos.reduce((a, [x, y]) => a + y - x, 0), atend: 0, extra: 0, bloq: 0, extras: [], bloqueos: [] };
+        reservasTodas.filter(r => r.trabajador_id === tid && r.fecha === f && ['completada', 'en_atencion'].includes(r.estado)).forEach(r => {
+          const m = minutosFuera(r, tramos); D.atend += m.dur;
+          if (m.fuera > 0){ D.extra += m.fuera; D.extras.push({ nombre: r.nombre, desde: m.ini, hasta: m.fin, fuera: m.fuera }); }
+        });
+        bloqueosDe(tid, f).forEach(b => {
+          const min = tramos.reduce((a, [x, y]) => a + cruce(b.desde, b.hasta, x, y), 0);
+          if (min > 0){ D.bloq += min; D.bloqueos.push({ motivo: b.motivo || 'Bloqueo', desde: b.desde, hasta: b.hasta, min }); }
+        });
+        R.prog += D.prog; R.atend += D.atend; R.extra += D.extra; R.bloq += D.bloq;
+        if (D.prog || D.extra || D.bloq || D.atend) R.dias.push(D);
+      }
+      R.bal = R.extra - R.bloq;
+      return R;
+    }
+    const txtBalance = b => b > 0 ? `<b class="asis-mas">+${hhmm(b)} extra</b>` : b < 0 ? `<b class="asis-menos">${hhmm(b)} ausente</b>` : '<b>0:00 · cuadrado</b>';
+    function dibujarAsistencia(){
+      if (!yo || yo.rol !== 'admin') return;
+      const [desde, hasta, txt] = rangoAsis(); $('asisTxt').textContent = txt + (LOCAL_PANEL ? ' · ' + nombreLocal(LOCAL_PANEL) : '');
+      const filas = trabsFiltro().filter(t => t.activo).map(t => ({ t, A: calcularAsistencia(t.id, desde, hasta) }));
+      const T = filas.reduce((a, { A }) => ({ prog: a.prog + A.prog, atend: a.atend + A.atend, extra: a.extra + A.extra, bloq: a.bloq + A.bloq }), { prog: 0, atend: 0, extra: 0, bloq: 0 });
+      T.bal = T.extra - T.bloq;
+      $('kpisAsis').innerHTML = `<div class="kpi"><b>${hhmm(T.prog)}</b><span>horas en su horario</span></div>
+        <div class="kpi"><b>${hhmm(T.atend)}</b><span>horas atendiendo</span></div>
+        <div class="kpi"><b class="asis-mas">+${hhmm(T.extra)}</b><span>horas extra</span></div>
+        <div class="kpi"><b class="asis-menos">${hhmm(T.bloq)}</b><span>horas bloqueadas / ausente</span></div>
+        <div class="kpi destacado"><b>${T.bal > 0 ? '+' : T.bal < 0 ? '−' : ''}${hhmm(T.bal)}</b><span>balance del equipo (${T.bal > 0 ? 'extra' : T.bal < 0 ? 'ausente' : 'cuadrado'})</span></div>`;
+      $('asisTabla').innerHTML = !filas.length ? '<p class="vacio">No hay profesionales activos.</p>' : `<div style="overflow-x:auto;"><table class="tabla-caja">
+        <tr><th></th><th class="num">En horario</th><th class="num">Atendiendo</th><th class="num">Horas extra</th><th class="num">Bloqueadas</th><th class="num">Balance</th></tr>
+        ${filas.map(({ t, A }) => `<tr style="cursor:pointer;" data-tid="${t.id}" class="${ASIS_SEL === t.id ? 'sel' : ''}" onclick="verAsistencia(${t.id})"><td><button class="link" style="margin:0;">${esc(t.nombre)}</button>${locales.length > 1 && !LOCAL_PANEL ? ` <span class="nota">· ${esc(nombreLocal(t.local_id))}</span>` : ''}</td>
+          <td class="num">${hhmm(A.prog)}</td><td class="num">${hhmm(A.atend)}</td><td class="num"><span class="asis-mas">+${hhmm(A.extra)}</span></td><td class="num"><span class="asis-menos">${hhmm(A.bloq)}</span></td><td class="num">${txtBalance(A.bal)}</td></tr>`).join('')}
+        <tr class="total"><td>Equipo</td><td class="num">${hhmm(T.prog)}</td><td class="num">${hhmm(T.atend)}</td><td class="num">+${hhmm(T.extra)}</td><td class="num">${hhmm(T.bloq)}</td><td class="num">${txtBalance(T.bal)}</td></tr></table></div>`;
+      apilarTablas($('asisTabla')); $('asisTabla').querySelectorAll('div[style*="overflow-x"]').forEach(encadenarH);
+      if (ASIS_SEL && filas.some(x => x.t.id === ASIS_SEL)) verAsistencia(ASIS_SEL, true); else $('asisDetalle').classList.add('oculto');
+    }
+    function verAsistencia(tid, sinMover){
+      ASIS_SEL = tid; const t = trabajadores.find(x => x.id === tid); if (!t) return;
+      const [desde, hasta, txt] = rangoAsis(), A = calcularAsistencia(tid, desde, hasta), el = $('asisDetalle');
+      const dias = A.dias.filter(d => d.extra || d.bloq);
+      el.innerHTML = `<div class="barra" style="margin:0 0 8px;"><h3 style="margin:0;">⏱ ${esc(t.nombre)} · ${esc(txt)}</h3><button class="boton-linea" style="margin-left:auto;" onclick="ASIS_SEL=null;dibujarAsistencia()">Cerrar</button></div>
+        <div class="asis-res"><div><small>Horas extra</small><b class="asis-mas">+${hhmm(A.extra)}</b></div><div><small>Bloqueadas / ausente</small><b class="asis-menos">${hhmm(A.bloq)}</b></div>
+          <div class="fuerte"><small>Balance</small>${txtBalance(A.bal)}</div></div>
+        ${!dias.length ? '<p class="vacio">Sin horas extra ni bloqueos en este período.</p>' : `<div style="overflow-x:auto;"><table class="tabla-caja">
+          <tr><th>Día</th><th>Horas extra</th><th>Bloqueos</th><th class="num">Balance</th></tr>
+          ${dias.map(d => `<tr><td>${esc(fechaDiaCaja(d.fecha))}</td>
+            <td>${d.extras.length ? d.extras.map(x => `<span class="asis-mas">+${hhmm(x.fuera)}</span> ${esc(x.nombre)} <small class="nota">${aHora(x.desde)}–${aHora(x.hasta)}</small>`).join('<br>') : '—'}</td>
+            <td>${d.bloqueos.length ? d.bloqueos.map(x => `<span class="asis-menos">${hhmm(x.min)}</span> ${esc(x.motivo)} <small class="nota">${aHora(x.desde)}–${aHora(Math.min(x.hasta, 1439))}</small>`).join('<br>') : '—'}</td>
+            <td class="num">${txtBalance(d.extra - d.bloq)}</td></tr>`).join('')}</table></div>`}`;
+      el.classList.remove('oculto');
+      apilarTablas(el); el.querySelectorAll('div[style*="overflow-x"]').forEach(encadenarH);
+      document.querySelectorAll('#asisTabla tr[data-tid]').forEach(tr => tr.classList.toggle('sel', Number(tr.dataset.tid) === tid));
+      if (!sinMover) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     function periodoCaja(p){ cajaPeriodo = p; document.querySelectorAll('.chips-periodo .chip').forEach(c => c.classList.toggle('sel', c.dataset.p === p)); dibujarCaja(); }
     function moverCaja(n){
       if (cajaPeriodo === 'dia') cajaRef.setDate(cajaRef.getDate() + n);
@@ -3377,7 +3504,7 @@
                sin: hechas.filter(r => !r.metodo_pago).reduce((a, r) => a + rec(r), 0), total: cobrado(hechas),
                propinas: hechas.reduce((a, r) => a + (r.propina || 0), 0) };
     }
-    function dibujarCaja(){ BAL_CAJA_P = {}; dibujarCajaBase(); apilarTablas($('tab-caja')); $('tab-caja').querySelectorAll('div[style*="overflow-x"]').forEach(encadenarH); }
+    function dibujarCaja(){ BAL_CAJA_P = {}; INF_PROD = {}; dibujarCajaBase(); apilarTablas($('tab-caja')); $('tab-caja').querySelectorAll('div[style*="overflow-x"]').forEach(encadenarH); }
     // Cadena horizontal para tablas anchas (misma idea que la agenda): se arrastra, tiene flechas y gira con la rueda
     function encadenarH(sc){
       if (!sc || sc.parentNode.classList.contains('ch-marco')) return;
@@ -3515,8 +3642,25 @@
     // ----- Informe de liquidación: servicios × % + propinas = total a pagar (transparente y separado) -----
     let ULTIMO_INFORME = null;
     const fechaDiaCaja = f => deTexto(f).toLocaleDateString('es-CL', { weekday:'short', day:'numeric', month:'short' });
+    // Productos vendidos en sus atenciones (efectivo y comisión por productos, Fase 50) — se piden aparte y se guardan por período
+    let INF_PROD = {};
+    async function cargarProdInforme(tid, desde, hasta, clave, rehacer){
+      INF_PROD[clave] = 'cargando';
+      const { data, error } = await db.rpc('productos_atenciones', { p_desde: desde, p_hasta: hasta, p_tid: tid });
+      INF_PROD[clave] = error ? { error: true, l: [] } : { l: data || [] };
+      rehacer();
+    }
+    async function cambiarVerEfectivo(tid, on){
+      const { error } = await db.rpc('guardar_ver_efectivo', { p_tid: tid, p_on: on });
+      if (error) return alert(/guardar_ver_efectivo/.test(error.message || '') ? 'Falta instalar la Fase 50 en Supabase.' : error.message);
+      const t = trabajadores.find(x => x.id === tid); if (t) t.ver_efectivo = on;
+      dibujarCaja();
+    }
     function informeLiquidacion(lista, tid, periodoTxt){
       const admin = yo.rol === 'admin', t = trabajadores.find(x => x.id === tid) || {};
+      const [iDesde, iHasta] = rangoCaja(), claveP = tid + '|' + iDesde + '|' + iHasta;
+      if (!INF_PROD[claveP] && conTienda()) cargarProdInforme(tid, iDesde, iHasta, claveP, () => informeLiquidacion(lista, tid, periodoTxt));
+      const PR = INF_PROD[claveP] && INF_PROD[claveP].l ? INF_PROD[claveP].l : [];
       const pct = t.comision ?? 50;
       const hechas = lista.filter(r => r.estado === 'completada').sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
       // parte por servicios: el trabajador la recibe calculada desde la base (ganancia - propina); el admin la calcula con el %
@@ -3524,14 +3668,20 @@
       const sum = (l, f) => l.reduce((a, r) => a + f(r), 0);
       const S = { n: hechas.length, serv: sum(hechas, r => r.total || 0), parte: sum(hechas, parte), prop: sum(hechas, r => r.propina || 0),
                   llegadas: hechas.filter(r => r.origen === 'llegada').length, noVino: lista.filter(r => r.estado === 'no_asistio').length };
-      S.total = S.parte + S.prop;
+      S.comProd = Math.round(PR.reduce((a, x) => a + Number(x.comision || 0), 0));
+      S.total = S.parte + S.prop + S.comProd;
+      // Efectivo que tiene en mano: lo que pagaron en efectivo sus clientes (servicio + propina + productos en su atención)
+      S.efServ = sum(hechas.filter(r => r.metodo_pago === 'efectivo'), r => (r.total || 0) + (r.propina || 0));
+      S.efProd = PR.filter(x => x.metodo_pago === 'efectivo').reduce((a, x) => a + (x.total || 0), 0);
+      S.efectivo = S.efServ + S.efProd; S.dif = S.efectivo - S.total;
+      const verEf = admin || t.ver_efectivo;
       // Servicios que ejecutó (nombre × veces), sin montos: es lo que ve el trabajador
       const cuentaServ = {}; hechas.forEach(r => { const k = (r.servicios || 'Atención').trim(); cuentaServ[k] = (cuentaServ[k] || 0) + 1; });
       S.lista = Object.entries(cuentaServ).sort((a, b) => b[1] - a[1]).map(([k, v]) => v > 1 ? `${k} x${v}` : k);
       const metodos = ['efectivo', 'debito', 'transferencia'].map(k => [k, sum(hechas.filter(r => r.metodo_pago === k), r => (r.total || 0) + (r.propina || 0))]);
       const dias = [...new Set(hechas.map(r => r.fecha))].sort();
       const nombre = t.nombre || yo.nombre || '';
-      ULTIMO_INFORME = { nombre, periodo: periodoTxt, ...S, pct, tid, telefono: t.telefono || '' };
+      ULTIMO_INFORME = { nombre, periodo: periodoTxt, ...S, pct, tid, telefono: t.telefono || '', verEf: admin ? !!t.ver_efectivo : verEf };
       const accion = admin
         ? (t.telefono ? `<button class="boton wsp-btn" onclick="enviarInforme()">💬 Enviar liquidación a ${esc(nombre)}</button>`
                       : `<span class="nota">Para enviarle su liquidación por WhatsApp, agrega su teléfono en Equipo y horarios.</span>`)
@@ -3547,8 +3697,16 @@
                     : `<div class="liq-fila"><span>Servicios realizados <small>(${S.n} atenci${S.n === 1 ? 'ón' : 'ones'})</small>${S.lista.length ? `<small style="display:block;margin-top:3px;">${esc(S.lista.join(' · '))}</small>` : ''}</span><b></b></div>`}
             <div class="liq-fila"><span>${admin ? `Su comisión <small>(${pct}% de los servicios)</small>` : 'Tu ganancia por servicios'}</span><b>${clp(S.parte)}</b></div>
             <div class="liq-fila mas"><span>+ Propinas <small>(100% ${admin ? 'suyas' : 'tuyas'})</small></span><b>${clp(S.prop)}</b></div>
+            ${S.comProd ? `<div class="liq-fila mas"><span>+ Comisión por productos <small>(vendidos en ${admin ? 'sus' : 'tus'} atenciones)</small></span><b>${clp(S.comProd)}</b></div>` : ''}
             <div class="liq-fila total"><span>Total a pagar</span><b>${clp(S.total)}</b></div>
-            <p class="nota" style="margin-top:6px;">${clp(S.parte)} por servicios + ${clp(S.prop)} en propinas = <b>${clp(S.total)}</b>${S.llegadas ? ` · ${S.llegadas} por orden de llegada` : ''}${S.noVino ? ` · ${S.noVino} no asistieron` : ''}</p>
+            <p class="nota" style="margin-top:6px;">${clp(S.parte)} por servicios + ${clp(S.prop)} en propinas${S.comProd ? ` + ${clp(S.comProd)} por productos` : ''} = <b>${clp(S.total)}</b>${S.llegadas ? ` · ${S.llegadas} por orden de llegada` : ''}${S.noVino ? ` · ${S.noVino} no asistieron` : ''}</p>
+            ${verEf ? `<div class="efectivo-caja ${S.dif > 0 ? 'debe' : S.dif < 0 ? 'cobra' : 'ok'}">
+              <div class="liq-fila"><span>💵 Efectivo que ${admin ? 'recibió' : 'recibiste'} <small>(${clp(S.efServ)} en atenciones${S.efProd ? ` + ${clp(S.efProd)} en productos` : ''})</small></span><b>${clp(S.efectivo)}</b></div>
+              <div class="liq-fila"><span>− ${admin ? 'Le corresponde' : 'Te corresponde'} <small>(total a pagar)</small></span><b>− ${clp(S.total)}</b></div>
+              <div class="liq-fila total"><span>${S.dif > 0 ? (admin ? '= Debe entregar al local' : '= Debes entregar al local') : S.dif < 0 ? (admin ? '= El local le debe pagar' : '= El local te debe pagar') : '= Cuadrado'}</span><b>${clp(Math.abs(S.dif))}</b></div>
+              <p class="nota" style="margin:4px 0 0;">${S.dif > 0 ? `${admin ? 'Tiene' : 'Tienes'} en mano más efectivo de lo que ${admin ? 'le' : 'te'} corresponde: la diferencia es del local.` : S.dif < 0 ? `Parte de ${admin ? 'su' : 'tu'} pago entró por débito o transferencia al local: el local completa la diferencia.` : 'El efectivo en mano es justo lo que corresponde.'}</p>
+              ${admin ? `<label class="check-linea no-print" style="margin-top:8px;"><input type="checkbox" ${t.ver_efectivo ? 'checked' : ''} onchange="cambiarVerEfectivo(${tid}, this.checked)"> Mostrar este cuadre de efectivo a ${esc(t.nombre || 'este profesional')} en su informe</label>` : ''}
+            </div>` : ''}
           </div>
 
           ${dias.length > 1 ? `<h3 style="margin-top:18px;">Por día</h3>
@@ -3577,7 +3735,9 @@
     const categoriaLocal = () => NEG.rubro || NEG.nombre || 'Servicios';
     function textoInforme(){
       const I = ULTIMO_INFORME, admin = yo.rol === 'admin';
-      const lineas = [`• Atenciones: ${I.n}`, `• Servicios: ${(I.lista && I.lista.length) ? I.lista.join(', ') : categoriaLocal()}`, `• ${admin ? 'Comisión' : 'Mi ganancia por servicios'}: ${clp(I.parte)}`, `• Propinas: ${clp(I.prop)}`, `• *Total a pagar: ${clp(I.total)}*`];
+      const lineas = [`• Atenciones: ${I.n}`, `• Servicios: ${(I.lista && I.lista.length) ? I.lista.join(', ') : categoriaLocal()}`, `• ${admin ? 'Comisión' : 'Mi ganancia por servicios'}: ${clp(I.parte)}`, `• Propinas: ${clp(I.prop)}`]
+        .concat(I.comProd ? [`• Comisión por productos: ${clp(I.comProd)}`] : []).concat([`• *Total a pagar: ${clp(I.total)}*`])
+        .concat(I.verEf ? [`• Efectivo en mano: ${clp(I.efectivo)}`, I.dif > 0 ? `• ${admin ? 'Debes entregar al local' : 'Debo entregar al local'}: ${clp(I.dif)}` : I.dif < 0 ? `• ${admin ? 'El local te paga' : 'El local me debe'}: ${clp(-I.dif)}` : '• Efectivo cuadrado'] : []);
       return admin
         ? `Hola ${I.nombre},\nTu liquidación de ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\nCualquier duda me avisas.`
         : `Hola, soy ${I.nombre}.\nMi informe en ${NEG.nombre || ''} (${I.periodo}):\n${lineas.join('\n')}\n(${clp(I.parte)} por servicios + ${clp(I.prop)} en propinas)\n¡Gracias!`;
@@ -3595,7 +3755,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F49 · 09-10 a';
+    const VERSION_PANEL = 'F50 · 09-10 a';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
