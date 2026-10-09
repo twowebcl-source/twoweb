@@ -229,6 +229,13 @@
     .cv-riel::after { content:""; position:absolute; left:0; right:0; top:var(--tt); height:var(--th); background:var(--voltaje); border-radius:6px; }
     .cv-riel:hover::after { filter:brightness(1.2); }
     .nombre-auto { margin:6px 0 0; }
+    .reparto { flex-basis:100%; border:1px solid var(--linea); border-radius:var(--r-s); padding:10px 14px; background:var(--panel); }
+    .rep-tit { font-weight:700; margin-bottom:6px; }
+    .rep-lista { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:6px 18px; }
+    .rep-item { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:5px 0; border-bottom:1px dashed var(--linea); }
+    .rep-item small { display:block; color:var(--gris); font-size:11px; }
+    .rep-item.local { border-bottom:none; }
+    .rep-item.local b { color:var(--voltaje); font-size:17px; }
     .loc-lista { display:grid; gap:10px; }
     .loc-item { border:1px solid var(--linea); border-radius:var(--r-s); padding:12px; background:color-mix(in srgb, var(--panel2) 60%, transparent); }
     .loc-item.nuevo { border-style:dashed; border-color:var(--voltaje); }
@@ -2089,7 +2096,25 @@
         const pct = t.comision ?? 50, parte = Math.round(cobrado * pct / 100) + propinas;
         h += `<div class="kpi destacado"><b>${clp(parte)}</b><span>ganancia de ${esc(t.nombre)} (${pct}% + propinas)</span></div>`;
       }
-      $('kpis').innerHTML = h;
+      $('kpis').innerHTML = h + (t ? '' : repartoDia(delDia));
+    }
+    // "Todos": cuánto ganó cada profesional hoy y cuánto queda para el local (lo cobrado menos las comisiones; las propinas son de cada uno)
+    function repartoDia(delDia){
+      const hechas = delDia.filter(r => r.estado === 'completada'); if (!hechas.length) return '';
+      const yoT = trabajadores.find(x => x.correo && yo.correo && x.correo.toLowerCase() === yo.correo.toLowerCase());
+      const ids = [...new Set(hechas.map(r => r.trabajador_id))];
+      let local = 0, entra = 0;
+      const filas = ids.map(id => {
+        const tr = trabajadores.find(x => x.id === id) || { nombre: hechas.find(r => r.trabajador_id === id)?.trabajador || '—', comision: 50 };
+        const rs = hechas.filter(r => r.trabajador_id === id), pct = tr.comision ?? 50;
+        const serv = rs.reduce((a, r) => a + (r.total || 0), 0), prop = rs.reduce((a, r) => a + (r.propina || 0), 0), com = Math.round(serv * pct / 100);
+        local += serv - com; entra += serv + prop;
+        return { nom: tr.nombre + (yoT && yoT.id === id ? ' (tú)' : ''), gan: com + prop, n: rs.length, pct, prop };
+      }).sort((a, b) => b.gan - a.gan);
+      return `<div class="reparto"><div class="rep-tit">💰 Reparto de hoy <span class="nota">· solo atenciones cobradas</span></div>
+        <div class="rep-lista">${filas.map(f => `<div class="rep-item"><span>${esc(f.nom)} <small>${f.n} atención${f.n === 1 ? '' : 'es'} · ${f.pct}%${f.prop ? ' + propinas' : ''}</small></span><b>${clp(f.gan)}</b></div>`).join('')}
+          <div class="rep-item local"><span>🏪 Para el local <small>lo cobrado menos comisiones</small></span><b>${clp(local)}</b></div></div>
+        <div class="nota" style="margin-top:6px;">Entró hoy en total: <b>${clp(entra)}</b> (servicios + propinas) · el detalle completo está en Caja.</div></div>`;
     }
 
     // Foto del profesional (la sube el admin en Equipo y horarios): en su avatar de arriba y en la agenda
@@ -2996,7 +3021,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F46 · 08-10 b';
+    const VERSION_PANEL = 'F46 · 08-10 c';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
