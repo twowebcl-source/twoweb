@@ -143,7 +143,12 @@
     @media (max-width:700px){ .ing-grid { grid-template-columns:1fr; } }
     .ing-logo { width:64px; height:64px; border-radius:16px; object-fit:contain; background:rgba(255,255,255,.06); }
     h1.marca-neg { display:flex; align-items:center; gap:10px; }
-    h1.marca-neg .logo-neg { height:42px; width:42px; object-fit:contain; border-radius:var(--r-s); background:color-mix(in srgb, var(--hueso) 7%, transparent); }
+    /* Logo del negocio: el espacio se adapta a la forma de la imagen (horizontal, cuadrada o vertical), sin recortarla */
+    h1.marca-neg .logo-neg { height:44px; width:auto; max-width:200px; object-fit:contain; border-radius:var(--r-s); flex-shrink:0; transition:height .2s; }
+    h1.marca-neg .logo-neg.l-cuad { width:44px; border-radius:12px; object-fit:cover; }
+    h1.marca-neg .logo-neg.l-vert { height:60px; }
+    h1.marca-neg .logo-neg.l-horiz { height:40px; max-width:220px; }
+    @media (max-width:640px){ h1.marca-neg .logo-neg { max-width:140px; } h1.marca-neg .logo-neg.l-vert { height:52px; } h1.marca-neg .logo-neg.l-horiz { height:34px; max-width:150px; } }
     .prev-img { display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap; }
     .prev-img img { max-height:70px; max-width:220px; border-radius:var(--r-s); border:1px solid var(--linea); object-fit:cover; }
     .switch-promo { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; cursor:pointer; white-space:nowrap; }
@@ -1636,7 +1641,12 @@
       document.title = NEG.nombre || MARCA;
       document.querySelectorAll('h1.marca-neg span').forEach(e => e.textContent = NEG.nombre || MARCA);
       document.querySelectorAll('h1.marca-neg .logo-neg').forEach(img => {
-        if (NEG.logo_url) { img.src = NEG.logo_url; img.classList.remove('oculto'); } else { img.removeAttribute('src'); img.classList.add('oculto'); }
+        if (NEG.logo_url) {
+          img.onload = () => { const r = img.naturalWidth / (img.naturalHeight || 1);
+            img.classList.toggle('l-horiz', r > 1.25); img.classList.toggle('l-vert', r < .8); img.classList.toggle('l-cuad', r >= .8 && r <= 1.25); };
+          if (img.src !== NEG.logo_url) img.src = NEG.logo_url; else if (img.complete) img.onload();
+          img.classList.remove('oculto');
+        } else { img.removeAttribute('src'); img.classList.add('oculto'); }
       });
       iconosSegunSesion(); asegurarIconoApp();
       aplicarTemaActual();
@@ -3832,7 +3842,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F52 · 09-10 b';
+    const VERSION_PANEL = 'F52 · 09-10 c';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
