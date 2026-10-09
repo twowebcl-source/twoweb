@@ -229,6 +229,11 @@
     .cv-riel::after { content:""; position:absolute; left:0; right:0; top:var(--tt); height:var(--th); background:var(--voltaje); border-radius:6px; }
     .cv-riel:hover::after { filter:brightness(1.2); }
     .nombre-auto { margin:6px 0 0; }
+    .loc-lista { display:grid; gap:10px; }
+    .loc-item { border:1px solid var(--linea); border-radius:var(--r-s); padding:12px; background:color-mix(in srgb, var(--panel2) 60%, transparent); }
+    .loc-item.nuevo { border-style:dashed; border-color:var(--voltaje); }
+    .eq-grupo { display:flex; align-items:center; gap:8px; margin:18px 0 8px; font-weight:700; }
+    .eq-grupo span { font-weight:400; }
     .app-prev { margin-top:10px; }
     .ap-tel { display:inline-flex; gap:14px; padding:14px 16px; border-radius:18px; background:linear-gradient(160deg, #2b3a55, #5b3f5e); }
     .ap-ic { width:58px; display:flex; flex-direction:column; align-items:center; gap:5px; }
@@ -1008,6 +1013,7 @@
       <!-- Agenda del día -->
       <div id="tab-dia" class="oculto">
         <div id="solPend"></div>
+        <div id="linkNegocio" class="link-pro oculto"></div>
         <div class="barra">
           <button class="boton-linea" onclick="moverDia(-1)" aria-label="Día anterior">‹</button>
           <span class="fecha-txt" id="diaTxt"></span>
@@ -1040,6 +1046,7 @@
 
       <!-- Equipo (admin) -->
       <div id="tab-equipo" class="oculto">
+        <div class="tarjeta" id="localesAdmin"></div>
         <div class="tarjeta">
           <h3>Agregar trabajador</h3>
           <div class="grid-2">
@@ -1132,6 +1139,7 @@
       <!-- Negocios (solo el dueño de la plataforma) -->
       <div id="tab-negocios" class="oculto">
         <div class="kpis" id="kpisNeg"></div>
+        <div id="solLocales"></div>
         <div class="tarjeta">
           <h3>Nuevo negocio</h3>
           <p class="nota" style="margin-bottom:10px;">Crea el negocio completo: su link, su primer local, la cuenta del administrador (entra de inmediato con ese correo y contraseña) y, si tiene agenda, servicios de ejemplo que después ajusta.</p>
@@ -1716,7 +1724,7 @@
         yo.rol === 'admin' ? db.from('reservas').select('*').order('fecha').order('hora') : db.rpc('mis_citas', {}),
         db.from('bloqueos').select('*').order('inicio'),
         db.rpc('agenda_config'),
-        db.from('locales').select('*').order('orden').order('id'),
+        db.from('locales').select('*').eq('activo', true).order('orden').order('id'),
         db.rpc('faltas_reservas', {}).then(r => r, () => ({})),
         db.rpc('solicitudes_cambio_lista', {}).then(r => r, () => ({})),
       ]).then(x => { SOLIC = (x[7] && !x[7].error && x[7].data) || []; return x; });
@@ -1889,7 +1897,7 @@
       if (t === 'productos') cargarProductos();
       if (t === 'caja') dibujarCaja();
       if (t === 'midia') dibujarMiDia();
-      if (t === 'dia') pintarSolicitudesPend();
+      if (t === 'dia'){ pintarSolicitudesPend(); pintarLinkNegocio(); }
       if (t === 'dia') dibujarDia();
       if (t === 'semana') dibujarSemana();
       if (t === 'lista') dibujarLista();
@@ -2988,7 +2996,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F45 · 07-10 c';
+    const VERSION_PANEL = 'F46 · 08-10';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3812,16 +3820,128 @@
     }
 
     // ================= EQUIPO Y HORARIOS (admin) =================
+    // ================= LOCALES (Fase 46) =================
+    const linkLocal = l => { const b = linkAgenda(); return b + (b.includes('?') ? '&' : '?') + 'local=' + l.id; };
+    let MIS_LOC = null;
+    async function cargarLocalesAdmin(){
+      const el = $('localesAdmin'); if (!el) return;
+      if (yo.rol !== 'admin'){ el.classList.add('oculto'); return; }
+      const { data, error } = await db.rpc('mis_locales');
+      if (error){ el.innerHTML = /mis_locales/.test(error.message || '') ? '<p class="nota">📍 Locales: falta instalar la Fase 46.</p>' : ''; return; }
+      MIS_LOC = data; dibujarLocalesAdmin();
+    }
+    function dibujarLocalesAdmin(nuevo){
+      const el = $('localesAdmin'), d = MIS_LOC || { locales: [] }, n = d.locales.length, max = d.max, lleno = max != null && n >= max;
+      el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <h3 style="margin:0;">📍 Tus locales <span class="nota">· ${n}${max != null ? ' de ' + max : ''} local${(max ?? n) === 1 ? '' : 'es'} ${max != null ? 'según tu plan' : '(sin límite en tu plan)'}</span></h3>
+          ${lleno ? `<span class="nota">Para agregar más locales, escríbele a ${esc(MARCA)}.</span>` : `<button class="boton-linea" onclick="dibujarLocalesAdmin(true)">+ Agregar local</button>`}</div>
+        <p class="nota" style="margin:4px 0 10px;">Cada local tiene su equipo, sus servicios y precios. En tu agenda online el cliente elige el local y ve las horas de ese equipo.</p>
+        <div class="loc-lista">${d.locales.map(l => `<div class="loc-item" id="loc-${l.id}">
+            <div class="grid-2">
+              <div><label>Nombre del local</label><input data-c="nombre" value="${esc(l.nombre)}"></div>
+              <div><label>Dirección</label><input data-c="direccion" value="${esc(l.direccion || '')}" placeholder="Ej: Av. Providencia 1234, Providencia"></div>
+              <div class="full"><label>Referencia (opcional)</label><input data-c="referencia" value="${esc(l.referencia || '')}" placeholder="Ej: a pasos del Metro Los Leones"></div>
+            </div>
+            <p class="nota" style="margin:6px 0 0;">👥 ${l.profesionales} profesional${l.profesionales === 1 ? '' : 'es'} · ✂️ ${l.servicios} servicio${l.servicios === 1 ? '' : 's'}${l.reservas ? ' · 📅 ' + l.reservas + ' reservas en su historial' : ''}</p>
+            ${n > 1 ? `<div style="display:flex;gap:6px;margin-top:8px;"><input readonly id="lnk-${l.id}" value="${esc(linkLocal(l))}" title="Link directo a la agenda de este local">
+              <button class="boton-linea" onclick="copiarTexto('lnk-${l.id}', 'est-loc-${l.id}')">Copiar link</button></div>` : ''}
+            <div class="det-acciones" style="margin-top:8px;"><button class="boton" onclick="guardarLocal(${l.id})">Guardar</button>
+              ${l.pendiente ? '<span class="nota">⏳ Pediste eliminarlo: en revisión por ' + esc(MARCA) + '</span>'
+                : n > 1 ? `<button class="link rojo" style="margin-left:auto;" onclick="pedirEliminarLocal(${l.id})">Pedir eliminar este local</button>` : ''}</div>
+            <p class="estado" id="est-loc-${l.id}"></p></div>`).join('')}
+          ${nuevo && !lleno ? `<div class="loc-item nuevo" id="loc-nuevo"><h4 style="margin:0 0 6px;">Nuevo local</h4><div class="grid-2">
+              <div><label>Nombre del local</label><input data-c="nombre" placeholder="Ej: Sucursal Ñuñoa"></div>
+              <div><label>Dirección</label><input data-c="direccion" placeholder="Ej: Irarrázaval 3000, Ñuñoa"></div>
+              <div class="full"><label>Referencia (opcional)</label><input data-c="referencia" placeholder="Ej: frente a la plaza"></div></div>
+            <div class="det-acciones" style="margin-top:8px;"><button class="boton" onclick="guardarLocal(null)">Crear local</button>
+              <button class="boton-linea" style="margin-left:auto;" onclick="dibujarLocalesAdmin()">Cancelar</button></div><p class="estado" id="est-loc-nuevo"></p></div>` : ''}</div>`;
+      if (nuevo) $('loc-nuevo')?.querySelector('input')?.focus();
+    }
+    async function guardarLocal(id){
+      const c = $(id ? 'loc-' + id : 'loc-nuevo'), v = k => c.querySelector(`[data-c="${k}"]`).value.trim(), est = id ? 'est-loc-' + id : 'est-loc-nuevo';
+      estado(est, 'Guardando…');
+      const { error } = await db.rpc('guardar_local', { p: { id, nombre: v('nombre'), direccion: v('direccion'), referencia: v('referencia') } });
+      if (error) return estado(est, 'Error: ' + error.message, 'error');
+      await cargarEquipo(); estado(id ? est : 'estadoNuevo', id ? '✓ Guardado.' : '✓ Local creado. Ahora agrega su equipo abajo eligiéndolo en "Local donde atiende", y sus servicios en la pestaña Servicios.', 'ok');
+    }
+    async function pedirEliminarLocal(id){
+      const l = MIS_LOC.locales.find(x => x.id === id); if (!l) return;
+      const motivo = prompt(`¿Pedir eliminar "${l.nombre}"?\n\nPara cuidar tus clientes y tu historial, la eliminación la revisa ${MARCA}. Si el local tiene reservas o equipo, se archiva: deja de verse, pero sus reservas y clientes se conservan.\n\nCuéntanos el motivo (opcional):`, '');
+      if (motivo === null) return;
+      const { error } = await db.rpc('solicitar_eliminar_local', { p_local: id, p_motivo: motivo });
+      if (error) return estado('est-loc-' + id, 'Error: ' + error.message, 'error');
+      await cargarLocalesAdmin(); estado('est-loc-' + id, '✓ Solicitud enviada. Te avisaremos cuando se resuelva.', 'ok');
+    }
+    // Super admin: solicitudes para eliminar locales
+    async function cargarSolLocales(){
+      const el = $('solLocales'); if (!el || !yo?.super) return;
+      const { data, error } = await db.rpc('super_solicitudes_local');
+      if (error || !data){ el.innerHTML = ''; return; }
+      const pend = data.filter(x => x.estado === 'pendiente');
+      if (!data.length){ el.innerHTML = ''; return; }
+      el.innerHTML = `<div class="tarjeta"><h3 style="margin:0 0 6px;">🗑 Solicitudes para eliminar locales ${pend.length ? `<span class="contador-tab">${pend.length}</span>` : ''}</h3>
+        ${data.map(x => `<div class="sol-caja ${x.estado}" style="margin-top:8px;"><div class="sol-tit">${esc(x.negocio)} · 📍 ${esc(x.local)}${x.direccion ? ' <span class="nota">(' + esc(x.direccion) + ')</span>' : ''}</div>
+          <div class="sol-prop">Pedido por ${esc(x.pedido_por || 'el admin')} el ${new Date(x.creado).toLocaleDateString('es-CL')}${x.motivo ? ' · "' + esc(x.motivo) + '"' : ''}<br>
+            👥 ${x.profesionales} profesionales activos · 📅 ${x.reservas} reservas en su historial${x.futuras ? ` · <b style="color:var(--rojo);">${x.futuras} reservas futuras</b>` : ''}</div>
+          ${x.estado === 'pendiente' ? `<p class="nota" style="margin:6px 0;">${x.reservas || x.profesionales ? 'Tiene historial: al aprobar se <b>archiva</b> (deja de verse; reservas y clientes se conservan; su equipo y servicios quedan inactivos).' : 'Sin historial: al aprobar se <b>elimina</b>.'}</p>
+            <div class="det-acciones" style="margin-top:4px;"><button class="boton" onclick="resolverLocal(${x.id}, true)">Aprobar</button><button class="boton-linea rojo" onclick="resolverLocal(${x.id}, false)">Rechazar</button></div>`
+            : `<div class="nota">${x.estado === 'aprobada' ? '✓ Aprobada · ' + esc(x.resultado || '') : '✕ Rechazada'}</div>`}</div>`).join('')}</div>`;
+    }
+    async function resolverLocal(id, aprobar){
+      const r = prompt(aprobar ? 'Mensaje para el admin (opcional):' : '¿Por qué no se elimina? (se lo enviamos al admin)', '');
+      if (r === null) return;
+      const { data, error } = await db.rpc('super_resolver_local', { p_id: id, p_aprobar: aprobar, p_respuesta: r });
+      if (error) return alert('Error: ' + error.message);
+      mostrarToast({ id: 0, tipo: 'completada', titulo: aprobar ? 'Local ' + data.resultado : 'Solicitud rechazada', detalle: 'Le avisamos al admin del negocio.' });
+      cargarSolLocales(); cargarNegocios();
+    }
+    // Super admin: cuántos locales puede tener un negocio
+    async function abrirLimLocales(id){
+      const { data, error } = await db.rpc('super_lim_locales', { p_negocio: id });
+      if (error) return alert(/super_lim_locales/.test(error.message || '') ? 'Falta instalar la Fase 46.' : error.message);
+      const n = negocios.find(x => x.id === id) || {}, plan = data.plan == null ? 'sin límite' : data.plan;
+      $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">📍 Locales de ${esc(n.nombre || '')}</h3>
+        <p class="nota">Usa <b>${data.usa}</b> · su plan permite <b>${plan}</b>. Puedes darle más o menos locales solo a este negocio.</p>
+        <label>Máximo de locales</label><select id="limLoc">
+          <option value="">Según su plan (${plan})</option>${[1, 2, 3, 4, 5, 6, 8, 10, 15, 20].map(k => `<option value="${k}" ${data.ajuste === k ? 'selected' : ''}>${k}</option>`).join('')}
+          <option value="-1" ${data.ajuste === -1 ? 'selected' : ''}>∞ Sin límite</option></select>
+        <div class="det-acciones"><button class="boton" onclick="guardarLimLocales(${id})">Guardar</button><button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
+        <p class="estado" id="estLimLoc"></p>`;
+      $('fondoDetalle').classList.remove('oculto');
+    }
+    async function guardarLimLocales(id){
+      const v = $('limLoc').value, { data, error } = await db.rpc('super_guardar_lim_locales', { p_negocio: id, p_max: v === '' ? null : Number(v) });
+      if (error) return estado('estLimLoc', 'Error: ' + error.message, 'error');
+      estado('estLimLoc', `✓ Guardado: ${data.max == null ? 'sin límite' : 'hasta ' + data.max} local${data.max === 1 ? '' : 'es'}${data.usa > (data.max ?? 1e9) ? ' (ya tiene ' + data.usa + ': no podrá agregar más)' : ''}.`, 'ok');
+    }
+    // Link de la agenda del negocio (como el link personal del profesional)
+    function pintarLinkNegocio(){
+      const el = $('linkNegocio'); if (!el) return;
+      if (yo?.rol !== 'admin' || !NEG?.slug || !conAgenda()){ el.classList.add('oculto'); return; }
+      el.classList.remove('oculto');
+      el.innerHTML = `<label>🔗 Link de tu agenda online · compártelo en Instagram, WhatsApp o Google</label>
+        <div style="display:flex;gap:6px;"><input id="lnkNeg" readonly value="${esc(linkAgenda())}"><button class="boton-linea" onclick="copiarTexto('lnkNeg', 'estLnkNeg')">Copiar</button>
+          <a class="boton-linea" href="${esc(linkAgenda())}" target="_blank" rel="noopener" style="text-decoration:none;">Abrir</a></div>
+        ${locales.length > 1 ? `<details style="margin-top:6px;"><summary class="nota" style="cursor:pointer;">Links directos por local (${locales.length})</summary>
+          ${locales.map(l => `<div style="display:flex;gap:6px;margin-top:6px;align-items:center;"><span class="nota" style="min-width:120px;">📍 ${esc(l.nombre)}</span><input id="lnkL-${l.id}" readonly value="${esc(linkLocal(l))}">
+            <button class="boton-linea" onclick="copiarTexto('lnkL-${l.id}', 'estLnkNeg')">Copiar</button></div>`).join('')}</details>` : ''}
+        <p class="estado" id="estLnkNeg"></p>`;
+    }
     async function cargarEquipo(){
       await cargarBase();
+      cargarLocalesAdmin();
       const sv = await db.from('servicios').select('*').order('orden').order('id');
       servicios = sv.data || [];
       const { data: accesos } = await db.rpc('estado_accesos');
       const acc = Object.fromEntries((accesos || []).map(a => [a.trabajador_id, a]));
       $('nuevoLocal').innerHTML = locales.map(l => `<option value="${l.id}" ${l.id === (LOCAL_PANEL || locales[0]?.id) ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('');
       // El admin primero; después el resto (del local elegido arriba, si hay filtro)
-      const lista = trabsFiltro().sort((x, y) => (acc[y.id]?.es_admin ? 1 : 0) - (acc[x.id]?.es_admin ? 1 : 0));
-      $('listaTrab').innerHTML = lista.map(t => {
+      // Agrupado por local (cada local con su equipo); dentro de cada local, el admin primero
+      const ordLoc = id => { const i = locales.findIndex(l => l.id === id); return i < 0 ? 999 : i; };
+      const lista = trabsFiltro().sort((x, y) => ordLoc(x.local_id) - ordLoc(y.local_id) || (acc[y.id]?.es_admin ? 1 : 0) - (acc[x.id]?.es_admin ? 1 : 0));
+      $('listaTrab').innerHTML = lista.map((t, i) => {
+        const cab = locales.length > 1 && (i === 0 || lista[i - 1].local_id !== t.local_id)
+          ? `<div class="eq-grupo">📍 ${esc(nombreLocal(t.local_id) || 'Sin local')} <span class="nota">· ${lista.filter(x => x.local_id === t.local_id).length} en el equipo</span></div>` : '';
         const a = acc[t.id] || {};
         const servLocal = servicios.length ? servicios.filter(s => s.local_id === t.local_id) : serviciosActivos.filter(s => s.local_id === t.local_id);
         const mios = asignados[t.id] || [];
@@ -3833,7 +3953,7 @@
         else accesoHtml = `<span class="nota">Sin cuenta.</span>
             <input type="text" id="clave-${t.id}" placeholder="Contraseña inicial (mín. 6)">
             <button class="boton-linea" onclick="crearAcceso(${t.id})">Crear acceso</button>`;
-        return `<div class="trab ${a.es_admin ? 'es-admin' : ''}" id="trab-${t.id}">
+        return `${cab}<div class="trab ${a.es_admin ? 'es-admin' : ''}" id="trab-${t.id}">
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
             ${a.es_admin ? '<span class="badge-admin" title="Esta cuenta administra todo el sistema">★ ADMIN</span>' : ''}
             ${locales.length > 1 ? `<span class="badge-local">📍 ${esc(nombreLocal(t.local_id) || 'Sin local')}</span>` : ''}
@@ -5212,6 +5332,7 @@
     }
     async function cargarNegocios(){
       $('tablaNeg').innerHTML = '<p class="nota">Cargando…</p>';
+      cargarSolLocales();
       await cargarPlanesRubros();
       if (!$('nnVence').value){ const d = new Date(); d.setDate(d.getDate() + 30); $('nnVence').value = fechaTexto(d); }
       const { data, error } = await db.rpc('super_negocios');
@@ -5250,6 +5371,7 @@
           <td><div class="chk-mod">
             <label><input type="checkbox" ${n.mod_agenda !== false ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_agenda', this)"> 📅 Agenda</label>
             <button class="boton-linea btn-lim" onclick="abrirLimitesNeg(${n.id})" title="Envíos masivos por correo y WhatsApp de este negocio">✉️ Límites de mensajes</button>
+            <button class="boton-linea btn-lim" onclick="abrirLimLocales(${n.id})" title="Cuántos locales puede tener este negocio">📍 Locales (${n.locales ?? '?'})</button>
             <label><input type="checkbox" ${n.mod_tienda ? 'checked' : ''} onchange="cambiarModulo(${n.id}, 'mod_tienda', this)"> 🛍 Tienda${n.mod_tienda ? ` <span class="nota">(${n.productos || 0} prod.)</span>` : ''}</label>
             ${'fid_plan' in n ? `<label title="Tarjeta de fidelidad para los clientes de este negocio"><input type="checkbox" ${(n.fid_otorgada ?? n.fid_plan) ? 'checked' : ''} onchange="cambiarFidelidad(${n.id}, this)"> 🎟 Fidelidad</label>
             <span class="nota" style="display:block;font-size:11px;">${n.fid_otorgada === null || n.fid_otorgada === undefined ? (n.fid_plan ? 'incluida en su plan' : 'su plan no la trae') : n.fid_otorgada ? (n.fid_plan ? 'otorgada' : '⭐ otorgada por ti') : '✕ quitada por ti'}${(n.fid_otorgada ?? n.fid_plan) ? (n.fid_activa ? ` · activa (${n.fid_meta} at.)` : ' · el admin aún no la activa') : ''}</span>` : ''}</div></td>
