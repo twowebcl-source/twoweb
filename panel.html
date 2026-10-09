@@ -259,6 +259,8 @@
     .rp-real.neg b { color:var(--rojo); }
     .rp-donde { background:var(--panel2); border-radius:var(--r-s); padding:2px 12px 6px; margin-bottom:8px; }
     .rp-donde .rp-fila { font-size:13px; }
+    .rp-chk { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gris); margin:4px 0 2px; cursor:pointer; }
+    .rp-chk input { width:auto; margin:0; }
     .rp-kpis { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:12px; }
     .rp-kpis div, .rp-ec div { background:var(--panel2); border-radius:var(--r-s); padding:9px 12px; }
     .rp-kpis small, .rp-ec small { display:block; font-size:11px; color:var(--gris); }
@@ -2191,7 +2193,8 @@
       pros.forEach((p, i) => p.color = COLS_REP[i % COLS_REP.length]);
       const serv = pros.reduce((a, p) => a + p.serv, 0), prop = pros.reduce((a, p) => a + p.prop, 0);
       const com = Math.round(pros.reduce((a, p) => a + p.com, 0) * 100) / 100, local = Math.round((serv - com) * 100) / 100;
-      return { fecha: diaVista, pros, serv, prop, com, local, entra: serv + prop, ivaDia: separarIva(serv), real: Math.round((local - separarIva(serv).iva) * 100) / 100 };
+      const ivaConProp = ivaConPropinas(), baseIva = serv + (ivaConProp ? prop : 0), ivaDia = separarIva(baseIva);   // IVA sobre todo lo que ingresó
+      return { fecha: diaVista, pros, serv, prop, com, local, entra: serv + prop, ivaConProp, baseIva, ivaDia, real: Math.round((local - ivaDia.iva) * 100) / 100 };
     }
     // Barra: cada profesional + IVA a pagar + lo que realmente le queda al local
     function barraReparto(R){
@@ -2207,14 +2210,15 @@
         <div class="rep-cab"><div class="rep-tit">💰 Reparto ${hoy ? 'de hoy' : 'del día'} <span class="nota">· solo atenciones cobradas</span></div><span class="rep-ver">Ver detalle e IVA ›</span></div>
         ${barraReparto(R)}
         <div class="rep-lista">${R.pros.map(p => `<div class="rep-item"><span class="rep-pto" style="background:${p.color};"></span><span class="rep-nom">${esc(p.nom)}${p.tu ? ' <em>(tú)</em>' : ''}<small>${p.n} atención${p.n === 1 ? '' : 'es'} · ${p.pct}%${p.prop ? ' + propinas' : ''}</small></span><b>${clpX(p.gan)}<small>${pctTxt(p.gan, base)}</small></b></div>`).join('')}
-          <div class="rep-item local"><span class="rep-pto" style="background:var(--voltaje);"></span><span class="rep-nom">🏪 Para el local<small>cobrado − comisiones · menos <u>IVA</u> queda <b class="${R.real < 0 ? 'neg' : ''}">${clp2(R.real)}</b></small></span><b>${clpX(R.local)}<small>${pctTxt(R.local, base)}</small></b></div></div>
+          <div class="rep-item local"><span class="rep-pto" style="background:var(--voltaje);"></span><span class="rep-nom">🏪 Para el local<small>cobrado − comisiones · considera su <u>IVA</u></small></span><b>${clpX(R.local)}<small>${pctTxt(R.local, base)}</small></b></div></div>
         <div class="rep-pie"><span>Entró ${hoy ? 'hoy' : 'ese día'}: <b>${clp(R.entra)}</b> <small>(servicios + propinas)</small></span><span>IVA a pagar: <b class="rojo">${clp2(R.ivaDia.iva)}</b> · Ganancia real del local: <b class="${R.real < 0 ? 'rojo' : 'naranja'}">${clp2(R.real)}</b></span></div></div>`;
     }
     function abrirReparto(){
       const R = REPARTO; if (!R) return;
       const f = deTexto(R.fecha).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
       const fila = (a, b, cls = '') => `<div class="rp-fila ${cls}"><span>${a}</span><b>${b}</b></div>`;
-      const neg = R.real < 0;
+      const neg = R.real < 0, base = R.baseIva, conProp = R.ivaConProp && R.prop > 0;
+      const queBase = conProp ? 'servicios + propinas' : 'servicios';
       $('ventanaDetalle').classList.add('ancha');
       $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">💰 Reparto del día</h3>
         <p class="nota" style="margin-bottom:12px;">${esc(f[0].toUpperCase() + f.slice(1))} · ${R.pros.reduce((a, p) => a + p.n, 0)} atenciones cobradas</p>
@@ -2227,27 +2231,40 @@
           ${R.pros.map(p => `<div class="rp-tr"><span><i style="background:${p.color};"></i>${esc(p.nom)}${p.tu ? ' <em>(tú)</em>' : ''}<small>${p.n} atención${p.n === 1 ? '' : 'es'}</small></span>
             <span data-l="Servicios">${clp(p.serv)}</span><span data-l="Comisión">${clp(p.serv)} × ${p.pct}% = ${clpX(p.com)}</span><span data-l="Propinas">+ ${clp(p.prop)}</span><b data-l="Gana">${clpX(p.gan)}</b></div>`).join('')}
           <div class="rp-tr total"><span>Total a pagar al equipo</span><span>${clp(R.serv)}</span><span>${clpX(R.com)}</span><span>+ ${clp(R.prop)}</span><b>${clpX(R.com + R.prop)}</b></div></div>
-          <p class="nota">Las propinas son 100% de quien atendió y no llevan IVA.</p></div>
+          <p class="nota">Las propinas son 100% de quien atendió.</p></div>
 
         <div class="rp-sec"><div class="rp-tit"><span class="rp-num">2</span> Para el local</div>
           ${fila('Servicios cobrados', clp(R.serv))}${fila('− Comisiones del equipo', '− ' + clpX(R.com))}${fila('= Para el local', clpX(R.local), 'res')}
-          <p class="nota">Ojo: esto todavía no es ganancia. Al local le ingresaron <b>${clp(R.serv)}</b> y el IVA se paga sobre todo eso (punto 3).</p></div>
+          <details class="rp-iva"><summary>Considera este ingreso y su <u>IVA</u> ›</summary>
+            <p class="nota" style="margin:0 0 6px;">Los ${clpX(R.local)} todavía no son ganancia: al local le ingresaron <b>${clp(base)}</b> (${queBase}) y el IVA se paga sobre todo eso.</p>
+            ${fila(`Total sin IVA: ${clp(base)} ÷ 1,19`, clp2(R.ivaDia.neto))}${fila(`IVA a pagar: ${clp(base)} − ${clp2(R.ivaDia.neto)}`, clp2(R.ivaDia.iva))}
+            ${fila(`Ganancia real: ${clpX(R.local)} − ${clp2(R.ivaDia.iva)}`, clp2(R.real), 'res' + (neg ? ' neg' : ''))}
+            <p class="nota">El detalle de la cuenta está en los puntos 3 y 4.</p></details></div>
 
-        <div class="rp-sec iva"><div class="rp-tit"><span class="rp-num">3</span> <u>IVA</u> del día <span class="nota">· sobre todo lo que ingresó en servicios</span></div>
-          <div class="rp-ec"><div><small>Total cobrado</small><b>${clp(R.serv)}</b></div><span>÷ 1,19 =</span><div class="fuerte"><small>Total sin IVA</small><b>${clp2(R.ivaDia.neto)}</b></div></div>
-          <div class="rp-ec"><div><small>Total cobrado</small><b>${clp(R.serv)}</b></div><span>− ${clp2(R.ivaDia.neto)} =</span><div class="fuerte rojo"><small>Total IVA a pagar</small><b>${clp2(R.ivaDia.iva)}</b></div></div>
-          <p class="nota">Redondeado a pesos (como en la boleta): sin IVA <b>${clp(Math.round(R.ivaDia.neto))}</b> · IVA <b>${clp(Math.round(R.serv) - Math.round(R.ivaDia.neto))}</b>. Las propinas (${clp(R.prop)}) no llevan IVA.</p></div>
+        <div class="rp-sec iva"><div class="rp-tit"><span class="rp-num">3</span> <u>IVA</u> del día <span class="nota">· sobre todo lo que ingresó (${queBase})</span></div>
+          <div class="rp-ec"><div><small>Total ingresado</small><b>${clp(base)}</b></div><span>÷ 1,19 =</span><div class="fuerte"><small>Total sin IVA</small><b>${clp2(R.ivaDia.neto)}</b></div></div>
+          <div class="rp-ec"><div><small>Total ingresado</small><b>${clp(base)}</b></div><span>− ${clp2(R.ivaDia.neto)} =</span><div class="fuerte rojo"><small>Total IVA a pagar</small><b>${clp2(R.ivaDia.iva)}</b></div></div>
+          <p class="nota">Redondeado a pesos (como en la boleta): sin IVA <b>${clp(Math.round(R.ivaDia.neto))}</b> · IVA <b>${clp(base - Math.round(R.ivaDia.neto))}</b>.</p>
+          ${R.prop > 0 ? `<label class="rp-chk"><input type="checkbox" ${R.ivaConProp ? 'checked' : ''} onchange="cambiarIvaPropinas(this.checked)"> Incluir las propinas (${clp(R.prop)}) en el IVA</label>` : ''}
 
-        <div class="rp-sec"><div class="rp-tit"><span class="rp-num">4</span> Ganancia real del local</div>
-          ${fila('Para el local (punto 2)', clpX(R.local))}${fila('− Total IVA a pagar (punto 3)', '− ' + clp2(R.ivaDia.iva))}
-          <div class="rp-real ${neg ? 'neg' : ''}"><small>= Ganancia real del local</small><b>${clp2(R.real)}</b><span>${neg ? '⚠️ Las comisiones más el IVA superan lo cobrado: este día el local pierde plata.' : `De cada $100 que ingresaron en servicios, al local le quedan $${R.serv ? (Math.round(R.real / R.serv * 1000) / 10).toLocaleString('es-CL') : 0}.`}</span></div>
-          <div class="rp-donde"><div class="rp-tit" style="font-size:13px;margin:10px 0 6px;">A dónde se fueron los ${clp(R.serv)} de servicios</div>
-            ${fila('Comisiones del equipo', clpX(R.com))}${fila('IVA (al Estado)', clp2(R.ivaDia.iva))}${fila('Ganancia real del local', clp2(R.real))}${fila('Total', clp(R.serv), 'res')}</div>
-          <p class="nota">Este IVA es el que generan las ventas del día. A fin de mes se le resta el IVA de las compras del local con factura (productos, insumos, arriendo, etc.), así que el que se paga de verdad puede ser menor. Confírmalo con tu contador.</p></div>
+          <details class="rp-iva"><summary>¿Cuánto le queda al local después de pagar el IVA? ›</summary>
+            ${fila('Para el local (punto 2)', clpX(R.local))}${fila('− Total IVA a pagar', '− ' + clp2(R.ivaDia.iva))}${fila('= Ganancia real del local', clp2(R.real), 'res' + (neg ? ' neg' : ''))}
+            ${neg ? '<p class="nota" style="color:var(--rojo);">⚠️ Las comisiones más el IVA superan lo que le quedó al local: este día el local pierde plata.</p>' : `<p class="nota">De cada $100 que ingresaron, al local le quedan $${base ? (Math.round(R.real / base * 1000) / 10).toLocaleString('es-CL') : 0}.</p>`}
+            <div class="rp-donde"><div style="font-size:12px;color:var(--gris);margin:6px 0 2px;">A dónde se fueron los ${clp(R.entra)} que entraron</div>
+              ${fila('Equipo (comisiones + propinas)', clpX(R.com + R.prop))}${fila('IVA (al Estado)', clp2(R.ivaDia.iva))}${fila('Ganancia real del local', clp2(R.real))}${fila('Total', clp(R.entra), 'res')}</div>
+            <p class="nota">Este IVA es el de las ventas del día. A fin de mes se le resta el IVA de las compras del local con factura (productos, insumos, arriendo, etc.), así que el que se paga de verdad puede ser menor. Confírmalo con tu contador.</p></details></div>
 
         <p class="nota">El detalle por atención (medio de pago, productos, descuentos) sigue en Caja.</p>
         <div class="det-acciones"><button class="boton-linea" onclick="cerrarDetalle();verTab('caja')">Ir a Caja</button><button class="boton" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>`;
       $('fondoDetalle').classList.remove('oculto');
+    }
+    // Propinas dentro o fuera del IVA (se recuerda en este navegador; por defecto: dentro)
+    function ivaConPropinas(){ try { return localStorage.getItem('tw-iva-propinas') !== '0'; } catch (e) { return true; } }
+    function cambiarIvaPropinas(si){
+      try { localStorage.setItem('tw-iva-propinas', si ? '1' : '0'); } catch (e) {}
+      const abiertos = [...document.querySelectorAll('#ventanaDetalle details')].map(d => d.open), sc = $('ventanaDetalle').scrollTop;
+      dibujarDia(); abrirReparto();
+      document.querySelectorAll('#ventanaDetalle details').forEach((d, i) => d.open = !!abiertos[i]); $('ventanaDetalle').scrollTop = sc;
     }
 
     // Foto del profesional (la sube el admin en Equipo y horarios): en su avatar de arriba y en la agenda
@@ -3154,7 +3171,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F46 · 09-10 b';
+    const VERSION_PANEL = 'F46 · 09-10 c';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
