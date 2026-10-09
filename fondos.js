@@ -63,7 +63,10 @@ function aplicarFuente(cod){
   r.classList.add('fuente-propia');
 }
 const FondoAnim = (() => {
-  let cv, cx, cfg = null, M = null, raf = 0, t0 = 0, ult = 0, W = 0, H = 0, dpr = 1, items = [], ondas = [], proxGota = 0, img = null, imgSrc = '';
+  let cv, cx, cfg = null, M = null, raf = 0, t0 = 0, ult = 0, W = 0, H = 0, dpr = 1, items = [], ondas = [], proxGota = 0, img = null, imgSrc = '', frSc = null;
+  // Imagen que acompaña el desplazamiento (Fase 51): cuánto se ha bajado en la página, de 0 (arriba) a 1 (abajo)
+  const fraccionScroll = () => { const e = document.scrollingElement || document.documentElement, max = e.scrollHeight - innerHeight; return max > 4 ? Math.min(1, Math.max(0, (scrollY || e.scrollTop) / max)) : .5; };
+  const conScroll = () => cfg && cfg.motor === 'imagen' && cfg.mover === 'scroll';
   const quieto = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const rgba = (hex, a) => { const n = parseInt((hex || '#888888').slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${Math.max(0, Math.min(1, a))})`; };
   const R = (a, b) => a + Math.random() * (b - a);
@@ -74,6 +77,7 @@ const FondoAnim = (() => {
     cv = document.createElement('canvas'); cv.id = 'fondoAnim'; cv.setAttribute('aria-hidden', 'true');
     document.body.prepend(cv); cx = cv.getContext('2d');
     addEventListener('resize', medir);
+    addEventListener('scroll', () => { if (conScroll() && (quieto() || document.hidden)){ frSc = fraccionScroll(); cuadro(performance.now()); } }, { passive: true });
     document.addEventListener('visibilitychange', () => { cancelAnimationFrame(raf); if (!document.hidden && cfg && !quieto()) bucle(performance.now()); });
   }
   function medir(){
@@ -116,7 +120,16 @@ const FondoAnim = (() => {
   function cuadro(t){
     const k = [0, .55, 1, 1.5, 2.1][cfg.intensidad] * (oscuro() ? 1 : .8), d0 = Math.min(.05, (t - ult) / 1000) || 0; ult = t;
     cx.clearRect(0, 0, W, H);
-    if (cfg.motor === 'imagen' && img && img.complete && img.naturalWidth){
+    if (cfg.motor === 'imagen' && img && img.complete && img.naturalWidth && cfg.mover !== 'animada'){
+      // 'scroll': la imagen cubre la pantalla y se recorre completa al bajar/subir; 'fijo': quieta y centrada
+      const iw = img.naturalWidth, ih = img.naturalHeight, e = Math.max(W / iw, H / ih);
+      let dx = (W - iw * e) / 2, dy = (H - ih * e) / 2;
+      if (cfg.mover === 'scroll'){
+        const meta = fraccionScroll(); frSc = frSc == null || quieto() ? meta : frSc + (meta - frSc) * .18;
+        if (ih * e > H + 1) dy = (H - ih * e) * frSc; else if (iw * e > W + 1) dx = (W - iw * e) * frSc;
+      }
+      cx.globalAlpha = cfg.propia ? 1 : Math.min(1, .35 + .25 * k); cx.drawImage(img, dx, dy, iw * e, ih * e); cx.globalAlpha = 1;
+    } else if (cfg.motor === 'imagen' && img && img.complete && img.naturalWidth){
       const s = t / 1000 * [0, .45, 1, 1.9][cfg.velocidad];
       const z = 1.12 + Math.sin(s * .05) * .06, iw = img.naturalWidth, ih = img.naturalHeight, e = Math.max(W / iw, H / ih) * z;
       const dx = (W - iw * e) / 2 + Math.sin(s * .07) * W * .03, dy = (H - ih * e) / 2 + Math.cos(s * .06) * H * .03;
@@ -239,7 +252,7 @@ const FondoAnim = (() => {
       const p = f.params || {};
       const mezcla = (q, motor) => ({ ...q, motor, c1: sel.color || q.c1 || '#22d3ee', c2: sel.color2 || q.c2 || '#6366f1', c3: sel.color3 || q.c3 || q.c1,
               forma: sel.forma || q.forma || 'circulo', intensidad: sel.intensidad || 2, velocidad: sel.velocidad || 2 });
-      cfg = { ...mezcla(p, f.motor), propia: !!f.propia };
+      cfg = { ...mezcla(p, f.motor), propia: !!f.propia, mover: ['scroll', 'fijo', 'animada'].includes(sel.mover) ? sel.mover : 'scroll' }; frSc = null;
       const capa = f.capaItem && MOTORES[f.capaItem.motor] && f.capaItem.motor !== 'imagen' ? f.capaItem : null;
       M = capa ? mezcla({ ...(capa.params || {}), tinte: 'ninguno' }, capa.motor) : cfg;
       cv.style.filter = f.motor !== 'imagen' && p.blur ? `blur(${p.blur}px)` : 'none';

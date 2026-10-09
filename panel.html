@@ -3755,7 +3755,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F50 · 09-10 a';
+    const VERSION_PANEL = 'F51 · 09-10 a';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -4033,11 +4033,14 @@
       const efectos = FONDOS_CAT.filter(x => x.activo !== false && x.motor !== 'imagen');
       return `<div class="fondo-ajustes">
         ${propio ? `<div><button class="boton-linea" onclick="$('pzArchivo').click()">📷 ${(PZ.imagenNueva ?? PZ.imagen) ? 'Cambiar foto' : 'Elegir foto de la galería'}</button>
-            <span class="nota"> Se mueve suavemente, como un video.</span></div>
+</div>
           <div><small>Efecto encima</small> ${chip('efecto', '', 'Ninguno')}${efectos.map(x => chip('efecto', x.codigo, (x.icono || '') + ' ' + esc(x.nombre))).join('')}</div>` : ''}
         ${mot ? `<div class="colores-fondo">${[['color', 'c1'], ['color2', 'c2'], ['color3', 'c3']].slice(0, mot.colores).map(([k, pk], i) =>
             `<label class="check-linea" style="margin:0;">Color ${i + 1} <input type="color" value="${s[k] || f.params?.[pk] || f.params?.c1 || '#888888'}" oninput="ajustePz('${k}', this.value, true)"></label>`).join('')}
             <button class="link" style="margin:0;" onclick="ajustePz('reset', 1)">Colores originales</button></div>` : ''}
+        ${propio || (f && f.motor === 'imagen') ? `<div><small>La imagen</small> ${[['scroll', '↕ Se recorre al subir y bajar'], ['fijo', '▣ Fija'], ['animada', '〰 Movimiento suave']].map(([v, t]) =>
+            `<button class="chip ${(s.mover || 'scroll') === v ? 'sel' : ''}" onclick="ajustePz('mover', '${v}')">${t}</button>`).join('')}
+            <p class="nota" style="margin:4px 0 0;">${(s.mover || 'scroll') === 'scroll' ? 'La imagen se ve completa: mientras bajas por el panel, la imagen baja contigo (en computador y celular).' : (s.mover || 'scroll') === 'fijo' ? 'La imagen queda quieta, centrada y cubriendo la pantalla.' : 'La imagen se mueve lento y solo, como un video.'}</p></div>` : ''}
         <div><small>Intensidad</small> ${chip('intensidad', 1, 'Suave')}${chip('intensidad', 2, 'Media')}${chip('intensidad', 3, 'Fuerte')}${chip('intensidad', 4, '🔥 Máxima')}</div>
         <div><small>Velocidad</small> ${chip('velocidad', 1, 'Lenta')}${chip('velocidad', 2, 'Normal')}${chip('velocidad', 3, 'Rápida')}</div>
         ${mot && mot.forma && (f.params?.particula || 'forma') === 'forma' ? `<div><small>Forma</small> ${Object.entries(FORMAS_FONDO).map(([k, t]) => chip('forma', k, t)).join('')}</div>` : ''}
@@ -4046,7 +4049,7 @@
     }
     function elegirPz(cod){
       if (cod === 'propio' && !(PZ.imagenNueva ?? PZ.imagen)){ $('pzArchivo').click(); return; }
-      PZ.sel = cod ? { codigo: cod, intensidad: PZ.sel?.intensidad || 3, velocidad: PZ.sel?.velocidad || 2, vidrio: PZ.sel?.vidrio ?? true, ...(cod === 'propio' ? { efecto: PZ.sel?.efecto || '' } : {}) } : null;
+      PZ.sel = cod ? { codigo: cod, intensidad: PZ.sel?.intensidad || 3, velocidad: PZ.sel?.velocidad || 2, vidrio: PZ.sel?.vidrio ?? true, ...(PZ.sel?.mover ? { mover: PZ.sel.mover } : {}), ...(cod === 'propio' ? { efecto: PZ.sel?.efecto || '' } : {}) } : null;
       dibujarPz(); previewPz();
     }
     function ajustePz(k, v, sinRedibujar){
@@ -4058,7 +4061,7 @@
     async function subirFotoPz(input){
       try {
         const d = await comprimirImagen(input.files[0], 1600, 650000);
-        PZ.imagenNueva = d; PZ.sel = { codigo: 'propio', intensidad: PZ.sel?.intensidad || 3, velocidad: PZ.sel?.velocidad || 2, vidrio: PZ.sel?.vidrio ?? true, efecto: PZ.sel?.efecto || '' };
+        PZ.imagenNueva = d; PZ.sel = { codigo: 'propio', intensidad: PZ.sel?.intensidad || 3, velocidad: PZ.sel?.velocidad || 2, vidrio: PZ.sel?.vidrio ?? true, efecto: PZ.sel?.efecto || '', ...(PZ.sel?.mover ? { mover: PZ.sel.mover } : {}) };
         dibujarPz(); previewPz();
       } catch (e) { alert(e.message); }
       input.value = '';
