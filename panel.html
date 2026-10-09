@@ -2052,7 +2052,7 @@
       $('diaInput').value = diaVista;
       const delDia = reservasTodas.filter(r => r.fecha === diaVista && enFiltro(r.trabajador_id));
       $('ctrlDia').innerHTML = controlesVista(true, diaVista === hoyTxt() ? (VISTA.trab || 0) : undefined);
-      pintarKpisDia(delDia);
+      pintarKpisDia(delDia); pintarLinkNegocio();
       const cols = trabsFiltro().filter(t => (t.activo || delDia.some(r => r.trabajador_id === t.id)) && (!VISTA.trab || t.id === VISTA.trab));
       const lista = VISTA.modo === 'lista';
       $('agendaDiaCaja').classList.toggle('oculto', lista); $('listaDia').classList.toggle('oculto', !lista);
@@ -2996,7 +2996,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F46 · 08-10';
+    const VERSION_PANEL = 'F46 · 08-10 b';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -3915,16 +3915,22 @@
       estado('estLimLoc', `✓ Guardado: ${data.max == null ? 'sin límite' : 'hasta ' + data.max} local${data.max === 1 ? '' : 'es'}${data.usa > (data.max ?? 1e9) ? ' (ya tiene ' + data.usa + ': no podrá agregar más)' : ''}.`, 'ok');
     }
     // Link de la agenda del negocio (como el link personal del profesional)
+    // Cambia según lo que el admin está viendo: un profesional → su link personal; un local → el link de ese local; todos → el link general
     function pintarLinkNegocio(){
       const el = $('linkNegocio'); if (!el) return;
       if (yo?.rol !== 'admin' || !NEG?.slug || !conAgenda()){ el.classList.add('oculto'); return; }
+      const t = VISTA.trab ? trabajadores.find(x => x.id === VISTA.trab) : null, l = !t && LOCAL_PANEL ? locales.find(x => x.id === LOCAL_PANEL) : null;
+      const url = t ? linkPro(t) : l ? linkLocal(l) : linkAgenda();
+      const titulo = t ? `🔗 Link de agenda de <b>${esc(t.nombre)}</b> · quien entre agenda directo con ${esc(t.nombre.split(' ')[0])}`
+        : l ? `🔗 Link de agenda del local <b>📍 ${esc(l.nombre)}</b>` : `🔗 Link de tu agenda online${locales.length > 1 ? ' (todos los locales)' : ''} · compártelo en Instagram, WhatsApp o Google`;
       el.classList.remove('oculto');
-      el.innerHTML = `<label>🔗 Link de tu agenda online · compártelo en Instagram, WhatsApp o Google</label>
-        <div style="display:flex;gap:6px;"><input id="lnkNeg" readonly value="${esc(linkAgenda())}"><button class="boton-linea" onclick="copiarTexto('lnkNeg', 'estLnkNeg')">Copiar</button>
-          <a class="boton-linea" href="${esc(linkAgenda())}" target="_blank" rel="noopener" style="text-decoration:none;">Abrir</a></div>
-        ${locales.length > 1 ? `<details style="margin-top:6px;"><summary class="nota" style="cursor:pointer;">Links directos por local (${locales.length})</summary>
-          ${locales.map(l => `<div style="display:flex;gap:6px;margin-top:6px;align-items:center;"><span class="nota" style="min-width:120px;">📍 ${esc(l.nombre)}</span><input id="lnkL-${l.id}" readonly value="${esc(linkLocal(l))}">
-            <button class="boton-linea" onclick="copiarTexto('lnkL-${l.id}', 'estLnkNeg')">Copiar</button></div>`).join('')}</details>` : ''}
+      el.innerHTML = `<label>${titulo}</label>
+        <div style="display:flex;gap:6px;"><input id="lnkNeg" readonly value="${esc(url)}"><button class="boton-linea" onclick="copiarTexto('lnkNeg', 'estLnkNeg')">Copiar</button>
+          <a class="boton-linea" href="${esc(url)}" target="_blank" rel="noopener" style="text-decoration:none;">Abrir</a></div>
+        ${!t && !l && locales.length > 1 ? `<details style="margin-top:6px;"><summary class="nota" style="cursor:pointer;">Links directos por local (${locales.length})</summary>
+          ${locales.map(x => `<div style="display:flex;gap:6px;margin-top:6px;align-items:center;"><span class="nota" style="min-width:120px;">📍 ${esc(x.nombre)}</span><input id="lnkL-${x.id}" readonly value="${esc(linkLocal(x))}">
+            <button class="boton-linea" onclick="copiarTexto('lnkL-${x.id}', 'estLnkNeg')">Copiar</button></div>`).join('')}</details>` : ''}
+        ${t || l ? `<p class="nota" style="margin:4px 0 0;">Elige "Todos" arriba para ver el link general de tu agenda.</p>` : ''}
         <p class="estado" id="estLnkNeg"></p>`;
     }
     async function cargarEquipo(){
