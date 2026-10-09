@@ -260,6 +260,14 @@
     .rp-donde { background:var(--panel2); border-radius:var(--r-s); padding:2px 12px 6px; margin-bottom:8px; }
     .rp-donde .rp-fila { font-size:13px; }
     .rp-fila small.nota { font-size:11px; }
+    .mover-img { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:14px; border:1px solid var(--linea); background:var(--panel2); cursor:pointer; margin:2px 0; }
+    .mover-img input { width:20px; height:20px; margin:0; flex:none; accent-color:var(--voltaje); }
+    .mover-img b { display:block; font-size:14px; color:var(--hueso); } .mover-img small { display:block; color:var(--gris); font-size:12px; margin-top:2px; }
+    .mover-img .mi-ico { font-size:22px; }
+    .mover-img.on { border-color:color-mix(in srgb, var(--voltaje) 60%, transparent); background:color-mix(in srgb, var(--voltaje) 10%, var(--panel2)); }
+    .mover-img.grande { padding:18px; } .mover-img.grande b { font-size:16px; } .mover-img.grande .mi-ico { font-size:30px; }
+    .pz-final { padding:6px 2px 10px; }
+    .pz-final-tit { font-weight:700; font-size:16px; margin-bottom:6px; }
     .bal-trab { margin-top:2px; }
     .bt-tit { display:flex; align-items:center; gap:10px; }
     .bt-ava { width:32px; height:32px; font-size:14px; flex:none; }
@@ -3824,7 +3832,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F52 · 09-10 a';
+    const VERSION_PANEL = 'F52 · 09-10 b';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
@@ -4060,7 +4068,7 @@
       const img = PZ.imagenNueva !== undefined ? PZ.imagenNueva : PZ.imagen;
       FondoAnim.poner(PZ.sel, PZ.sel && PZ.sel.codigo === 'propio' ? resolverFondo(PZ.sel, img) : undefined);
     }
-    function tabPz(t){ PZ.tab = t; dibujarPz(); if (t === 'fuente') Object.keys(FUENTES_ESTILO).forEach(k => { if (k !== 'defecto') cargarFuenteMuestra(k); }); }
+    function tabPz(t){ PZ.tab = t; PZ.paso = null; dibujarPz(); if (t === 'fuente') Object.keys(FUENTES_ESTILO).forEach(k => { if (k !== 'defecto') cargarFuenteMuestra(k); }); }
     function cargarFuenteMuestra(k){
       const f = FUENTES_ESTILO[k]; if (!f.g || document.getElementById('fuenteEst-' + k)) return;
       const l = document.createElement('link'); l.id = 'fuenteEst-' + k; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + f.g + '&display=swap'; document.head.appendChild(l);
@@ -4072,6 +4080,16 @@
       $('pzTitulo').textContent = neg ? 'Personalizar mi página' : 'Personalizar mi panel';
       $('pzSub').textContent = neg ? 'Lo verán tus clientes en tu agenda, tienda y página. Mientras eliges, se ve aquí detrás.' : 'Solo cambia tu panel. Mientras eliges, se ve aquí detrás.';
       document.querySelectorAll('#hojaPz .pz-tab').forEach(b => { b.classList.toggle('sel', b.dataset.t === PZ.tab); if (b.dataset.t === 'colores') b.classList.toggle('oculto', neg); });
+      $('pzAplicar').textContent = PZ.paso === 'final' ? '✓ Aplicar' : 'Aplicar';
+      if (PZ.paso === 'final'){
+        document.querySelectorAll('#hojaPz .pz-tab').forEach(b => b.classList.remove('sel'));
+        $('pzCuerpo').innerHTML = `<div class="pz-final">
+          <div class="pz-final-tit">Último paso · tu imagen de fondo</div>
+          <p class="nota" style="margin:0 0 12px;">Elige si la imagen acompaña tu movimiento o queda quieta. Mientras eliges, se ve aquí detrás: prueba deslizando.</p>
+          ${casillaMover(PZ.sel, true)}
+          <button class="link" style="margin-top:14px;" onclick="PZ.paso=null; dibujarPz()">‹ Volver a elegir el estilo</button></div>`;
+        return;
+      }
       if (PZ.tab === 'colores'){
         $('pzCuerpo').innerHTML = `<p class="nota" style="margin:0 0 10px;">Los colores de <b>tu</b> panel (tus clientes no los ven). Toca uno para probarlo.</p>
           <div class="temas" id="temasMios">${selectorMio()}</div>
@@ -4107,14 +4125,22 @@
         ${mot ? `<div class="colores-fondo">${[['color', 'c1'], ['color2', 'c2'], ['color3', 'c3']].slice(0, mot.colores).map(([k, pk], i) =>
             `<label class="check-linea" style="margin:0;">Color ${i + 1} <input type="color" value="${s[k] || f.params?.[pk] || f.params?.c1 || '#888888'}" oninput="ajustePz('${k}', this.value, true)"></label>`).join('')}
             <button class="link" style="margin:0;" onclick="ajustePz('reset', 1)">Colores originales</button></div>` : ''}
-        ${propio || (f && f.motor === 'imagen') ? `<div><small>La imagen</small> ${[['scroll', '↕ Se recorre al subir y bajar'], ['fijo', '▣ Fija'], ['animada', '〰 Movimiento suave']].map(([v, t]) =>
-            `<button class="chip ${(s.mover || 'scroll') === v ? 'sel' : ''}" onclick="ajustePz('mover', '${v}')">${t}</button>`).join('')}
-            <p class="nota" style="margin:4px 0 0;">${(s.mover || 'scroll') === 'scroll' ? 'La imagen se ve completa: mientras bajas por el panel, la imagen baja contigo (en computador y celular).' : (s.mover || 'scroll') === 'fijo' ? 'La imagen queda quieta, centrada y cubriendo la pantalla.' : 'La imagen se mueve lento y solo, como un video.'}</p></div>` : ''}
+        ${propio || (f && f.motor === 'imagen') ? casillaMover(s) : ''}
         <div><small>Intensidad</small> ${chip('intensidad', 1, 'Suave')}${chip('intensidad', 2, 'Media')}${chip('intensidad', 3, 'Fuerte')}${chip('intensidad', 4, '🔥 Máxima')}</div>
         <div><small>Velocidad</small> ${chip('velocidad', 1, 'Lenta')}${chip('velocidad', 2, 'Normal')}${chip('velocidad', 3, 'Rápida')}</div>
         ${mot && mot.forma && (f.params?.particula || 'forma') === 'forma' ? `<div><small>Forma</small> ${Object.entries(FORMAS_FONDO).map(([k, t]) => chip('forma', k, t)).join('')}</div>` : ''}
         <label class="check-linea" style="margin:0;"><input type="checkbox" ${s.vidrio !== false ? 'checked' : ''} onchange="ajustePz('vidrio', this.checked, true)"> Tarjetas de vidrio (el fondo se ve a través)</label>
       </div>`;
+    }
+    // Imagen de fondo: con movimiento al deslizar el panel (se recorre completa) o fija (Fase 51)
+    const esImagenSel = sel => !!sel && (sel.codigo === 'propio' || fondoDe(sel.codigo)?.motor === 'imagen');
+    const conMovimiento = sel => (sel?.mover || 'scroll') === 'scroll';
+    function casillaMover(s, grande){
+      return `<label class="mover-img ${grande ? 'grande' : ''} ${conMovimiento(s) ? 'on' : ''}">
+        <input type="checkbox" ${conMovimiento(s) ? 'checked' : ''} onchange="PZ.sel.mover = this.checked ? 'scroll' : 'fijo'; previewPz(); dibujarPz()">
+        <span class="mi-ico">${conMovimiento(s) ? '🎞' : '🖼'}</span>
+        <span><b>Imagen con movimiento al deslizar el panel</b>
+          <small>${conMovimiento(s) ? 'Activado: al subir y bajar por el panel, la imagen avanza contigo y se ve completa (computador y celular).' : 'Desactivado: la imagen queda fija, centrada y cubriendo la pantalla.'}</small></span></label>`;
     }
     function elegirPz(cod){
       if (cod === 'propio' && !(PZ.imagenNueva ?? PZ.imagen)){ $('pzArchivo').click(); return; }
@@ -4138,6 +4164,8 @@
     function vistaPreviaPz(){ $('hojaPz').classList.add('oculto'); $('pzVolver').classList.remove('oculto'); }
     function volverPz(){ $('pzVolver').classList.add('oculto'); $('hojaPz').classList.remove('oculto'); }
     async function aplicarPz(){
+      // Último paso: si el fondo es una imagen, se pregunta si va con movimiento o fija
+      if (esImagenSel(PZ.sel) && PZ.paso !== 'final'){ PZ.paso = 'final'; dibujarPz(); return; }
       const b = $('pzAplicar'); b.disabled = true; b.textContent = 'Guardando…';
       const fondo = PZ.sel ? { ...PZ.sel } : { codigo: 'ninguno' };
       let r;
