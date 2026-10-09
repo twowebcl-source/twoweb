@@ -260,19 +260,25 @@
     .rp-donde { background:var(--panel2); border-radius:var(--r-s); padding:2px 12px 6px; margin-bottom:8px; }
     .rp-donde .rp-fila { font-size:13px; }
     .rp-fila small.nota { font-size:11px; }
-    /* Sable de luz: el valor late y una hoja de luz lo ilumina por debajo */
-    .sable { --sc:var(--voltaje); position:relative; display:inline-block; color:var(--sc) !important; padding:0 2px 7px; transform-origin:50% 60%;
-      text-shadow:0 0 6px color-mix(in srgb, var(--sc) 75%, transparent), 0 0 16px color-mix(in srgb, var(--sc) 45%, transparent);
-      animation:sableLatido 1.8s ease-in-out infinite; }
-    .sable.sith { --sc:var(--rojo); }
-    .sable::after { content:""; position:absolute; left:-6px; right:-6px; bottom:0; height:3px; border-radius:3px;
-      background:linear-gradient(90deg, transparent, #fff 10%, #fff 90%, transparent);
-      box-shadow:0 0 3px 1px var(--sc), 0 0 10px 3px color-mix(in srgb, var(--sc) 80%, transparent), 0 0 22px 6px color-mix(in srgb, var(--sc) 40%, transparent);
-      transform-origin:left center; animation:sableEncender .7s cubic-bezier(.2,.8,.2,1) both, sableZumbido 3.2s linear .7s infinite; }
-    @keyframes sableLatido { 0%, 100% { transform:scale(1); } 14% { transform:scale(1.07); } 28% { transform:scale(1); } 42% { transform:scale(1.045); } 60% { transform:scale(1); } }
+    /* Sable de luz: una hoja de luz fina bajo el valor; el color cambia según el monto. Solo la alerta roja se mueve */
+    .sable { --sc:#facc15; position:relative; display:inline-block; color:var(--sc) !important; padding:0 2px 6px 4px; transform-origin:50% 60%;
+      text-shadow:0 0 5px color-mix(in srgb, var(--sc) 40%, transparent); }
+    .sable::before { content:""; position:absolute; left:-9px; bottom:-1px; width:9px; height:5px; border-radius:1px;
+      background:linear-gradient(180deg, #9aa0a8, #4b5058 55%, #2a2d33); box-shadow:inset 2px 0 0 #2a2d33, inset -2px 0 0 #2a2d33; }
+    .sable::after { content:""; position:absolute; left:0; right:-4px; bottom:0; height:2px; border-radius:2px;
+      background:linear-gradient(90deg, #fff, #fff 92%, transparent);
+      box-shadow:0 0 2px 1px var(--sc), 0 0 7px 1px color-mix(in srgb, var(--sc) 60%, transparent);
+      transform-origin:left center; animation:sableEncender .6s cubic-bezier(.2,.8,.2,1) both; }
+    .sable.t-celeste { --sc:#67e8f9; } .sable.t-azul { --sc:#3b82f6; } .sable.t-morado { --sc:#d946ef; }
+    .sable.t-naranjo { --sc:#fb923c; }
+    .sable.t-blanco { --sc:#ffffff; text-shadow:0 0 6px rgba(255,255,255,.75), 0 0 16px rgba(255,255,255,.35); }
+    .sable.t-blanco::after { height:3px; box-shadow:0 0 3px 1px #fff, 0 0 12px 3px rgba(255,255,255,.55), 0 0 24px 6px rgba(200,220,255,.25); }
+    .sable.t-alerta { --sc:#ef4444; animation:sableLatido 1.6s ease-in-out infinite; text-shadow:0 0 6px rgba(239,68,68,.6); }
+    .sable.t-alerta::after { animation:sableEncender .6s cubic-bezier(.2,.8,.2,1) both, sableAlerta 1.6s ease-in-out .6s infinite; }
+    @keyframes sableLatido { 0%, 100% { transform:scale(1); } 14% { transform:scale(1.06); } 28% { transform:scale(1); } 42% { transform:scale(1.035); } 60% { transform:scale(1); } }
     @keyframes sableEncender { from { transform:scaleX(0); opacity:.4; } to { transform:scaleX(1); opacity:1; } }
-    @keyframes sableZumbido { 0%, 100% { opacity:1; } 47% { opacity:1; } 49% { opacity:.72; } 51% { opacity:1; } 83% { opacity:.88; } 85% { opacity:1; } }
-    @media (prefers-reduced-motion:reduce){ .sable, .sable::after { animation:none; } }
+    @keyframes sableAlerta { 0%, 100% { box-shadow:0 0 2px 1px var(--sc), 0 0 7px 1px rgba(239,68,68,.6); } 20% { box-shadow:0 0 3px 1px var(--sc), 0 0 14px 4px rgba(239,68,68,.75); } }
+    @media (prefers-reduced-motion:reduce){ .sable, .sable::after { animation:none !important; } }
     .rp-fila.brillo { padding-top:10px; padding-bottom:4px; }
     .rp-fila.brillo b { font-size:19px; }
     .rep-item.local b .sable { font-size:17px; }
@@ -648,6 +654,10 @@
     .sol-acc { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .sol-form { margin-top:10px; padding:12px 14px; border-radius:12px; border:1px dashed var(--linea); display:grid; gap:6px; }
     .sol-form label { font-size:13px; font-weight:600; margin-top:4px; }
+    .sol-hora { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .sol-checks label { font-weight:400; margin-top:0; }
+    .serv-fijos { display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; border:1px solid var(--linea); background:var(--panel2); margin-bottom:6px; }
+    .serv-fijos span { margin-left:auto; color:var(--gris); font-size:13px; }
     .sol-banner { margin-top:14px; padding:12px 14px; border-radius:14px; border:1px solid color-mix(in srgb, var(--voltaje) 55%, transparent); background:color-mix(in srgb, var(--voltaje) 10%, var(--panel)); display:grid; gap:8px; }
     .sol-item { text-align:left; background:var(--panel2); border:1px solid var(--linea); border-radius:10px; padding:8px 12px; color:var(--hueso); cursor:pointer; font:inherit; display:grid; gap:2px; }
     .sol-item:hover { border-color:var(--voltaje); } .sol-item small { color:var(--gris); }
@@ -2231,7 +2241,12 @@
     const IVA = 0.19, COLS_REP = ['#60a5fa', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#22d3ee', '#a3e635', '#fb923c'];
     let REPARTO = null;
     // Valor con "sable de luz": late y queda iluminado (rojo si es negativo)
-    const sable = (txt, n) => `<span class="sable${n < 0 ? ' sith' : ''}">${txt}</span>`;
+    // Niveles: ≤ $500.000 amarillo · hasta $1.000.000 celeste · hasta $1.500.000 azul · hasta $2.000.000 morado · más: blanco
+    //          negativo hasta −$500.000 naranjo · más negativo: rojo en alerta (late)
+    const nivelSable = n => n < -500000 ? 't-alerta' : n < 0 ? 't-naranjo' : n <= 500000 ? '' : n <= 1000000 ? 't-celeste' : n <= 1500000 ? 't-azul' : n <= 2000000 ? 't-morado' : 't-blanco';
+    const sable = (txt, n) => `<span class="sable ${nivelSable(n)}" title="${esc(nombreNivel(n))}">${txt}</span>`;
+    const nombreNivel = n => n < -500000 ? 'Alerta: pérdida mayor a $500.000' : n < 0 ? 'Pérdida' : n <= 500000 ? 'Nivel 1 · hasta $500.000' : n <= 1000000 ? 'Nivel 2 · hasta $1.000.000'
+      : n <= 1500000 ? 'Nivel 3 · hasta $1.500.000' : n <= 2000000 ? 'Nivel 4 · hasta $2.000.000' : 'Nivel máximo · sobre $2.000.000';
     // Ícono "Balance Inteligente": hexágono con anillo de reparto que gira y núcleo que late
     const iconoBalance = id => `<svg class="bal-ico" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--voltaje)"/><stop offset="1" style="stop-color:var(--azul)"/></linearGradient></defs>
       <path d="M16 2.5 27.7 9.25v13.5L16 29.5 4.3 22.75V9.25Z" fill="none" stroke="url(#${id})" stroke-width="1.6" stroke-linejoin="round"/>
@@ -2509,7 +2524,7 @@
     }
 
     // ----- Terminar atención: servicios realizados + cómo pagó -----
-    let pagoElegido = null, cobroDesc = 0;
+    let pagoElegido = null, cobroDesc = 0, TERM_BLOQ = false;
     let PRODS_COBRO = [], APARTADOS = [], ventaLocal = {}, entregarIds = new Set();
     async function cargarProductosCobro(r){
       if (!conTienda() || !$('cobroProds')) return;
@@ -2550,14 +2565,16 @@
     function abrirTerminar(id){
       PRODS_COBRO = []; APARTADOS = []; ventaLocal = {}; entregarIds = new Set();
       const r = reservasTodas.find(x => x.id === id); if (!r) return;
-      pagoElegido = r.metodo_pago || null; cobroDesc = r.descuento_pct || 0;
+      pagoElegido = r.metodo_pago || null; cobroDesc = r.descuento_pct || 0; TERM_BLOQ = agendaCerrada(r);
       const marcados = marcadosPorNombre(r.servicios, r.trabajador_id);
       $('ventanaDetalle').innerHTML = `<h3 style="font-size:18px;">✓ Terminar atención</h3>
         <div class="det-fila"><span>Cliente</span><span>${esc(r.nombre)}</span></div>
         <div class="det-fila"><span>Inicio</span><span>${aHora(rangoDe(r)[0])}${r.origen === 'llegada' ? ' · orden de llegada' : ''}</span></div>
         ${r.origen === 'llegada' ? `<label for="fNombreLlegada">Nombre del cliente (opcional)</label><input id="fNombreLlegada" placeholder="Ej: Pedro">` : ''}
         ${cobroDesc ? `<div class="info-llegada">🎁 Cliente inscrito: <b>${cobroDesc}% de descuento en su primera visita</b>. El total ya lo incluye.</div>` : ''}
-        <label>Servicios realizados</label><div class="serv-checks">${checksServicios(marcados, r.trabajador_id)}</div>
+        ${TERM_BLOQ ? `<label>Servicios agendados</label><div class="serv-fijos">🔒 <b>${esc(r.servicios || '—')}</b> <span>${clp(r.total || 0)}</span></div>
+          <p class="nota" style="margin:-2px 0 6px;">La hora ya está agendada. Si hizo otro servicio, cobra lo agendado y después usa "✉️ Solicitar un cambio".</p>`
+          : `<label>Servicios realizados</label><div class="serv-checks">${checksServicios(marcados, r.trabajador_id)}</div>`}
         <label for="fPropina">Propina (opcional, es 100% tuya)</label>
         <div class="propinas">
           ${[0, 1000, 2000, 3000, 5000].map(v => `<button class="chip ${v === (r.propina || 0) ? 'sel' : ''}" onclick="elegirPropina(${v}, this)">${v ? clp(v) : 'Sin propina'}</button>`).join('')}
@@ -2571,13 +2588,15 @@
         <div class="det-acciones"><button class="boton" onclick="confirmarTermino(${r.id})">Confirmar pago y terminar</button>
           <button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button></div>
         <p class="estado" id="estadoAccion"></p>`;
+      $('ventanaDetalle').dataset.rid = r.id;
       totalACobrar();
       $('fondoDetalle').classList.remove('oculto');
       cargarProductosCobro(r);
     }
     function totalACobrar(){
       const ids = servSeleccionados(), bruto = serviciosActivos.filter(s => ids.includes(s.id)).reduce((a, s) => a + s.precio, 0);
-      const serv = Math.round(bruto * (100 - (cobroDesc || 0)) / 100);
+      const rT = TERM_BLOQ ? reservasTodas.find(x => x.id === Number($('ventanaDetalle').dataset.rid)) : null;
+      const serv = rT ? (rT.total || 0) : Math.round(bruto * (100 - (cobroDesc || 0)) / 100);
       const prop = Math.max(0, parseInt($('fPropina').value) || 0);
       const prods = totalProductosCobro();
       $('totalServicios').textContent = clp(serv); $('totalPropina').textContent = clp(prop); $('totalCobrar').textContent = clp(serv + prop + prods);
@@ -2589,7 +2608,7 @@
       totalACobrar();
     }
     async function confirmarTermino(id){
-      const r = reservasTodas.find(x => x.id === id), ids = servSeleccionados();
+      const r = reservasTodas.find(x => x.id === id), ids = TERM_BLOQ ? [] : servSeleccionados();
       if (!ids.length && !r.total) return estado('estadoAccion', 'Marca los servicios que se hicieron.', 'error');
       if (!pagoElegido) return estado('estadoAccion', 'Elige cómo pagó el cliente.', 'error');
       estado('estadoAccion', 'Guardando…');
@@ -2671,17 +2690,18 @@
         <div class="det-fila"><span>Pago</span><span>${r.metodo_pago ? PAGOS[r.metodo_pago] : (est === 'completada' ? 'Sin registrar' : '—')}</span></div>
         ${est === 'completada' && admin ? `<div class="pagos"><span class="nota">Método de pago:</span>
           ${Object.entries(PAGOS).map(([k, v]) => `<button class="chip ${r.metodo_pago === k ? 'sel' : ''}" onclick="cambiarPago(${r.id}, '${k}')">${v}</button>`).join('')}</div>` : ''}
-        ${est === 'completada' ? cajaSolicitud(r) : ''}
+        ${agendaCerrada(r) ? '<div class="det-fila"><span>Edición</span><span class="cobro-cerrado" style="padding:4px 12px;">🔒 Agendada · solo el admin la cambia</span></div>' : ''}
+        ${est === 'completada' || agendaCerrada(r) || SOLIC.some(x => x.reserva_id === r.id) ? cajaSolicitud(r) : ''}
         ${est === 'confirmada' || est === 'en_atencion' ? `<div class="det-acciones">
           ${est === 'confirmada' ? `<button class="boton-linea" onclick="cerrarDetalle(); iniciarAtencion(${r.id})">${esFutura(r) ? '▶ Comenzar ahora (llegó antes)' : '▶ Iniciar atención'}</button>` : ''}
           <button class="boton" onclick="abrirTerminar(${r.id})">✓ Terminó · cobrar</button></div>` : ''}
         <div class="det-acciones">
           ${admin && tel ? `<a class="boton-linea" href="https://wa.me/${tel}?text=${msgWa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
           ${!admin && est === 'completada' ? `<span class="cobro-cerrado" title="Una atención cobrada no se edita: pide el cambio al administrador">🔒 Cobrada</span>` : `<select onchange="cambiarEstado(${r.id}, this.value)">
-            ${Object.entries(ESTADOS).map(([k,v]) => `<option value="${k}" ${k===est?'selected':''}>${v}</option>`).join('')}
+            ${Object.entries(ESTADOS).filter(([k]) => admin || k === est || !['confirmada', 'en_atencion'].includes(est) || !['cancelada', 'completada'].includes(k)).map(([k,v]) => `<option value="${k}" ${k===est?'selected':''}>${v}</option>`).join('')}
           </select>`}
           ${yo.rol === 'admin' ? `<button class="boton" onclick="abrirEditar(${r.id})">✎ Editar</button>` : ''}
-          ${est === 'confirmada' ? `<button class="boton-linea rojo" onclick="cancelarReserva(${r.id})">Cancelar reserva</button>` : ''}
+          ${est === 'confirmada' && admin ? `<button class="boton-linea rojo" onclick="cancelarReserva(${r.id})">Cancelar reserva</button>` : ''}
           ${yo.rol === 'admin' ? `<button class="boton-linea rojo" onclick="borrarReserva(${r.id})">Eliminar</button>` : ''}
           <button class="boton-linea" style="margin-left:auto;" onclick="cerrarDetalle()">Cerrar</button>
         </div>
@@ -2690,44 +2710,71 @@
       if (r.origen === 'web') cargarFotoRef(r.id);
     }
     // ----- Solicitudes de cambio de una atención cobrada (Fase 38) -----
-    const TIPOS_SOL = { pago: '💳 Método de pago', propina: '💵 Propina', servicio: '✂️ Servicio', otro: '📝 Otro' };
+    const TIPOS_SOL = { pago: '💳 Método de pago', propina: '💵 Propina', servicio: '✂️ Servicio', otro: '📝 Otro', hora: '🕐 Hora o día', cancelar: '✕ Cancelar la hora' };
+    const TIPOS_COBRADA = ['pago', 'propina', 'servicio', 'otro'], TIPOS_AGENDADA = ['hora', 'servicio', 'cancelar', 'otro'];
+    const fechaSol = f => f ? deTexto(f).toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
     const txtPropuesta = s => s.tipo === 'pago' ? `${PAGOS[s.antes?.metodo_pago] || '—'} → <b>${PAGOS[s.propuesta.metodo_pago] || '—'}</b>`
-      : s.tipo === 'propina' ? `${clp(s.antes?.propina || 0)} → <b>${clp(s.propuesta.propina || 0)}</b>` : '';
+      : s.tipo === 'propina' ? `${clp(s.antes?.propina || 0)} → <b>${clp(s.propuesta.propina || 0)}</b>`
+      : s.tipo === 'hora' && s.propuesta?.hora ? `${esc(fechaSol(s.antes?.fecha))} ${esc(s.antes?.hora || '')} → <b>${esc(fechaSol(s.propuesta.fecha))} ${esc(s.propuesta.hora)}</b>`
+      : s.tipo === 'servicio' && s.propuesta?.nombres ? `${esc(s.antes?.servicios || '—')} → <b>${esc(s.propuesta.nombres)}</b> (${clp(s.propuesta.total || 0)})`
+      : s.tipo === 'cancelar' ? '<b>Cancelar esta hora</b>' : '';
+    // Se aplica sola al aprobar (si no, el admin corrige con "✎ Editar" y después aprueba)
+    const solSeAplica = s => ['pago', 'propina', 'hora', 'cancelar'].includes(s.tipo) || (s.tipo === 'servicio' && !!s.propuesta?.servicios);
+    // Hora agendada cerrada para el trabajador (Fase 48): no se edita, se pide al admin
+    const agendaCerrada = r => yo.rol !== 'admin' && ['confirmada', 'en_atencion'].includes(r.estado || 'confirmada') && r.origen !== 'llegada' && r.total != null;
     function cajaSolicitud(r){
       const admin = yo.rol === 'admin', ss = SOLIC.filter(x => x.reserva_id === r.id), pend = ss.find(x => x.estado === 'pendiente'), ult = ss.find(x => x.estado !== 'pendiente');
       if (pend) return `<div class="sol-caja pend"><div class="sol-tit">📝 Solicitud de cambio ${admin ? `de <b>${esc(pend.trabajador || 'equipo')}</b>` : 'enviada'} · ${TIPOS_SOL[pend.tipo]}</div>
           <div class="sol-msj">"${esc(pend.mensaje)}"</div>${txtPropuesta(pend) ? `<div class="sol-prop">${txtPropuesta(pend)}</div>` : ''}
           ${admin ? `<textarea id="solResp" rows="2" maxlength="300" placeholder="Respuesta para ${esc(pend.trabajador || 'el profesional')} (opcional)"></textarea>
-            <div class="sol-acc"><button class="boton" onclick="resolverSolicitud(${pend.id}, true)">✓ Aprobar${['pago', 'propina'].includes(pend.tipo) ? ' y aplicar' : ''}</button>
+            <div class="sol-acc"><button class="boton" onclick="resolverSolicitud(${pend.id}, true)">✓ Aprobar${solSeAplica(pend) ? ' y aplicar' : ''}</button>
             <button class="boton-linea rojo" onclick="resolverSolicitud(${pend.id}, false)">✕ Rechazar</button></div>
-            ${['servicio', 'otro'].includes(pend.tipo) ? '<p class="nota" style="margin:6px 0 0;">Corrige la atención con "✎ Editar" y después presiona Aprobar.</p>' : ''}`
+            ${!solSeAplica(pend) ? '<p class="nota" style="margin:6px 0 0;">Corrige con "✎ Editar" y después presiona Aprobar.</p>' : pend.tipo === 'cancelar' ? '<p class="nota" style="margin:6px 0 0;">Al aprobar, la hora queda cancelada.</p>' : ''}`
           : '<p class="nota" style="margin:6px 0 0;">⏳ Esperando la respuesta del administrador.</p>'}</div>`;
       return `${ult ? `<div class="sol-caja ${ult.estado}"><div class="sol-tit">${ult.estado === 'aprobada' ? '✓ Cambio aprobado' : '✕ Cambio rechazado'} · ${TIPOS_SOL[ult.tipo]}</div>
           <div class="sol-msj">"${esc(ult.mensaje)}"</div>${ult.respuesta ? `<div class="sol-prop">Respuesta: ${esc(ult.respuesta)}</div>` : ''}</div>` : ''}
         ${admin ? '' : `<div class="det-acciones"><button class="boton-linea" onclick="formSolicitud(${r.id})">✉️ Solicitar un cambio</button>
-          <span class="nota">¿Te equivocaste en el pago, el servicio o la propina? Pídeselo al administrador.</span></div><div id="formSol"></div>`}`;
+          <span class="nota">${r.estado === 'completada' ? '¿Te equivocaste en el pago, el servicio o la propina? Pídeselo al administrador.' : '¿El cliente quiere otra hora, otro servicio o cancelar? Pídeselo al administrador.'}</span></div><div id="formSol"></div>`}`;
     }
     let SOL_TIPO = 'propina';
     function formSolicitud(id, tipo){
       const r = reservasTodas.find(x => x.id === id); if (!r) return; if (tipo) SOL_TIPO = tipo;
+      const cobrada = r.estado === 'completada', tipos = cobrada ? TIPOS_COBRADA : TIPOS_AGENDADA;
+      if (!tipos.includes(SOL_TIPO)) SOL_TIPO = cobrada ? 'propina' : 'hora';
+      if (r.estado === 'en_atencion' && SOL_TIPO === 'hora') SOL_TIPO = 'servicio';
+      const tiposVer = r.estado === 'en_atencion' ? tipos.filter(k => k !== 'hora') : tipos;
+      const marcados = marcadosPorNombre(r.servicios, r.trabajador_id), [ri] = rangoDe(r);
+      const ej = { propina: 'Ej: se me olvidó agregar la propina de $2.000', pago: 'Ej: presioné efectivo pero pagó con débito',
+        servicio: cobrada ? 'Ej: me equivoqué de servicio, fue corte + barba' : 'Ej: se me olvidó agregar cejas', hora: 'Ej: el cliente me pidió venir a las 17:00',
+        cancelar: 'Ej: el cliente avisó que no puede venir', otro: 'Cuéntale qué pasó' }[SOL_TIPO];
       $('formSol').innerHTML = `<div class="sol-form">
-          <label>¿Qué quieres corregir?</label>
-          <div class="ideas">${Object.entries(TIPOS_SOL).map(([k, v]) => `<button class="chip ${SOL_TIPO === k ? 'sel' : ''}" onclick="formSolicitud(${id}, '${k}')">${v}</button>`).join('')}</div>
+          <label>¿Qué quieres ${cobrada ? 'corregir' : 'cambiar'}?</label>
+          <div class="ideas">${tiposVer.map(k => `<button class="chip ${SOL_TIPO === k ? 'sel' : ''}" onclick="formSolicitud(${id}, '${k}')">${TIPOS_SOL[k]}</button>`).join('')}</div>
           ${SOL_TIPO === 'pago' ? `<label>¿Cómo pagó realmente?</label><select id="solPago">${Object.entries(PAGOS).filter(([k]) => k !== r.metodo_pago).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>` : ''}
           ${SOL_TIPO === 'propina' ? `<label>Propina correcta (hoy dice ${clp(r.propina || 0)})</label><input id="solPropina" type="number" min="0" step="100" inputmode="numeric" placeholder="Ej: 2000">` : ''}
+          ${SOL_TIPO === 'hora' ? `<label>Nuevo día y hora (hoy: ${esc(fechaSol(r.fecha))} ${aHora(ri)})</label>
+            <div class="sol-hora"><input id="solFecha" type="date" value="${r.fecha}" min="${hoyTxt()}"><input id="solHoraN" type="time" step="300" value="${aHora(ri)}"></div>` : ''}
+          ${SOL_TIPO === 'servicio' && !cobrada ? `<label>Servicios que debería tener (hoy: ${esc(r.servicios || '—')})</label>
+            <div class="serv-checks sol-checks">${servDelLocal(r.trabajador_id).map(sv => `<label><input type="checkbox" class="sol-serv" value="${sv.id}" ${marcados.includes(sv.id) ? 'checked' : ''}> ${esc(sv.nombre)} <span>${sv.duracion} min · ${clp(sv.precio)}</span></label>`).join('')}</div>` : ''}
           <label>Mensaje para el administrador</label>
-          <textarea id="solMsj" rows="3" maxlength="500" placeholder="${SOL_TIPO === 'propina' ? 'Ej: se me olvidó agregar la propina de $2.000' : SOL_TIPO === 'servicio' ? 'Ej: me equivoqué de servicio, fue corte + barba' : SOL_TIPO === 'pago' ? 'Ej: presioné efectivo pero pagó con débito' : 'Cuéntale qué pasó'}"></textarea>
+          <textarea id="solMsj" rows="3" maxlength="500" placeholder="${ej}"></textarea>
           <div class="sol-acc"><button class="boton" onclick="enviarSolicitud(${id})">Enviar solicitud</button><button class="boton-linea" onclick="$('formSol').innerHTML=''">Cancelar</button></div></div>`;
       $('solMsj')?.focus();
     }
     async function enviarSolicitud(id){
-      const p = { tipo: SOL_TIPO, mensaje: $('solMsj').value.trim() };
+      const r = reservasTodas.find(x => x.id === id), p = { tipo: SOL_TIPO, mensaje: $('solMsj').value.trim() };
       if (SOL_TIPO === 'pago') p.metodo_pago = $('solPago').value;
       if (SOL_TIPO === 'propina') p.propina = String(Math.round(Number($('solPropina').value || '')) || '');
       if (SOL_TIPO === 'propina' && $('solPropina').value === '') return estado('estadoDetalle', 'Escribe la propina correcta.', 'error');
-      if (p.mensaje.length < 3) return estado('estadoDetalle', 'Escribe qué pasó.', 'error');
+      if (SOL_TIPO === 'hora'){ p.fecha = $('solFecha').value; p.hora = $('solHoraN').value; if (!p.fecha || !p.hora) return estado('estadoDetalle', 'Elige el nuevo día y hora.', 'error'); }
+      if (SOL_TIPO === 'servicio' && r && r.estado !== 'completada'){
+        p.servicios = [...document.querySelectorAll('.sol-serv:checked')].map(x => Number(x.value));
+        if (!p.servicios.length) return estado('estadoDetalle', 'Marca al menos un servicio.', 'error');
+      }
+      if (p.mensaje.length < 3) return estado('estadoDetalle', 'Escribe el mensaje para el administrador.', 'error');
       const { error } = await db.rpc('solicitar_cambio', { p_reserva: id, p });
-      if (error) return estado('estadoDetalle', /solicitar_cambio/.test(error.message || '') ? 'Falta instalar la Fase 38 en Supabase.' : error.message, 'error');
+      if (error) return estado('estadoDetalle', /solicitar_cambio/.test(error.message || '') ? 'Falta instalar la Fase 38 en Supabase.'
+        : /tipo_check/.test(error.message || '') ? 'Falta instalar la Fase 48 en Supabase.' : mensajeError(error), 'error');
       await cargarBase(); abrirDetalle(id); estado('estadoDetalle', '✓ Solicitud enviada. Te avisaremos cuando el administrador responda.', 'ok');
     }
     async function resolverSolicitud(sid, aprobar){
@@ -2736,7 +2783,7 @@
       const { data, error } = await db.rpc('resolver_solicitud', { p_id: sid, p_aprobar: aprobar, p_respuesta: $('solResp')?.value || null });
       if (error) return estado('estadoDetalle', error.message, 'error');
       await cargarBase(); refrescarVista(); if (reservasTodas.some(r => r.id === s.reserva_id)) abrirDetalle(s.reserva_id); else cerrarDetalle();
-      estado('estadoDetalle', aprobar ? (data.aplicado ? '✓ Aprobada y aplicada. Ya se ve en la caja.' : '✓ Aprobada.') : '✓ Rechazada.', 'ok');
+      estado('estadoDetalle', aprobar ? (data.aplicado ? '✓ Aprobada y aplicada.' : '✓ Aprobada.') : '✓ Rechazada.', 'ok');
       pintarSolicitudesPend();
     }
     // Tarjeta para el admin con las solicitudes pendientes (arriba de la agenda del día)
@@ -2779,7 +2826,8 @@
     async function marcar(id, nuevoEstado, pago){
       const { error } = await db.rpc('marcar_cita', { p_id: id, p_estado: nuevoEstado ?? null, p_pago: pago ?? null });
       if (error) return (error.message || '').includes('HORA_OCUPADA') ? 'No se puede reactivar: esa hora ya la tomó otra persona.'
-        : (error.message || '').includes('COBRO_CERRADO') ? 'Esta atención ya está cobrada. Usa "✉️ Solicitar un cambio".' : error.message;
+        : (error.message || '').includes('COBRO_CERRADO') ? 'Esta atención ya está cobrada. Usa "✉️ Solicitar un cambio".'
+        : (error.message || '').includes('AGENDA_CERRADA') ? 'Esta hora ya está agendada: para cambiarla o cancelarla usa "✉️ Solicitar un cambio".' : error.message;
       const r = reservasTodas.find(x => x.id === id);
       if (r){ if (nuevoEstado) r.estado = nuevoEstado; if (pago !== undefined) r.metodo_pago = pago || null; if (r.estado !== 'completada') r.metodo_pago = null; }
       return null;
@@ -2941,7 +2989,8 @@
       e.textContent = ids.length ? `${aHora(ini)}–${aHora(ini + dur)} · ${dur} min · ${clp(tot)}` : 'Elige al menos un servicio.';
       revisarFuera(dur);
     }
-    function mensajeError(error){ const m = error.message || ''; return m.includes('HORA_OCUPADA') ? 'Ese horario ya tiene otra reserva.' : m; }
+    function mensajeError(error){ const m = error.message || ''; return m.includes('HORA_OCUPADA') ? 'Ese horario ya tiene otra reserva.'
+      : m.includes('AGENDA_CERRADA') ? m.replace(/^AGENDA_CERRADA:\s*/, '') : m; }
 
     async function guardarAgendar(){
       const p = { trabajador_id: Number($('fTid').value), fecha: $('fFecha').value, hora: $('fHora').value, servicios: servSeleccionados(),
@@ -3276,7 +3325,7 @@
     }
     function imprimirInforme(){ document.body.classList.add('imprimiendo'); window.print(); setTimeout(() => document.body.classList.remove('imprimiendo'), 500); }
 
-    const VERSION_PANEL = 'F46 · 09-10 e';
+    const VERSION_PANEL = 'F48 · 09-10 b';
     // ================= MI CUENTA =================
     function abrirMiCuenta(msg){
       imgNegNueva = {}; temaNegNuevo = ''; temaMio = yo.mi_tema || '';
